@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { getAreas, addArea, deleteArea, type Area } from "@/lib/store";
+import { geocodeAddress } from "@/lib/geocode";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminPage() {
@@ -13,13 +14,18 @@ export default function AdminPage() {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!name.trim() || !address.trim()) {
       toast({ title: "Fyll i namn och adress", variant: "destructive" });
       return;
     }
+
+    setLoading(true);
+    const coords = await geocodeAddress(address.trim());
+    
     addArea({
       name: name.trim(),
       address: address.trim(),
@@ -27,12 +33,24 @@ export default function AdminPage() {
       snowStatus: "pending",
       sweepStatus: "pending",
       images: [],
+      lat: coords?.lat,
+      lng: coords?.lng,
     });
+
     setAreas(getAreas());
     setName("");
     setAddress("");
     setNotes("");
-    toast({ title: "Område tillagt!" });
+    setLoading(false);
+
+    if (coords) {
+      toast({ title: "Område tillagt med kartposition!" });
+    } else {
+      toast({
+        title: "Område tillagt",
+        description: "Kunde inte hitta kartposition för adressen. Kontrollera stavningen.",
+      });
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -64,7 +82,7 @@ export default function AdminPage() {
               <Input
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="T.ex. Storgatan 1"
+                placeholder="T.ex. Storgatan 1, Stockholm"
               />
             </div>
           </div>
@@ -77,9 +95,13 @@ export default function AdminPage() {
               rows={2}
             />
           </div>
-          <Button onClick={handleAdd} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Lägg till område
+          <Button onClick={handleAdd} disabled={loading} className="gap-2">
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            {loading ? "Söker kartposition..." : "Lägg till område"}
           </Button>
         </CardContent>
       </Card>
@@ -106,6 +128,9 @@ export default function AdminPage() {
                     <p className="text-sm font-medium">{area.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {area.address}
+                      {area.lat != null && (
+                        <span className="ml-2 text-success">📍 På karta</span>
+                      )}
                     </p>
                   </div>
                   <Button

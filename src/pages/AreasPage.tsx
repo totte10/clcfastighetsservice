@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { getAreas, updateArea, type Area } from "@/lib/store";
 import { StatusBadge } from "@/components/StatusBadge";
+import { AreaMap } from "@/components/AreaMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,10 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Snowflake, Wind, ImagePlus, X } from "lucide-react";
+import { Snowflake, Wind, ImagePlus, X, Map } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Status = "pending" | "in-progress" | "done";
+
+function getMarkerColor(snow: Status, sweep: Status): "green" | "orange" | "red" {
+  if (snow === "done" && sweep === "done") return "green";
+  if (snow === "pending" && sweep === "pending") return "red";
+  return "orange";
+}
 
 export default function AreasPage() {
   const [areas, setAreas] = useState<Area[]>(getAreas);
@@ -38,8 +45,6 @@ export default function AreasPage() {
     input.onchange = (e) => {
       const files = (e.target as HTMLInputElement).files;
       if (!files) return;
-      const area = areas.find((a) => a.id === id);
-      if (!area) return;
 
       Array.from(files).forEach((file) => {
         const reader = new FileReader();
@@ -66,6 +71,8 @@ export default function AreasPage() {
     refresh();
   };
 
+  const areasWithCoords = areas.filter((a) => a.lat != null && a.lng != null);
+
   if (areas.length === 0) {
     return (
       <div className="space-y-4">
@@ -83,6 +90,40 @@ export default function AreasPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Områden</h1>
 
+      {/* Overview map */}
+      {areasWithCoords.length > 0 && (
+        <Card className="glass-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Map className="h-5 w-5 text-primary" />
+              Alla områden på karta
+            </CardTitle>
+            <div className="flex gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-success inline-block" /> Klart
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-warning inline-block" /> Pågår
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-destructive inline-block" /> Ej påbörjad
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <AreaMap
+              className="h-72 md:h-96 w-full rounded-lg overflow-hidden"
+              markers={areasWithCoords.map((a) => ({
+                lat: a.lat!,
+                lng: a.lng!,
+                label: a.name,
+                color: getMarkerColor(a.snowStatus, a.sweepStatus),
+              }))}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {areas.map((area) => (
           <Card key={area.id} className="glass-card">
@@ -91,6 +132,20 @@ export default function AreasPage() {
               <p className="text-sm text-muted-foreground">{area.address}</p>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Per-area map */}
+              {area.lat != null && area.lng != null && (
+                <AreaMap
+                  markers={[{
+                    lat: area.lat,
+                    lng: area.lng,
+                    label: area.name,
+                    color: getMarkerColor(area.snowStatus, area.sweepStatus),
+                  }]}
+                  zoom={15}
+                  className="h-40 w-full rounded-md overflow-hidden"
+                />
+              )}
+
               {/* Status selectors */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
