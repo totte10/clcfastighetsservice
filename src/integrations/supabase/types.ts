@@ -74,6 +74,96 @@ export type Database = {
         }
         Relationships: []
       }
+      egna_entries: {
+        Row: {
+          address: string
+          ansvarig: string
+          blow_status: string
+          created_at: string
+          datum_planerat: string
+          id: string
+          kommentar: string
+          lat: number | null
+          lng: number | null
+          sweep_status: string
+          timmar: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          ansvarig?: string
+          blow_status?: string
+          created_at?: string
+          datum_planerat?: string
+          id?: string
+          kommentar?: string
+          lat?: number | null
+          lng?: number | null
+          sweep_status?: string
+          timmar?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          ansvarig?: string
+          blow_status?: string
+          created_at?: string
+          datum_planerat?: string
+          id?: string
+          kommentar?: string
+          lat?: number | null
+          lng?: number | null
+          sweep_status?: string
+          timmar?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tidx_entries: {
+        Row: {
+          address: string
+          ansvarig: string
+          created_at: string
+          datum_planerat: string
+          id: string
+          kommentar: string
+          lat: number | null
+          lng: number | null
+          omrade: string
+          status: string
+          timmar_maskin: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          ansvarig?: string
+          created_at?: string
+          datum_planerat?: string
+          id?: string
+          kommentar?: string
+          lat?: number | null
+          lng?: number | null
+          omrade?: string
+          status?: string
+          timmar_maskin?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          ansvarig?: string
+          created_at?: string
+          datum_planerat?: string
+          id?: string
+          kommentar?: string
+          lat?: number | null
+          lng?: number | null
+          omrade?: string
+          status?: string
+          timmar_maskin?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       time_entries: {
         Row: {
           area_id: string | null
