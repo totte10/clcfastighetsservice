@@ -1,7 +1,8 @@
-import { LayoutDashboard, MapPin, Clock, Settings, Wind, Home, MessageCircle, LogOut } from "lucide-react";
+import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import clcLogo from "@/assets/clc-logo.png";
 import {
   Sidebar,
@@ -16,19 +17,32 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Tidx Sopningar", url: "/tidx", icon: Wind },
-  { title: "Egna Områden", url: "/egna", icon: Home },
-  { title: "Chatt", url: "/chat", icon: MessageCircle },
-  { title: "Tidrapport", url: "/time", icon: Clock },
-  { title: "Admin", url: "/admin", icon: Settings },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: false },
+  { title: "Tidx Sopningar", url: "/tidx", icon: Wind, adminOnly: false },
+  { title: "Egna Områden", url: "/egna", icon: Home, adminOnly: false },
+  { title: "Chatt", url: "/chat", icon: MessageCircle, adminOnly: false },
+  { title: "Tidrapport", url: "/time", icon: Clock, adminOnly: false },
+  { title: "Admin", url: "/admin", icon: Settings, adminOnly: true },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
   const { user, signOut } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
+
+  const visibleItems = items.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <Sidebar collapsible="icon">
@@ -50,7 +64,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
