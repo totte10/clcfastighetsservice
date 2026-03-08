@@ -10,7 +10,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <header className="h-14 flex items-center border-b border-border/50 bg-card/50 backdrop-blur-sm px-4 shrink-0">
             <SidebarTrigger className="mr-4" />
             <h2 className="text-sm font-medium text-muted-foreground">
-              Snöröjning & Maskinsopning
+              CLC – Snöröjning & Maskinsopning
             </h2>
           </header>
           <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
