@@ -134,6 +134,7 @@ export interface TidxEntry {
   timmarMaskin: number;
   lat?: number | null;
   lng?: number | null;
+  images: string[];
 }
 
 export async function getTidxEntries(): Promise<TidxEntry[]> {
