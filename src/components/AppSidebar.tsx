@@ -1,4 +1,4 @@
-import { LayoutDashboard, MapPin, Clock, Settings, Wind } from "lucide-react";
+import { LayoutDashboard, MapPin, Clock, Settings, Wind, Home } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import clcLogo from "@/assets/clc-logo.png";
