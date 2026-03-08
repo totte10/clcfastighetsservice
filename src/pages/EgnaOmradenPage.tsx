@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AreaMap } from "@/components/AreaMap";
 import { EntryImageUpload } from "@/components/EntryImageUpload";
+import { AddressTimeLog } from "@/components/AddressTimeLog";
 import { geocodeAddress } from "@/lib/geocode";
 import { Fan, Wind, Calendar, Clock, Search, Map, Loader2 } from "lucide-react";
 import { getEgnaEntries, updateEgnaEntry, type EgnaEntry } from "@/lib/store";
