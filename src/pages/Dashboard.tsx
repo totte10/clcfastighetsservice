@@ -8,7 +8,7 @@ export default function Dashboard() {
   const timeEntries = useMemo(() => getTimeEntries(), []);
   const activeClock = getActiveClock();
 
-  const snowDone = areas.filter((a) => a.snowStatus === "done").length;
+  const blowDone = areas.filter((a) => a.blowStatus === "done").length;
   const sweepDone = areas.filter((a) => a.sweepStatus === "done").length;
   const todayEntries = timeEntries.filter(
     (t) => t.date === new Date().toISOString().split("T")[0]
