@@ -195,6 +195,7 @@ export async function getEgnaEntries(): Promise<EgnaEntry[]> {
     timmar: Number(r.timmar),
     lat: r.lat,
     lng: r.lng,
+    images: r.images ?? [],
   }));
 }
 
@@ -206,5 +207,6 @@ export async function updateEgnaEntry(id: string, updates: Partial<EgnaEntry>) {
   if (updates.kommentar !== undefined) mapped.kommentar = updates.kommentar;
   if (updates.lat !== undefined) mapped.lat = updates.lat;
   if (updates.lng !== undefined) mapped.lng = updates.lng;
+  if (updates.images !== undefined) mapped.images = updates.images;
   await supabase.from("egna_entries").update(mapped).eq("id", id);
 }
