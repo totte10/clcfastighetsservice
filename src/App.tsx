@@ -9,6 +9,7 @@ import AreasPage from "@/pages/AreasPage";
 import TimePage from "@/pages/TimePage";
 import AdminPage from "@/pages/AdminPage";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
+import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
