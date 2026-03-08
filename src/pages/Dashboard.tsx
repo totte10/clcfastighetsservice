@@ -1,5 +1,5 @@
 import { getAreas, getTimeEntries, getActiveClock } from "@/lib/store";
-import { MapPin, Snowflake, Wind, Clock } from "lucide-react";
+import { MapPin, Fan, Wind, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMemo } from "react";
 
@@ -8,7 +8,7 @@ export default function Dashboard() {
   const timeEntries = useMemo(() => getTimeEntries(), []);
   const activeClock = getActiveClock();
 
-  const snowDone = areas.filter((a) => a.snowStatus === "done").length;
+  const blowDone = areas.filter((a) => a.blowStatus === "done").length;
   const sweepDone = areas.filter((a) => a.sweepStatus === "done").length;
   const todayEntries = timeEntries.filter(
     (t) => t.date === new Date().toISOString().split("T")[0]
@@ -22,9 +22,9 @@ export default function Dashboard() {
       color: "text-primary",
     },
     {
-      label: "Snöröjning klart",
-      value: `${snowDone}/${areas.length}`,
-      icon: Snowflake,
+      label: "Framblåsning klart",
+      value: `${blowDone}/${areas.length}`,
+      icon: Fan,
       color: "text-primary",
     },
     {
@@ -46,7 +46,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Översikt av snöröjning och maskinsopning
+          Översikt av maskinsopning och framblåsning
         </p>
       </div>
 

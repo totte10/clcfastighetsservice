@@ -6,7 +6,7 @@ export interface Area {
   address: string;
   lat?: number;
   lng?: number;
-  snowStatus: "pending" | "in-progress" | "done";
+  blowStatus: "pending" | "in-progress" | "done";
   sweepStatus: "pending" | "in-progress" | "done";
   images: string[]; // base64 data URLs
   notes: string;
@@ -24,9 +24,9 @@ export interface TimeEntry {
   date: string;
 }
 
-const AREAS_KEY = "snowapp_areas";
-const TIME_KEY = "snowapp_time";
-const CLOCK_KEY = "snowapp_active_clock";
+const AREAS_KEY = "clc_areas";
+const TIME_KEY = "clc_time";
+const CLOCK_KEY = "clc_active_clock";
 
 export function getAreas(): Area[] {
   const data = localStorage.getItem(AREAS_KEY);

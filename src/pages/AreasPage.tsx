@@ -11,14 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Snowflake, Wind, ImagePlus, X, Map } from "lucide-react";
+import { Fan, Wind, ImagePlus, X, Map } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Status = "pending" | "in-progress" | "done";
 
-function getMarkerColor(snow: Status, sweep: Status): "green" | "orange" | "red" {
-  if (snow === "done" && sweep === "done") return "green";
-  if (snow === "pending" && sweep === "pending") return "red";
+function getMarkerColor(blow: Status, sweep: Status): "green" | "orange" | "red" {
+  if (blow === "done" && sweep === "done") return "green";
+  if (blow === "pending" && sweep === "pending") return "red";
   return "orange";
 }
 
@@ -30,7 +30,7 @@ export default function AreasPage() {
 
   const handleStatusChange = (
     id: string,
-    field: "snowStatus" | "sweepStatus",
+    field: "blowStatus" | "sweepStatus",
     value: Status
   ) => {
     updateArea(id, { [field]: value });
@@ -90,7 +90,6 @@ export default function AreasPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Områden</h1>
 
-      {/* Overview map */}
       {areasWithCoords.length > 0 && (
         <Card className="glass-card">
           <CardHeader className="pb-3">
@@ -117,7 +116,7 @@ export default function AreasPage() {
                 lat: a.lat!,
                 lng: a.lng!,
                 label: a.name,
-                color: getMarkerColor(a.snowStatus, a.sweepStatus),
+                color: getMarkerColor(a.blowStatus, a.sweepStatus),
               }))}
             />
           </CardContent>
@@ -132,31 +131,29 @@ export default function AreasPage() {
               <p className="text-sm text-muted-foreground">{area.address}</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Per-area map */}
               {area.lat != null && area.lng != null && (
                 <AreaMap
                   markers={[{
                     lat: area.lat,
                     lng: area.lng,
                     label: area.name,
-                    color: getMarkerColor(area.snowStatus, area.sweepStatus),
+                    color: getMarkerColor(area.blowStatus, area.sweepStatus),
                   }]}
                   zoom={15}
                   className="h-40 w-full rounded-md overflow-hidden"
                 />
               )}
 
-              {/* Status selectors */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                    <Snowflake className="h-4 w-4 text-primary" />
-                    Snöröjning
+                    <Fan className="h-4 w-4 text-primary" />
+                    Framblåsning
                   </div>
                   <Select
-                    value={area.snowStatus}
+                    value={area.blowStatus}
                     onValueChange={(v) =>
-                      handleStatusChange(area.id, "snowStatus", v as Status)
+                      handleStatusChange(area.id, "blowStatus", v as Status)
                     }
                   >
                     <SelectTrigger className="h-9">
@@ -168,7 +165,7 @@ export default function AreasPage() {
                       <SelectItem value="done">Klart</SelectItem>
                     </SelectContent>
                   </Select>
-                  <StatusBadge status={area.snowStatus} />
+                  <StatusBadge status={area.blowStatus} />
                 </div>
 
                 <div className="space-y-2">
@@ -195,7 +192,6 @@ export default function AreasPage() {
                 </div>
               </div>
 
-              {/* Images */}
               <div className="space-y-2">
                 <Button
                   variant="outline"
