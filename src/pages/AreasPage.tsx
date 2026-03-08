@@ -1,15 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { getAreas, updateArea, type Area } from "@/lib/store";
 import { StatusBadge } from "@/components/StatusBadge";
 import { AreaMap } from "@/components/AreaMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Fan, Wind, ImagePlus, X, Map } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -23,18 +19,18 @@ function getMarkerColor(blow: Status, sweep: Status): "green" | "orange" | "red"
 }
 
 export default function AreasPage() {
-  const [areas, setAreas] = useState<Area[]>(getAreas);
+  const [areas, setAreas] = useState<Area[]>([]);
   const { toast } = useToast();
 
-  const refresh = useCallback(() => setAreas(getAreas()), []);
+  const refresh = useCallback(async () => {
+    setAreas(await getAreas());
+  }, []);
 
-  const handleStatusChange = (
-    id: string,
-    field: "blowStatus" | "sweepStatus",
-    value: Status
-  ) => {
-    updateArea(id, { [field]: value });
-    refresh();
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const handleStatusChange = async (id: string, field: "blowStatus" | "sweepStatus", value: Status) => {
+    await updateArea(id, { [field]: value });
+    await refresh();
   };
 
   const handleImageUpload = (id: string) => {
@@ -42,33 +38,33 @@ export default function AreasPage() {
     input.type = "file";
     input.accept = "image/*";
     input.multiple = true;
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const files = (e.target as HTMLInputElement).files;
       if (!files) return;
-
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          const current = getAreas().find((a) => a.id === id);
-          if (current) {
-            updateArea(id, { images: [...current.images, result] });
-            refresh();
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      const area = areas.find((a) => a.id === id);
+      if (!area) return;
+      const newImages = [...area.images];
+      for (const file of Array.from(files)) {
+        const result = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        newImages.push(result);
+      }
+      await updateArea(id, { images: newImages });
+      await refresh();
       toast({ title: "Bilder uppladdade" });
     };
     input.click();
   };
 
-  const removeImage = (areaId: string, imgIndex: number) => {
+  const removeImage = async (areaId: string, imgIndex: number) => {
     const area = areas.find((a) => a.id === areaId);
     if (!area) return;
     const newImages = area.images.filter((_, i) => i !== imgIndex);
-    updateArea(areaId, { images: newImages });
-    refresh();
+    await updateArea(areaId, { images: newImages });
+    await refresh();
   };
 
   const areasWithCoords = areas.filter((a) => a.lat != null && a.lng != null);
@@ -125,25 +121,12 @@ export default function AreasPage() {
               <Map className="h-5 w-5 text-primary" />
               Alla områden på karta
             </CardTitle>
-            <div className="flex gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-success inline-block" /> Klart
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-warning inline-block" /> Pågår
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-destructive inline-block" /> Ej påbörjad
-              </span>
-            </div>
           </CardHeader>
           <CardContent>
             <AreaMap
               className="h-72 md:h-96 w-full rounded-lg overflow-hidden"
               markers={areasWithCoords.map((a) => ({
-                lat: a.lat!,
-                lng: a.lng!,
-                label: a.name,
+                lat: a.lat!, lng: a.lng!, label: a.name,
                 color: getMarkerColor(a.blowStatus, a.sweepStatus),
               }))}
             />
@@ -159,34 +142,13 @@ export default function AreasPage() {
               <p className="text-sm text-muted-foreground">{area.address}</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {area.lat != null && area.lng != null && (
-                <AreaMap
-                  markers={[{
-                    lat: area.lat,
-                    lng: area.lng,
-                    label: area.name,
-                    color: getMarkerColor(area.blowStatus, area.sweepStatus),
-                  }]}
-                  zoom={15}
-                  className="h-40 w-full rounded-md overflow-hidden"
-                />
-              )}
-
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                    <Fan className="h-4 w-4 text-primary" />
-                    Framblåsning
+                    <Fan className="h-4 w-4 text-primary" /> Framblåsning
                   </div>
-                  <Select
-                    value={area.blowStatus}
-                    onValueChange={(v) =>
-                      handleStatusChange(area.id, "blowStatus", v as Status)
-                    }
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={area.blowStatus} onValueChange={(v) => handleStatusChange(area.id, "blowStatus", v as Status)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Ej påbörjad</SelectItem>
                       <SelectItem value="in-progress">Pågår</SelectItem>
@@ -195,21 +157,12 @@ export default function AreasPage() {
                   </Select>
                   <StatusBadge status={area.blowStatus} />
                 </div>
-
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                    <Wind className="h-4 w-4 text-accent" />
-                    Maskinsopning
+                    <Wind className="h-4 w-4 text-accent" /> Maskinsopning
                   </div>
-                  <Select
-                    value={area.sweepStatus}
-                    onValueChange={(v) =>
-                      handleStatusChange(area.id, "sweepStatus", v as Status)
-                    }
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={area.sweepStatus} onValueChange={(v) => handleStatusChange(area.id, "sweepStatus", v as Status)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Ej påbörjad</SelectItem>
                       <SelectItem value="in-progress">Pågår</SelectItem>
@@ -221,28 +174,15 @@ export default function AreasPage() {
               </div>
 
               <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleImageUpload(area.id)}
-                  className="gap-2"
-                >
-                  <ImagePlus className="h-4 w-4" />
-                  Lägg till bild
+                <Button variant="outline" size="sm" onClick={() => handleImageUpload(area.id)} className="gap-2">
+                  <ImagePlus className="h-4 w-4" /> Lägg till bild
                 </Button>
                 {area.images.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {area.images.map((img, i) => (
                       <div key={i} className="relative group">
-                        <img
-                          src={img}
-                          alt={`Bild ${i + 1}`}
-                          className="w-20 h-20 object-cover rounded-md border"
-                        />
-                        <button
-                          onClick={() => removeImage(area.id, i)}
-                          className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
+                        <img src={img} alt={`Bild ${i + 1}`} className="w-20 h-20 object-cover rounded-md border" />
+                        <button onClick={() => removeImage(area.id, i)} className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <X className="h-3 w-3" />
                         </button>
                       </div>
@@ -251,11 +191,7 @@ export default function AreasPage() {
                 )}
               </div>
 
-              {area.notes && (
-                <p className="text-sm text-muted-foreground italic">
-                  {area.notes}
-                </p>
-              )}
+              {area.notes && <p className="text-sm text-muted-foreground italic">{area.notes}</p>}
             </CardContent>
           </Card>
         ))}
