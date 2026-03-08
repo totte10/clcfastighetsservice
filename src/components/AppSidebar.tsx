@@ -1,6 +1,7 @@
-import { LayoutDashboard, MapPin, Clock, Settings, Wind, Home, MessageCircle } from "lucide-react";
+import { LayoutDashboard, MapPin, Clock, Settings, Wind, Home, MessageCircle, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import clcLogo from "@/assets/clc-logo.png";
 import {
   Sidebar,
@@ -10,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -26,6 +28,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <Sidebar collapsible="icon">
@@ -66,6 +69,20 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter>
+        <div className="p-2">
+          {!collapsed && user && (
+            <p className="text-[10px] text-sidebar-foreground/50 truncate px-2 mb-1">
+              {user.email}
+            </p>
+          )}
+          <SidebarMenuButton onClick={signOut} className="w-full hover:bg-sidebar-accent/50 text-sidebar-foreground/70">
+            <LogOut className="mr-2 h-4 w-4" />
+            {!collapsed && <span>Logga ut</span>}
+          </SidebarMenuButton>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
