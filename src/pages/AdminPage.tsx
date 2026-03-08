@@ -30,7 +30,7 @@ export default function AdminPage() {
       name: name.trim(),
       address: address.trim(),
       notes: notes.trim(),
-      snowStatus: "pending",
+      blowStatus: "pending",
       sweepStatus: "pending",
       images: [],
       lat: coords?.lat,
