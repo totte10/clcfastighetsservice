@@ -15,9 +15,9 @@ import {
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  
   { title: "Tidx Sopningar", url: "/tidx", icon: Wind },
   { title: "Egna Områden", url: "/egna", icon: Home },
+  { title: "Chatt", url: "/chat", icon: MessageCircle },
   { title: "Tidrapport", url: "/time", icon: Clock },
   { title: "Admin", url: "/admin", icon: Settings },
 ];

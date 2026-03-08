@@ -29,6 +29,7 @@ const App = () => (
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/tidx" element={<TidxSopningarPage />} />
             <Route path="/egna" element={<EgnaOmradenPage />} />
+            <Route path="/chat" element={<ChatPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
