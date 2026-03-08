@@ -6,7 +6,7 @@ export interface Area {
   address: string;
   lat?: number;
   lng?: number;
-  snowStatus: "pending" | "in-progress" | "done";
+  blowStatus: "pending" | "in-progress" | "done";
   sweepStatus: "pending" | "in-progress" | "done";
   images: string[]; // base64 data URLs
   notes: string;
