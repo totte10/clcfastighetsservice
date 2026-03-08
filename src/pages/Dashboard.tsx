@@ -46,7 +46,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Översikt av snöröjning och maskinsopning
+          Översikt av maskinsopning och framblåsning
         </p>
       </div>
 
