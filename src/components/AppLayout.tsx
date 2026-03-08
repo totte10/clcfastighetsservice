@@ -7,7 +7,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center border-b bg-card px-4 shrink-0">
+          <header className="h-14 flex items-center border-b border-border/50 bg-card/50 backdrop-blur-sm px-4 shrink-0">
             <SidebarTrigger className="mr-4" />
             <h2 className="text-sm font-medium text-muted-foreground">
               Snöröjning & Maskinsopning
