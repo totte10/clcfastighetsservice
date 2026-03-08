@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { AreaMap } from "@/components/AreaMap";
+import { EntryImageUpload } from "@/components/EntryImageUpload";
 import { geocodeAddress } from "@/lib/geocode";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -182,6 +183,10 @@ export default function TidxSopningarPage() {
                 <Input value={entry.ansvarig} onChange={(e) => handleUpdate(entry.id, { ansvarig: e.target.value })} placeholder="Ansvarig" className="h-8 text-xs" />
                 <Input value={entry.kommentar} onChange={(e) => handleUpdate(entry.id, { kommentar: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
               </div>
+              <EntryImageUpload
+                images={entry.images}
+                onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
+              />
             </CardContent>
           </Card>
         ))}

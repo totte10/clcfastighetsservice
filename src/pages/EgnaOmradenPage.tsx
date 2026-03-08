@@ -7,6 +7,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AreaMap } from "@/components/AreaMap";
+import { EntryImageUpload } from "@/components/EntryImageUpload";
 import { geocodeAddress } from "@/lib/geocode";
 import { Fan, Wind, Calendar, Clock, Search, Map, Loader2 } from "lucide-react";
 import { getEgnaEntries, updateEgnaEntry, type EgnaEntry } from "@/lib/store";
@@ -192,6 +193,10 @@ export default function EgnaOmradenPage() {
               </div>
 
               <Input value={entry.ansvarig} onChange={(e) => handleUpdate(entry.id, { ansvarig: e.target.value })} placeholder="Ansvarig" className="h-8 text-xs" />
+              <EntryImageUpload
+                images={entry.images}
+                onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
+              />
             </CardContent>
           </Card>
         ))}
