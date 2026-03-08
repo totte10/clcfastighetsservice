@@ -90,6 +90,34 @@ export default function AreasPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Områden</h1>
 
+      <Card className="glass-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Alla områden</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y divide-border">
+            {areas.map((area) => (
+              <div key={area.id} className="flex items-center justify-between px-6 py-3">
+                <div>
+                  <p className="font-medium text-sm">{area.name}</p>
+                  <p className="text-xs text-muted-foreground">{area.address}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <Fan className="h-3.5 w-3.5 text-primary" />
+                    <StatusBadge status={area.blowStatus} />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Wind className="h-3.5 w-3.5 text-accent" />
+                    <StatusBadge status={area.sweepStatus} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {areasWithCoords.length > 0 && (
         <Card className="glass-card">
           <CardHeader className="pb-3">
