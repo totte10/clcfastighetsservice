@@ -9,6 +9,7 @@ import AreasPage from "@/pages/AreasPage";
 import TimePage from "@/pages/TimePage";
 import AdminPage from "@/pages/AdminPage";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
+import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/time" element={<TimePage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/tidx" element={<TidxSopningarPage />} />
+            <Route path="/egna" element={<EgnaOmradenPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
