@@ -25,6 +25,7 @@ const App = () => (
             <Route path="/areas" element={<AreasPage />} />
             <Route path="/time" element={<TimePage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/tidx" element={<TidxSopningarPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
