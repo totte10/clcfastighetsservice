@@ -17,6 +17,7 @@ const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Områden", url: "/areas", icon: MapPin },
   { title: "Tidx Sopningar", url: "/tidx", icon: Wind },
+  { title: "Egna Områden", url: "/egna", icon: Home },
   { title: "Tidrapport", url: "/time", icon: Clock },
   { title: "Admin", url: "/admin", icon: Settings },
 ];

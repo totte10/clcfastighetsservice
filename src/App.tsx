@@ -27,6 +27,7 @@ const App = () => (
             <Route path="/time" element={<TimePage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/tidx" element={<TidxSopningarPage />} />
+            <Route path="/egna" element={<EgnaOmradenPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
