@@ -193,6 +193,10 @@ export default function EgnaOmradenPage() {
               </div>
 
               <Input value={entry.ansvarig} onChange={(e) => handleUpdate(entry.id, { ansvarig: e.target.value })} placeholder="Ansvarig" className="h-8 text-xs" />
+              <EntryImageUpload
+                images={entry.images}
+                onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
+              />
             </CardContent>
           </Card>
         ))}
