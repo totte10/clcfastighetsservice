@@ -14,7 +14,113 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      active_clocks: {
+        Row: {
+          clock_in: string
+          employee_name: string
+          id: string
+        }
+        Insert: {
+          clock_in?: string
+          employee_name: string
+          id?: string
+        }
+        Update: {
+          clock_in?: string
+          employee_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      areas: {
+        Row: {
+          address: string
+          blow_status: string
+          created_at: string
+          id: string
+          images: string[]
+          lat: number | null
+          lng: number | null
+          name: string
+          notes: string
+          sweep_status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          blow_status?: string
+          created_at?: string
+          id?: string
+          images?: string[]
+          lat?: number | null
+          lng?: number | null
+          name: string
+          notes?: string
+          sweep_status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          blow_status?: string
+          created_at?: string
+          id?: string
+          images?: string[]
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          notes?: string
+          sweep_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      time_entries: {
+        Row: {
+          area_id: string | null
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          date: string
+          employee_name: string
+          id: string
+          manual_end: string | null
+          manual_start: string | null
+          type: string
+        }
+        Insert: {
+          area_id?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          date: string
+          employee_name: string
+          id?: string
+          manual_end?: string | null
+          manual_start?: string | null
+          type?: string
+        }
+        Update: {
+          area_id?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          date?: string
+          employee_name?: string
+          id?: string
+          manual_end?: string | null
+          manual_start?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
