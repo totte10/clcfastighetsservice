@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { AreaMap } from "@/components/AreaMap";
 import { EntryImageUpload } from "@/components/EntryImageUpload";
+import { AddressTimeLog } from "@/components/AddressTimeLog";
 import { geocodeAddress } from "@/lib/geocode";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
