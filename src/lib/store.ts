@@ -151,6 +151,7 @@ export async function getTidxEntries(): Promise<TidxEntry[]> {
     timmarMaskin: Number(r.timmar_maskin),
     lat: r.lat,
     lng: r.lng,
+    images: r.images ?? [],
   }));
 }
 
@@ -161,6 +162,7 @@ export async function updateTidxEntry(id: string, updates: Partial<TidxEntry>) {
   if (updates.kommentar !== undefined) mapped.kommentar = updates.kommentar;
   if (updates.lat !== undefined) mapped.lat = updates.lat;
   if (updates.lng !== undefined) mapped.lng = updates.lng;
+  if (updates.images !== undefined) mapped.images = updates.images;
   await supabase.from("tidx_entries").update(mapped).eq("id", id);
 }
 
