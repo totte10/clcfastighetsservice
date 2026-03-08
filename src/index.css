@@ -66,6 +66,11 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border shadow-sm;
+    @apply bg-card/70 backdrop-blur-md border border-border/60 shadow-lg shadow-black/20;
   }
+}
+
+/* Leaflet dark map tiles */
+.leaflet-tile-pane {
+  filter: brightness(0.75) contrast(1.1) saturate(0.8);
 }
