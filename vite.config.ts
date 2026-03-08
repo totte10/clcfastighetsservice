@@ -20,7 +20,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webp}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
         name: "CLC – Maskinsopning & Framblåsning",
