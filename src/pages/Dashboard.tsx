@@ -22,9 +22,9 @@ export default function Dashboard() {
       color: "text-primary",
     },
     {
-      label: "Snöröjning klart",
-      value: `${snowDone}/${areas.length}`,
-      icon: Snowflake,
+      label: "Framblåsning klart",
+      value: `${blowDone}/${areas.length}`,
+      icon: Fan,
       color: "text-primary",
     },
     {
