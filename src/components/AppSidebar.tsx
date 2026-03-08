@@ -1,4 +1,4 @@
-import { LayoutDashboard, MapPin, Clock, Settings } from "lucide-react";
+import { LayoutDashboard, MapPin, Clock, Settings, Wind } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import clcLogo from "@/assets/clc-logo.png";
@@ -16,6 +16,7 @@ import {
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Områden", url: "/areas", icon: MapPin },
+  { title: "Tidx Sopningar", url: "/tidx", icon: Wind },
   { title: "Tidrapport", url: "/time", icon: Clock },
   { title: "Admin", url: "/admin", icon: Settings },
 ];

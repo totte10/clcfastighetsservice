@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import AreasPage from "@/pages/AreasPage";
 import TimePage from "@/pages/TimePage";
 import AdminPage from "@/pages/AdminPage";
+import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/areas" element={<AreasPage />} />
             <Route path="/time" element={<TimePage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/tidx" element={<TidxSopningarPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
