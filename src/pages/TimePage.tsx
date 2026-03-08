@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   getActiveClock,
   setActiveClock,
@@ -6,68 +6,69 @@ import {
   getTimeEntries,
   getAreas,
   type TimeEntry,
+  type Area,
 } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, Play, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function TimePage() {
-  const [activeClock, setActiveClockState] = useState(getActiveClock);
-  const [entries, setEntries] = useState<TimeEntry[]>(getTimeEntries);
-  const [name, setName] = useState(activeClock?.employeeName || "");
+  const [activeClock, setActiveClockState] = useState<{ employeeName: string; clockIn: string } | null>(null);
+  const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [areas, setAreasState] = useState<Area[]>([]);
+  const [name, setName] = useState("");
   const [manualName, setManualName] = useState("");
-  const [manualDate, setManualDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [manualDate, setManualDate] = useState(new Date().toISOString().split("T")[0]);
   const [manualStart, setManualStart] = useState("");
   const [manualEnd, setManualEnd] = useState("");
   const [manualAreaId, setManualAreaId] = useState("");
-  const areas = getAreas();
   const { toast } = useToast();
 
-  const handleClockIn = () => {
-    if (!name.trim()) {
-      toast({ title: "Ange ditt namn", variant: "destructive" });
-      return;
-    }
+  const refresh = useCallback(async () => {
+    const [clock, te, ar] = await Promise.all([getActiveClock(), getTimeEntries(), getAreas()]);
+    setActiveClockState(clock);
+    setEntries(te);
+    setAreasState(ar);
+    if (clock) setName(clock.employeeName);
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const handleClockIn = async () => {
+    if (!name.trim()) { toast({ title: "Ange ditt namn", variant: "destructive" }); return; }
     const clock = { employeeName: name.trim(), clockIn: new Date().toISOString() };
-    setActiveClock(clock);
+    await setActiveClock(clock);
     setActiveClockState(clock);
     toast({ title: `${name} instämplad!` });
   };
 
-  const handleClockOut = () => {
+  const handleClockOut = async () => {
     if (!activeClock) return;
-    addTimeEntry({
+    await addTimeEntry({
       employeeName: activeClock.employeeName,
       type: "clock",
       clockIn: activeClock.clockIn,
       clockOut: new Date().toISOString(),
       date: new Date().toISOString().split("T")[0],
     });
-    setActiveClock(null);
+    await setActiveClock(null);
     setActiveClockState(null);
-    setEntries(getTimeEntries());
+    setEntries(await getTimeEntries());
     toast({ title: "Utstämplad!" });
   };
 
-  const handleManualEntry = () => {
+  const handleManualEntry = async () => {
     if (!manualName.trim() || !manualStart || !manualEnd) {
-      toast({ title: "Fyll i alla fält", variant: "destructive" });
-      return;
+      toast({ title: "Fyll i alla fält", variant: "destructive" }); return;
     }
-    addTimeEntry({
+    await addTimeEntry({
       employeeName: manualName.trim(),
       type: "manual",
       manualStart,
@@ -75,15 +76,13 @@ export default function TimePage() {
       date: manualDate,
       areaId: manualAreaId || undefined,
     });
-    setEntries(getTimeEntries());
+    setEntries(await getTimeEntries());
     setManualStart("");
     setManualEnd("");
     toast({ title: "Tid registrerad!" });
   };
 
-  const todayEntries = entries.filter(
-    (e) => e.date === new Date().toISOString().split("T")[0]
-  );
+  const todayEntries = entries.filter((e) => e.date === new Date().toISOString().split("T")[0]);
 
   return (
     <div className="space-y-6">
@@ -108,15 +107,10 @@ export default function TimePage() {
                 <>
                   <div className="space-y-2">
                     <Label>Ditt namn</Label>
-                    <Input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ange ditt namn"
-                    />
+                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ange ditt namn" />
                   </div>
                   <Button onClick={handleClockIn} className="gap-2">
-                    <Play className="h-4 w-4" />
-                    Stämpla in
+                    <Play className="h-4 w-4" /> Stämpla in
                   </Button>
                 </>
               ) : (
@@ -124,23 +118,12 @@ export default function TimePage() {
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full bg-success animate-pulse-slow" />
                     <p className="text-sm">
-                      <span className="font-bold">
-                        {activeClock.employeeName}
-                      </span>{" "}
-                      instämplad sedan{" "}
-                      {new Date(activeClock.clockIn).toLocaleTimeString(
-                        "sv-SE",
-                        { hour: "2-digit", minute: "2-digit" }
-                      )}
+                      <span className="font-bold">{activeClock.employeeName}</span> instämplad sedan{" "}
+                      {new Date(activeClock.clockIn).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
-                  <Button
-                    onClick={handleClockOut}
-                    variant="destructive"
-                    className="gap-2"
-                  >
-                    <Square className="h-4 w-4" />
-                    Stämpla ut
+                  <Button onClick={handleClockOut} variant="destructive" className="gap-2">
+                    <Square className="h-4 w-4" /> Stämpla ut
                   </Button>
                 </div>
               )}
@@ -157,49 +140,29 @@ export default function TimePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Namn</Label>
-                  <Input
-                    value={manualName}
-                    onChange={(e) => setManualName(e.target.value)}
-                    placeholder="Ditt namn"
-                  />
+                  <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Ditt namn" />
                 </div>
                 <div className="space-y-2">
                   <Label>Datum</Label>
-                  <Input
-                    type="date"
-                    value={manualDate}
-                    onChange={(e) => setManualDate(e.target.value)}
-                  />
+                  <Input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Starttid</Label>
-                  <Input
-                    type="time"
-                    value={manualStart}
-                    onChange={(e) => setManualStart(e.target.value)}
-                  />
+                  <Input type="time" value={manualStart} onChange={(e) => setManualStart(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Sluttid</Label>
-                  <Input
-                    type="time"
-                    value={manualEnd}
-                    onChange={(e) => setManualEnd(e.target.value)}
-                  />
+                  <Input type="time" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} />
                 </div>
               </div>
               {areas.length > 0 && (
                 <div className="space-y-2">
                   <Label>Område (valfritt)</Label>
                   <Select value={manualAreaId} onValueChange={setManualAreaId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Välj område" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Välj område" /></SelectTrigger>
                     <SelectContent>
                       {areas.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                        </SelectItem>
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -211,23 +174,17 @@ export default function TimePage() {
         </TabsContent>
       </Tabs>
 
-      {/* Today's entries */}
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="text-lg">Dagens registreringar</CardTitle>
         </CardHeader>
         <CardContent>
           {todayEntries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Inga registreringar idag.
-            </p>
+            <p className="text-sm text-muted-foreground">Inga registreringar idag.</p>
           ) : (
             <div className="space-y-2">
               {todayEntries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center justify-between p-3 rounded-md bg-muted/50"
-                >
+                <div key={entry.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                   <div>
                     <p className="text-sm font-medium">{entry.employeeName}</p>
                     <p className="text-xs text-muted-foreground">
