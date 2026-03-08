@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import AreasPage from "@/pages/AreasPage";
 import TimePage from "@/pages/TimePage";
 import AdminPage from "@/pages/AdminPage";
+import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
