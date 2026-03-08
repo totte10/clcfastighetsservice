@@ -32,6 +32,42 @@ export type Database = {
         }
         Relationships: []
       }
+      address_time_logs: {
+        Row: {
+          created_at: string
+          end_time: string | null
+          entry_id: string
+          entry_type: string
+          hours: number | null
+          id: string
+          note: string
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string | null
+          entry_id: string
+          entry_type: string
+          hours?: number | null
+          id?: string
+          note?: string
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string | null
+          entry_id?: string
+          entry_type?: string
+          hours?: number | null
+          id?: string
+          note?: string
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       areas: {
         Row: {
           address: string
