@@ -178,6 +178,7 @@ export interface EgnaEntry {
   timmar: number;
   lat?: number | null;
   lng?: number | null;
+  images: string[];
 }
 
 export async function getEgnaEntries(): Promise<EgnaEntry[]> {
