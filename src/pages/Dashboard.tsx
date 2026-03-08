@@ -1,5 +1,5 @@
 import { getAreas, getTimeEntries, getActiveClock } from "@/lib/store";
-import { MapPin, Snowflake, Wind, Clock } from "lucide-react";
+import { MapPin, Fan, Wind, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMemo } from "react";
 
