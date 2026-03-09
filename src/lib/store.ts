@@ -135,6 +135,7 @@ export interface TidxEntry {
   lat?: number | null;
   lng?: number | null;
   images: string[];
+  projectNumber: string;
 }
 
 export async function getTidxEntries(): Promise<TidxEntry[]> {
@@ -152,6 +153,7 @@ export async function getTidxEntries(): Promise<TidxEntry[]> {
     lat: r.lat,
     lng: r.lng,
     images: r.images ?? [],
+    projectNumber: r.project_number ?? "",
   }));
 }
 
@@ -163,6 +165,7 @@ export async function updateTidxEntry(id: string, updates: Partial<TidxEntry>) {
   if (updates.lat !== undefined) mapped.lat = updates.lat;
   if (updates.lng !== undefined) mapped.lng = updates.lng;
   if (updates.images !== undefined) mapped.images = updates.images;
+  if (updates.projectNumber !== undefined) mapped.project_number = updates.projectNumber;
   await supabase.from("tidx_entries").update(mapped).eq("id", id);
 }
 
@@ -179,6 +182,7 @@ export interface EgnaEntry {
   lat?: number | null;
   lng?: number | null;
   images: string[];
+  projectNumber: string;
 }
 
 export async function getEgnaEntries(): Promise<EgnaEntry[]> {
@@ -196,6 +200,7 @@ export async function getEgnaEntries(): Promise<EgnaEntry[]> {
     lat: r.lat,
     lng: r.lng,
     images: r.images ?? [],
+    projectNumber: r.project_number ?? "",
   }));
 }
 
@@ -208,5 +213,6 @@ export async function updateEgnaEntry(id: string, updates: Partial<EgnaEntry>) {
   if (updates.lat !== undefined) mapped.lat = updates.lat;
   if (updates.lng !== undefined) mapped.lng = updates.lng;
   if (updates.images !== undefined) mapped.images = updates.images;
+  if (updates.projectNumber !== undefined) mapped.project_number = updates.projectNumber;
   await supabase.from("egna_entries").update(mapped).eq("id", id);
 }

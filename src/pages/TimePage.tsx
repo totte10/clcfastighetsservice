@@ -25,6 +25,7 @@ interface TimeEntry {
   end_time: string | null;
   hours: number | null;
   project: string;
+  project_number: string;
   notes: string;
 }
 
@@ -33,6 +34,7 @@ const emptyForm = {
   start_time: "",
   end_time: "",
   project: "",
+  project_number: "",
   notes: "",
 };
 
@@ -66,6 +68,7 @@ export default function TimePage() {
         end_time: r.end_time,
         hours: r.hours ? Number(r.hours) : null,
         project: r.project,
+        project_number: r.project_number ?? "",
         notes: r.notes,
       }))
     );
@@ -101,6 +104,7 @@ export default function TimePage() {
       start_time: entry.start_time?.slice(0, 5) ?? "",
       end_time: entry.end_time?.slice(0, 5) ?? "",
       project: entry.project,
+      project_number: entry.project_number,
       notes: entry.notes,
     });
     setShowDialog(true);
@@ -118,6 +122,7 @@ export default function TimePage() {
       start_time: form.start_time,
       end_time: form.end_time || null,
       project: form.project,
+      project_number: form.project_number,
       notes: form.notes,
     };
 
@@ -246,9 +251,15 @@ export default function TimePage() {
                 <Input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Projekt / Uppdrag</Label>
-              <Input value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} placeholder="T.ex. Tidx Sopning Centrum" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Projekt / Uppdrag</Label>
+                <Input value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} placeholder="T.ex. Tidx Sopning Centrum" />
+              </div>
+              <div className="space-y-2">
+                <Label>Projektnummer</Label>
+                <Input value={form.project_number} onChange={(e) => setForm({ ...form, project_number: e.target.value })} placeholder="T.ex. P-2026-0001" />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Anteckning</Label>

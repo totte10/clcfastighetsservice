@@ -12,6 +12,7 @@ import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
 import AdminPage from "@/pages/AdminPage";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
+import ProjectsPage from "@/pages/ProjectsPage";
 import ChatPage from "@/pages/ChatPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "./pages/NotFound";
@@ -43,6 +44,7 @@ function ProtectedRoutes() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/tidx" element={<TidxSopningarPage />} />
         <Route path="/egna" element={<EgnaOmradenPage />} />
+        <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

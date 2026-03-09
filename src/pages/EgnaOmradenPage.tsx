@@ -155,6 +155,9 @@ export default function EgnaOmradenPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium">{entry.address}</p>
+                  {entry.projectNumber && (
+                    <span className="text-[10px] tracking-wider text-primary font-semibold">#{entry.projectNumber}</span>
+                  )}
                   {entry.lat != null && <span className="text-[10px] text-success">📍</span>}
                 </div>
                 <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
@@ -193,7 +196,10 @@ export default function EgnaOmradenPage() {
                 </div>
               </div>
 
-              <Input value={entry.kommentar} onChange={(e) => handleUpdate(entry.id, { kommentar: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
+              <div className="grid grid-cols-2 gap-2">
+                <Input value={entry.projectNumber} onChange={(e) => handleUpdate(entry.id, { projectNumber: e.target.value })} placeholder="Projektnr" className="h-8 text-xs" />
+                <Input value={entry.kommentar} onChange={(e) => handleUpdate(entry.id, { kommentar: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
+              </div>
               <EntryImageUpload
                 images={entry.images}
                 onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
