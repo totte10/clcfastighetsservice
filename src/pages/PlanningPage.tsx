@@ -91,7 +91,7 @@ export default function PlanningPage() {
     });
 
     (projRes.data ?? []).forEach((r) => {
-      const d = r.created_at?.split("T")[0];
+      const d = normalizeDate(r.datum_planerat) || r.created_at?.split("T")[0];
       if (d) result.push({ id: r.id, type: "project", title: r.name, date: d, status: r.status });
     });
 
