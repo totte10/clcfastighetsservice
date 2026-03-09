@@ -14,6 +14,7 @@ import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import ProjectsPage from "@/pages/ProjectsPage";
 import ChatPage from "@/pages/ChatPage";
+import PlanningPage from "@/pages/PlanningPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
