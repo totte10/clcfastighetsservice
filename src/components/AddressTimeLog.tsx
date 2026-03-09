@@ -21,6 +21,7 @@ interface TimeLog {
 interface AddressTimeLogProps {
   entryId: string;
   entryType: "tidx" | "egna";
+  entryLabel?: string;
 }
 
 export function AddressTimeLog({ entryId, entryType }: AddressTimeLogProps) {
