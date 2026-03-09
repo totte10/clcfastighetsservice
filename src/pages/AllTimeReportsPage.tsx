@@ -21,12 +21,14 @@ interface TimeLogRow {
   note: string;
   user_id: string;
   address?: string;
+  userName?: string;
 }
 
 export default function AllTimeReportsPage() {
   const [logs, setLogs] = useState<TimeLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterUser, setFilterUser] = useState<string>("all");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
   const { toast } = useToast();
@@ -34,21 +36,19 @@ export default function AllTimeReportsPage() {
   const loadLogs = useCallback(async () => {
     setLoading(true);
 
-    // Fetch all time logs
-    const { data: timeLogs } = await supabase
-      .from("address_time_logs")
-      .select("*")
-      .order("start_time", { ascending: false });
-
-    // Fetch addresses for tidx and egna entries
-    const [{ data: tidxData }, { data: egnaData }] = await Promise.all([
+    const [{ data: timeLogs }, { data: tidxData }, { data: egnaData }, { data: profilesData }] = await Promise.all([
+      supabase.from("address_time_logs").select("*").order("start_time", { ascending: false }),
       supabase.from("tidx_entries").select("id, address"),
       supabase.from("egna_entries").select("id, address"),
+      supabase.from("profiles").select("id, full_name"),
     ]);
 
     const addressMap = new Map<string, string>();
     tidxData?.forEach((e) => addressMap.set(e.id, e.address));
     egnaData?.forEach((e) => addressMap.set(e.id, e.address));
+
+    const nameMap = new Map<string, string>();
+    profilesData?.forEach((p) => nameMap.set(p.id, p.full_name));
 
     const mapped: TimeLogRow[] = (timeLogs ?? []).map((l) => ({
       id: l.id,
@@ -60,6 +60,7 @@ export default function AllTimeReportsPage() {
       note: l.note,
       user_id: l.user_id,
       address: addressMap.get(l.entry_id) ?? "Okänd adress",
+      userName: nameMap.get(l.user_id) || l.user_id.slice(0, 8),
     }));
 
     setLogs(mapped);
@@ -68,8 +69,13 @@ export default function AllTimeReportsPage() {
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
+  // Unique users for filter dropdown
+  const uniqueUsers = Array.from(new Map(logs.map((l) => [l.user_id, l.userName ?? l.user_id.slice(0, 8)])).entries())
+    .sort((a, b) => a[1].localeCompare(b[1]));
+
   const filtered = logs.filter((l) => {
     if (filterType !== "all" && l.entry_type !== filterType) return false;
+    if (filterUser !== "all" && l.user_id !== filterUser) return false;
     if (filterFrom && l.start_time < filterFrom) return false;
     if (filterTo && l.start_time > filterTo + "T23:59:59") return false;
     return true;
@@ -81,10 +87,11 @@ export default function AllTimeReportsPage() {
   const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
 
   const exportCSV = () => {
-    const header = "Datum;Adress;Typ;Start;Slut;Timmar;Anteckning";
+    const header = "Datum;Användare;Adress;Typ;Start;Slut;Timmar;Anteckning";
     const rows = filtered.map((l) =>
       [
         fmtDate(l.start_time),
+        l.userName ?? "",
         l.address,
         l.entry_type === "tidx" ? "Tidx" : "Egna",
         fmtTime(l.start_time),
@@ -93,7 +100,7 @@ export default function AllTimeReportsPage() {
         l.note,
       ].join(";")
     );
-    const csv = [header, ...rows, `;;;;;;Totalt: ${totalHours.toFixed(2)}h`].join("\n");
+    const csv = [header, ...rows, `;;;;;;;Totalt: ${totalHours.toFixed(2)}h`].join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -116,9 +123,10 @@ export default function AllTimeReportsPage() {
 
     autoTable(doc, {
       startY: filterFrom || filterTo ? 38 : 32,
-      head: [["Datum", "Adress", "Typ", "Start", "Slut", "Timmar", "Anteckning"]],
+      head: [["Datum", "Användare", "Adress", "Typ", "Start", "Slut", "Timmar", "Anteckning"]],
       body: filtered.map((l) => [
         fmtDate(l.start_time),
+        l.userName ?? "",
         l.address,
         l.entry_type === "tidx" ? "Tidx" : "Egna",
         fmtTime(l.start_time),
@@ -126,7 +134,7 @@ export default function AllTimeReportsPage() {
         l.hours?.toFixed(2) ?? "",
         l.note,
       ]),
-      foot: [["", "", "", "", "Totalt", totalHours.toFixed(2) + "h", ""]],
+      foot: [["", "", "", "", "", "Totalt", totalHours.toFixed(2) + "h", ""]],
       styles: { fontSize: 8 },
     });
 
@@ -178,7 +186,7 @@ export default function AllTimeReportsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-1">
               <Label className="text-xs">Typ</Label>
               <Select value={filterType} onValueChange={setFilterType}>
@@ -187,6 +195,18 @@ export default function AllTimeReportsPage() {
                   <SelectItem value="all">Alla</SelectItem>
                   <SelectItem value="tidx">Tidx Sopningar</SelectItem>
                   <SelectItem value="egna">Egna Områden</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Användare</Label>
+              <Select value={filterUser} onValueChange={setFilterUser}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alla</SelectItem>
+                  {uniqueUsers.map(([uid, name]) => (
+                    <SelectItem key={uid} value={uid}>{name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -259,6 +279,7 @@ export default function AllTimeReportsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Datum</TableHead>
+                    <TableHead>Användare</TableHead>
                     <TableHead>Adress</TableHead>
                     <TableHead>Typ</TableHead>
                     <TableHead>Start</TableHead>
@@ -271,6 +292,7 @@ export default function AllTimeReportsPage() {
                   {filtered.map((l) => (
                     <TableRow key={l.id}>
                       <TableCell className="whitespace-nowrap">{fmtDate(l.start_time)}</TableCell>
+                      <TableCell className="text-sm">{l.userName}</TableCell>
                       <TableCell className="font-medium max-w-[200px] truncate">{l.address}</TableCell>
                       <TableCell>
                         <span className="text-xs bg-secondary px-2 py-0.5 rounded text-secondary-foreground">
