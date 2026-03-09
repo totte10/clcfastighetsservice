@@ -374,6 +374,7 @@ export type Database = {
           notes: string
           project: string
           project_number: string
+          source_log_id: string | null
           start_time: string
           updated_at: string
           user_id: string
@@ -387,6 +388,7 @@ export type Database = {
           notes?: string
           project?: string
           project_number?: string
+          source_log_id?: string | null
           start_time: string
           updated_at?: string
           user_id: string
@@ -400,6 +402,7 @@ export type Database = {
           notes?: string
           project?: string
           project_number?: string
+          source_log_id?: string | null
           start_time?: string
           updated_at?: string
           user_id?: string
