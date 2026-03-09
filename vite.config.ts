@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
         short_name: "CLC",
         description: "Hantera maskinsopning, framblåsning och tidrapportering",
         theme_color: "#1a1a2e",
-        background_color: "#1a1a2e",
+        background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
