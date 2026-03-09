@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ImagePlus, X, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface EntryImageUploadProps {
@@ -11,6 +12,7 @@ interface EntryImageUploadProps {
 
 export function EntryImageUpload({ images, onImagesChange }: EntryImageUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
   const handleUpload = () => {
@@ -47,6 +49,13 @@ export function EntryImageUpload({ images, onImagesChange }: EntryImageUploadPro
     onImagesChange(images.filter((_, i) => i !== index));
   };
 
+  const showPrev = () => {
+    if (lightboxIndex !== null && lightboxIndex > 0) setLightboxIndex(lightboxIndex - 1);
+  };
+  const showNext = () => {
+    if (lightboxIndex !== null && lightboxIndex < images.length - 1) setLightboxIndex(lightboxIndex + 1);
+  };
+
   return (
     <div className="space-y-2">
       <Button variant="outline" size="sm" onClick={handleUpload} disabled={uploading} className="gap-2">
@@ -56,10 +65,10 @@ export function EntryImageUpload({ images, onImagesChange }: EntryImageUploadPro
       {images.length > 0 && (
         <div className="flex gap-2 flex-wrap">
           {images.map((url, i) => (
-            <div key={i} className="relative group">
-              <img src={url} alt={`Bild ${i + 1}`} className="w-20 h-20 object-cover rounded-md border border-border" />
+            <div key={i} className="relative group cursor-pointer" onClick={() => setLightboxIndex(i)}>
+              <img src={url} alt={`Bild ${i + 1}`} className="w-20 h-20 object-cover rounded-md border border-border hover:ring-2 hover:ring-primary/50 transition-all" />
               <button
-                onClick={() => handleRemove(i)}
+                onClick={(e) => { e.stopPropagation(); handleRemove(i); }}
                 className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <X className="h-3 w-3" />
@@ -68,6 +77,42 @@ export function EntryImageUpload({ images, onImagesChange }: EntryImageUploadPro
           ))}
         </div>
       )}
+
+      {/* Fullscreen lightbox */}
+      <Dialog open={lightboxIndex !== null} onOpenChange={() => setLightboxIndex(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 sm:p-4 flex items-center justify-center bg-black/95 border-none">
+          {lightboxIndex !== null && (
+            <div className="relative flex items-center justify-center w-full h-full">
+              {images.length > 1 && lightboxIndex > 0 && (
+                <button
+                  onClick={showPrev}
+                  className="absolute left-2 z-10 p-2 rounded-full bg-background/20 hover:bg-background/40 text-white transition-colors"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+              )}
+              <img
+                src={images[lightboxIndex]}
+                alt={`Bild ${lightboxIndex + 1}`}
+                className="max-w-full max-h-[85vh] object-contain rounded-md"
+              />
+              {images.length > 1 && lightboxIndex < images.length - 1 && (
+                <button
+                  onClick={showNext}
+                  className="absolute right-2 z-10 p-2 rounded-full bg-background/20 hover:bg-background/40 text-white transition-colors"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              )}
+              {images.length > 1 && (
+                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white/70 bg-black/50 px-3 py-1 rounded-full">
+                  {lightboxIndex + 1} / {images.length}
+                </span>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
