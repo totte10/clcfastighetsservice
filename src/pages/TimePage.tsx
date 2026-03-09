@@ -25,6 +25,7 @@ interface TimeEntry {
   end_time: string | null;
   hours: number | null;
   project: string;
+  project_number: string;
   notes: string;
 }
 
@@ -33,6 +34,7 @@ const emptyForm = {
   start_time: "",
   end_time: "",
   project: "",
+  project_number: "",
   notes: "",
 };
 
