@@ -69,8 +69,13 @@ export default function AllTimeReportsPage() {
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
+  // Unique users for filter dropdown
+  const uniqueUsers = Array.from(new Map(logs.map((l) => [l.user_id, l.userName ?? l.user_id.slice(0, 8)])).entries())
+    .sort((a, b) => a[1].localeCompare(b[1]));
+
   const filtered = logs.filter((l) => {
     if (filterType !== "all" && l.entry_type !== filterType) return false;
+    if (filterUser !== "all" && l.user_id !== filterUser) return false;
     if (filterFrom && l.start_time < filterFrom) return false;
     if (filterTo && l.start_time > filterTo + "T23:59:59") return false;
     return true;
