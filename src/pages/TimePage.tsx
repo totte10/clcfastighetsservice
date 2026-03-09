@@ -104,6 +104,7 @@ export default function TimePage() {
       start_time: entry.start_time?.slice(0, 5) ?? "",
       end_time: entry.end_time?.slice(0, 5) ?? "",
       project: entry.project,
+      project_number: entry.project_number,
       notes: entry.notes,
     });
     setShowDialog(true);
