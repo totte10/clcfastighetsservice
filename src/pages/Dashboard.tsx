@@ -113,10 +113,14 @@ export default function Dashboard() {
       });
     });
 
+    // Sort by scheduled date
+    tasks.sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
     return tasks;
   }, [tidxEntries, egnaEntries]);
 
-  // Group by date
+  // Extract just the date part (first 10 chars) from datum_planerat which may contain "2026-03-16 kvällstid 21:00"
+  const getDatePart = (s: string) => (s || "").slice(0, 10);
+
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
 
@@ -129,11 +133,11 @@ export default function Dashboard() {
     });
   }, [filterService, filterStatus, filterUser]);
 
-  const todayTasks = filterTasks(allTasks.filter((t) => t.scheduledDate === todayStr));
-  const tomorrowTasks = filterTasks(allTasks.filter((t) => t.scheduledDate === tomorrowStr));
+  const todayTasks = filterTasks(allTasks.filter((t) => getDatePart(t.scheduledDate) === todayStr));
+  const tomorrowTasks = filterTasks(allTasks.filter((t) => getDatePart(t.scheduledDate) === tomorrowStr));
   const upcomingTasks = filterTasks(allTasks.filter((t) => {
-    const d = parseDateSafe(t.scheduledDate);
-    return d && isAfter(d, addDays(new Date(), 1)) && t.scheduledDate !== tomorrowStr;
+    const dp = getDatePart(t.scheduledDate);
+    return dp > tomorrowStr;
   }));
 
   // Stats
