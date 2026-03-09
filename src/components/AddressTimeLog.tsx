@@ -305,7 +305,7 @@ export function AddressTimeLog({ entryId, entryType, entryLabel }: AddressTimeLo
                             {formatTime(log.start_time)} – {formatTime(log.end_time!)}
                           </span>
                           <span className="text-muted-foreground">({log.hours?.toFixed(1)}h)</span>
-                          <span className="text-[10px] text-muted-foreground/60">{formatDate(log.start_time)}</span>
+                          <span className="text-[10px] text-muted-foreground/60">{formatDateShort(log.start_time)}</span>
                         </div>
                         {log.note && <p className="text-muted-foreground italic text-[11px]">{log.note}</p>}
                       </div>
