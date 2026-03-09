@@ -175,7 +175,7 @@ export default function TidxSopningarPage() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <Select value={entry.status} onValueChange={(v) => handleUpdate(entry.id, { status: v as Status })}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -184,6 +184,7 @@ export default function TidxSopningarPage() {
                     <SelectItem value="done">Klart</SelectItem>
                   </SelectContent>
                 </Select>
+                <Input value={entry.projectNumber} onChange={(e) => handleUpdate(entry.id, { projectNumber: e.target.value })} placeholder="Projektnr" className="h-8 text-xs" />
                 <Input value={entry.ansvarig} onChange={(e) => handleUpdate(entry.id, { ansvarig: e.target.value })} placeholder="Ansvarig" className="h-8 text-xs" />
                 <Input value={entry.kommentar} onChange={(e) => handleUpdate(entry.id, { kommentar: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
               </div>
