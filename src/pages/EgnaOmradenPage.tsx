@@ -155,6 +155,9 @@ export default function EgnaOmradenPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium">{entry.address}</p>
+                  {entry.projectNumber && (
+                    <span className="text-[10px] tracking-wider text-primary font-semibold">#{entry.projectNumber}</span>
+                  )}
                   {entry.lat != null && <span className="text-[10px] text-success">📍</span>}
                 </div>
                 <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
