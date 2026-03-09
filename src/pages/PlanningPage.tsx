@@ -287,7 +287,7 @@ export default function PlanningPage() {
                           {item.extra && <span className="text-[10px] text-muted-foreground">{item.extra}</span>}
                         </div>
                       </div>
-                      {item.type !== "project" && (
+                      {(
                         <Popover
                           open={changingDate?.id === item.id && changingDate?.type === item.type}
                           onOpenChange={(open) => setChangingDate(open ? item : null)}
