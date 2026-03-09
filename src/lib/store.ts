@@ -200,6 +200,7 @@ export async function getEgnaEntries(): Promise<EgnaEntry[]> {
     lat: r.lat,
     lng: r.lng,
     images: r.images ?? [],
+    projectNumber: r.project_number ?? "",
   }));
 }
 
