@@ -122,6 +122,7 @@ export default function TimePage() {
       start_time: form.start_time,
       end_time: form.end_time || null,
       project: form.project,
+      project_number: form.project_number,
       notes: form.notes,
     };
 
