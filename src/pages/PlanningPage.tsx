@@ -316,6 +316,60 @@ export default function PlanningPage() {
           </CardContent>
         </Card>
       )}
+      {/* New project dialog */}
+      <Dialog open={showNewProject} onOpenChange={setShowNewProject}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nytt projekt i planeringen</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label>Projektnamn *</Label>
+              <Input value={newProjectForm.name} onChange={(e) => setNewProjectForm({ ...newProjectForm, name: e.target.value })} placeholder="T.ex. Vinterunderhåll" />
+            </div>
+            <div className="space-y-2">
+              <Label>Adress *</Label>
+              <Input value={newProjectForm.address} onChange={(e) => setNewProjectForm({ ...newProjectForm, address: e.target.value })} placeholder="Gatuadress, stad" />
+            </div>
+            <div className="space-y-2">
+              <Label>Projektnummer (lämna tomt för auto)</Label>
+              <Input value={newProjectForm.project_number} onChange={(e) => setNewProjectForm({ ...newProjectForm, project_number: e.target.value })} placeholder="T.ex. P-2026-0001" />
+            </div>
+            <div className="space-y-2">
+              <Label>Beskrivning</Label>
+              <Textarea value={newProjectForm.description} onChange={(e) => setNewProjectForm({ ...newProjectForm, description: e.target.value })} rows={2} />
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-sm text-muted-foreground">
+              📅 Planerat datum: <span className="font-medium text-foreground">{selectedDay ? format(selectedDay, "d MMMM yyyy", { locale: sv }) : "Idag"}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewProject(false)}>Avbryt</Button>
+            <Button onClick={async () => {
+              if (!newProjectForm.name.trim() || !newProjectForm.address.trim()) {
+                toast({ title: "Fyll i namn och adress", variant: "destructive" });
+                return;
+              }
+              const dateStr = selectedDay ? format(selectedDay, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+              const coords = await geocodeAddress(newProjectForm.address);
+              const { error } = await supabase.from("projects").insert({
+                name: newProjectForm.name,
+                address: newProjectForm.address,
+                description: newProjectForm.description,
+                project_number: newProjectForm.project_number || undefined,
+                datum_planerat: dateStr,
+                lat: coords?.lat ?? null,
+                lng: coords?.lng ?? null,
+              });
+              if (error) { toast({ title: "Kunde inte skapa projekt", variant: "destructive" }); return; }
+              toast({ title: "Projekt skapat!" });
+              setShowNewProject(false);
+              setNewProjectForm({ name: "", address: "", description: "", project_number: "" });
+              loadItems();
+            }}>Skapa projekt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
