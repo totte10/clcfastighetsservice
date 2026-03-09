@@ -188,7 +188,7 @@ export default function TidxSopningarPage() {
                 images={entry.images}
                 onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
               />
-              <AddressTimeLog entryId={entry.id} entryType="tidx" />
+              <AddressTimeLog entryId={entry.id} entryType="tidx" entryLabel={entry.address} />
             </CardContent>
           </Card>
         ))}

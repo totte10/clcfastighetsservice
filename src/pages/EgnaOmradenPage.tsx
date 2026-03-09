@@ -198,7 +198,7 @@ export default function EgnaOmradenPage() {
                 images={entry.images}
                 onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
               />
-              <AddressTimeLog entryId={entry.id} entryType="egna" />
+              <AddressTimeLog entryId={entry.id} entryType="egna" entryLabel={entry.address} />
             </CardContent>
           </Card>
         ))}
