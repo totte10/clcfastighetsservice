@@ -87,10 +87,11 @@ export default function AllTimeReportsPage() {
   const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
 
   const exportCSV = () => {
-    const header = "Datum;Adress;Typ;Start;Slut;Timmar;Anteckning";
+    const header = "Datum;Användare;Adress;Typ;Start;Slut;Timmar;Anteckning";
     const rows = filtered.map((l) =>
       [
         fmtDate(l.start_time),
+        l.userName ?? "",
         l.address,
         l.entry_type === "tidx" ? "Tidx" : "Egna",
         fmtTime(l.start_time),
@@ -99,7 +100,7 @@ export default function AllTimeReportsPage() {
         l.note,
       ].join(";")
     );
-    const csv = [header, ...rows, `;;;;;;Totalt: ${totalHours.toFixed(2)}h`].join("\n");
+    const csv = [header, ...rows, `;;;;;;;Totalt: ${totalHours.toFixed(2)}h`].join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
