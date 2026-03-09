@@ -1,207 +1,270 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  getActiveClock,
-  setActiveClock,
-  addTimeEntry,
-  getTimeEntries,
-  getAreas,
-  type TimeEntry,
-  type Area,
-} from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, Play, Square } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Clock, Plus, Pencil, Trash2, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+interface TimeEntry {
+  id: string;
+  user_id: string;
+  date: string;
+  start_time: string;
+  end_time: string | null;
+  hours: number | null;
+  project: string;
+  notes: string;
+}
+
+const emptyForm = {
+  date: new Date().toISOString().split("T")[0],
+  start_time: "",
+  end_time: "",
+  project: "",
+  notes: "",
+};
 
 export default function TimePage() {
-  const [activeClock, setActiveClockState] = useState<{ employeeName: string; clockIn: string } | null>(null);
+  const { user } = useAuth();
   const [entries, setEntries] = useState<TimeEntry[]>([]);
-  const [areas, setAreasState] = useState<Area[]>([]);
-  const [name, setName] = useState("");
-  const [manualName, setManualName] = useState("");
-  const [manualDate, setManualDate] = useState(new Date().toISOString().split("T")[0]);
-  const [manualStart, setManualStart] = useState("");
-  const [manualEnd, setManualEnd] = useState("");
-  const [manualAreaId, setManualAreaId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [showDialog, setShowDialog] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
   const { toast } = useToast();
 
-  const refresh = useCallback(async () => {
-    const [clock, te, ar] = await Promise.all([getActiveClock(), getTimeEntries(), getAreas()]);
-    setActiveClockState(clock);
-    setEntries(te);
-    setAreasState(ar);
-    if (clock) setName(clock.employeeName);
-  }, []);
-
-  useEffect(() => { refresh(); }, [refresh]);
-
-  const handleClockIn = async () => {
-    if (!name.trim()) { toast({ title: "Ange ditt namn", variant: "destructive" }); return; }
-    const clock = { employeeName: name.trim(), clockIn: new Date().toISOString() };
-    await setActiveClock(clock);
-    setActiveClockState(clock);
-    toast({ title: `${name} instämplad!` });
-  };
-
-  const handleClockOut = async () => {
-    if (!activeClock) return;
-    await addTimeEntry({
-      employeeName: activeClock.employeeName,
-      type: "clock",
-      clockIn: activeClock.clockIn,
-      clockOut: new Date().toISOString(),
-      date: new Date().toISOString().split("T")[0],
-    });
-    await setActiveClock(null);
-    setActiveClockState(null);
-    setEntries(await getTimeEntries());
-    toast({ title: "Utstämplad!" });
-  };
-
-  const handleManualEntry = async () => {
-    if (!manualName.trim() || !manualStart || !manualEnd) {
-      toast({ title: "Fyll i alla fält", variant: "destructive" }); return;
+  const loadEntries = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("user_time_entries")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false });
+    if (error) {
+      console.error("loadEntries error:", error);
+      toast({ title: "Kunde inte ladda tidsrapporter", variant: "destructive" });
     }
-    await addTimeEntry({
-      employeeName: manualName.trim(),
-      type: "manual",
-      manualStart,
-      manualEnd,
-      date: manualDate,
-      areaId: manualAreaId || undefined,
-    });
-    setEntries(await getTimeEntries());
-    setManualStart("");
-    setManualEnd("");
-    toast({ title: "Tid registrerad!" });
+    setEntries(
+      (data ?? []).map((r) => ({
+        id: r.id,
+        user_id: r.user_id,
+        date: r.date,
+        start_time: r.start_time,
+        end_time: r.end_time,
+        hours: r.hours ? Number(r.hours) : null,
+        project: r.project,
+        notes: r.notes,
+      }))
+    );
+    setLoading(false);
+  }, [user, toast]);
+
+  useEffect(() => {
+    loadEntries();
+  }, [loadEntries]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("user_time_entries_personal")
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_time_entries", filter: `user_id=eq.${user.id}` }, () => {
+        loadEntries();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, loadEntries]);
+
+  const openAdd = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowDialog(true);
   };
 
-  const todayEntries = entries.filter((e) => e.date === new Date().toISOString().split("T")[0]);
+  const openEdit = (entry: TimeEntry) => {
+    setEditingId(entry.id);
+    setForm({
+      date: entry.date,
+      start_time: entry.start_time?.slice(0, 5) ?? "",
+      end_time: entry.end_time?.slice(0, 5) ?? "",
+      project: entry.project,
+      notes: entry.notes,
+    });
+    setShowDialog(true);
+  };
+
+  const handleSave = async () => {
+    if (!user || !form.start_time || !form.date) {
+      toast({ title: "Fyll i datum och starttid", variant: "destructive" });
+      return;
+    }
+
+    const payload = {
+      user_id: user.id,
+      date: form.date,
+      start_time: form.start_time,
+      end_time: form.end_time || null,
+      project: form.project,
+      notes: form.notes,
+    };
+
+    if (editingId) {
+      const { error } = await supabase.from("user_time_entries").update(payload).eq("id", editingId);
+      if (error) { toast({ title: "Kunde inte uppdatera", variant: "destructive" }); return; }
+      toast({ title: "Tidspost uppdaterad!" });
+    } else {
+      const { error } = await supabase.from("user_time_entries").insert(payload);
+      if (error) { toast({ title: "Kunde inte spara", variant: "destructive" }); return; }
+      toast({ title: "Tidspost tillagd!" });
+    }
+
+    setShowDialog(false);
+    loadEntries();
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("user_time_entries").delete().eq("id", id);
+    if (error) { toast({ title: "Kunde inte ta bort", variant: "destructive" }); return; }
+    toast({ title: "Tidspost borttagen!" });
+    loadEntries();
+  };
+
+  const fmtDate = (d: string) => {
+    try { return new Date(d).toLocaleDateString("sv-SE"); } catch { return d; }
+  };
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Tidrapport</h1>
-
-      <Tabs defaultValue="clock" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="clock">Stämpla in/ut</TabsTrigger>
-          <TabsTrigger value="manual">Manuell registrering</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="clock">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                Stämpelklocka
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!activeClock ? (
-                <>
-                  <div className="space-y-2">
-                    <Label>Ditt namn</Label>
-                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ange ditt namn" />
-                  </div>
-                  <Button onClick={handleClockIn} className="gap-2">
-                    <Play className="h-4 w-4" /> Stämpla in
-                  </Button>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-success animate-pulse-slow" />
-                    <p className="text-sm">
-                      <span className="font-bold">{activeClock.employeeName}</span> instämplad sedan{" "}
-                      {new Date(activeClock.clockIn).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                  <Button onClick={handleClockOut} variant="destructive" className="gap-2">
-                    <Square className="h-4 w-4" /> Stämpla ut
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="manual">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-lg">Manuell tidsregistrering</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Namn</Label>
-                  <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="Ditt namn" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Datum</Label>
-                  <Input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Starttid</Label>
-                  <Input type="time" value={manualStart} onChange={(e) => setManualStart(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sluttid</Label>
-                  <Input type="time" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} />
-                </div>
-              </div>
-              {areas.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Område (valfritt)</Label>
-                  <Select value={manualAreaId} onValueChange={setManualAreaId}>
-                    <SelectTrigger><SelectValue placeholder="Välj område" /></SelectTrigger>
-                    <SelectContent>
-                      {areas.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <Button onClick={handleManualEntry}>Registrera tid</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <Clock className="h-6 w-6 text-primary" />
+          Tidrapport
+        </h1>
+        <Button onClick={openAdd} className="gap-2">
+          <Plus className="h-4 w-4" /> Ny tidspost
+        </Button>
+      </div>
 
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="text-lg">Dagens registreringar</CardTitle>
+          <CardTitle className="text-lg">Mina tidsregistreringar</CardTitle>
         </CardHeader>
         <CardContent>
-          {todayEntries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Inga registreringar idag.</p>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Laddar...</p>
+          ) : entries.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Inga tidsregistreringar än. Klicka "Ny tidspost" för att lägga till.</p>
           ) : (
-            <div className="space-y-2">
-              {todayEntries.map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                  <div>
-                    <p className="text-sm font-medium">{entry.employeeName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {entry.type === "clock"
-                        ? `${new Date(entry.clockIn!).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} - ${entry.clockOut ? new Date(entry.clockOut).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : "pågår"}`
-                        : `${entry.manualStart} - ${entry.manualEnd}`}
-                    </p>
-                  </div>
-                  <span className="text-xs bg-secondary px-2 py-1 rounded-md text-secondary-foreground">
-                    {entry.type === "clock" ? "Stämplad" : "Manuell"}
-                  </span>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Datum</TableHead>
+                    <TableHead>Start</TableHead>
+                    <TableHead>Slut</TableHead>
+                    <TableHead className="text-right">Timmar</TableHead>
+                    <TableHead>Projekt</TableHead>
+                    <TableHead>Anteckning</TableHead>
+                    <TableHead className="text-right">Åtgärder</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {entries.map((e) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="whitespace-nowrap">{fmtDate(e.date)}</TableCell>
+                      <TableCell>{e.start_time?.slice(0, 5)}</TableCell>
+                      <TableCell>{e.end_time?.slice(0, 5) ?? "—"}</TableCell>
+                      <TableCell className="text-right">{e.hours?.toFixed(2) ?? "—"}</TableCell>
+                      <TableCell className="max-w-[150px] truncate">{e.project || "—"}</TableCell>
+                      <TableCell className="max-w-[150px] truncate text-muted-foreground text-xs">{e.notes || "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(e)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Ta bort tidspost?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Denna åtgärd kan inte ångras.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(e.id)}>Ta bort</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Redigera tidspost" : "Ny tidspost"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Datum</Label>
+                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Starttid</Label>
+                <Input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Sluttid</Label>
+                <Input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Projekt / Uppdrag</Label>
+              <Input value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} placeholder="T.ex. Tidx Sopning Centrum" />
+            </div>
+            <div className="space-y-2">
+              <Label>Anteckning</Label>
+              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Valfri anteckning..." rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              <X className="h-4 w-4 mr-1" /> Avbryt
+            </Button>
+            <Button onClick={handleSave}>
+              <Save className="h-4 w-4 mr-1" /> {editingId ? "Spara" : "Lägg till"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

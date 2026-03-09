@@ -316,6 +316,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_time_entries: {
+        Row: {
+          created_at: string
+          date: string
+          end_time: string | null
+          hours: number | null
+          id: string
+          notes: string
+          project: string
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          end_time?: string | null
+          hours?: number | null
+          id?: string
+          notes?: string
+          project?: string
+          start_time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          end_time?: string | null
+          hours?: number | null
+          id?: string
+          notes?: string
+          project?: string
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
