@@ -253,14 +253,7 @@ export function AddressTimeLog({ entryId, entryType, entryLabel }: AddressTimeLo
               </>
             )}
           </div>
-          {!showManual ? (
-            <button
-              onClick={() => setShowManual(true)}
-              className="text-xs text-primary hover:underline font-medium"
-            >
-              + Lägg till tid manuellt
-            </button>
-          ) : (
+          {showManual && (
             <div className="p-3 rounded-lg bg-muted/50 border border-border/50 space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Lägg till manuell tid</p>
               <div className="grid grid-cols-3 gap-2">
