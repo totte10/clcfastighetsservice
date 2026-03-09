@@ -232,7 +232,27 @@ export function AddressTimeLog({ entryId, entryType, entryLabel }: AddressTimeLo
 
       {expanded && (
         <div className="space-y-3 pt-1">
-          {/* Manual add */}
+          {/* Export + Manual add buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {!showManual && (
+              <button
+                onClick={() => setShowManual(true)}
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                + Lägg till tid manuellt
+              </button>
+            )}
+            {completedLogs.length > 0 && (
+              <>
+                <Button size="sm" variant="ghost" onClick={exportCSV} className="h-6 text-[10px] gap-1 px-2 text-muted-foreground">
+                  <Download className="h-3 w-3" /> CSV
+                </Button>
+                <Button size="sm" variant="ghost" onClick={exportPDF} className="h-6 text-[10px] gap-1 px-2 text-muted-foreground">
+                  <FileText className="h-3 w-3" /> PDF
+                </Button>
+              </>
+            )}
+          </div>
           {!showManual ? (
             <button
               onClick={() => setShowManual(true)}
