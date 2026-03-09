@@ -184,7 +184,7 @@ export default function AllTimeReportsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-1">
               <Label className="text-xs">Typ</Label>
               <Select value={filterType} onValueChange={setFilterType}>
@@ -193,6 +193,18 @@ export default function AllTimeReportsPage() {
                   <SelectItem value="all">Alla</SelectItem>
                   <SelectItem value="tidx">Tidx Sopningar</SelectItem>
                   <SelectItem value="egna">Egna Områden</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Användare</Label>
+              <Select value={filterUser} onValueChange={setFilterUser}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alla</SelectItem>
+                  {uniqueUsers.map(([uid, name]) => (
+                    <SelectItem key={uid} value={uid}>{name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
