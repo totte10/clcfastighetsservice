@@ -196,7 +196,10 @@ export default function EgnaOmradenPage() {
                 </div>
               </div>
 
-              <Input value={entry.kommentar} onChange={(e) => handleUpdate(entry.id, { kommentar: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
+              <div className="grid grid-cols-2 gap-2">
+                <Input value={entry.projectNumber} onChange={(e) => handleUpdate(entry.id, { projectNumber: e.target.value })} placeholder="Projektnr" className="h-8 text-xs" />
+                <Input value={entry.kommentar} onChange={(e) => handleUpdate(entry.id, { kommentar: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
+              </div>
               <EntryImageUpload
                 images={entry.images}
                 onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
