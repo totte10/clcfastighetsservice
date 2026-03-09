@@ -153,6 +153,7 @@ export async function getTidxEntries(): Promise<TidxEntry[]> {
     lat: r.lat,
     lng: r.lng,
     images: r.images ?? [],
+    projectNumber: r.project_number ?? "",
   }));
 }
 
