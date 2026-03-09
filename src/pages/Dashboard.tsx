@@ -1,204 +1,424 @@
-import { useState, useEffect, useCallback } from "react";
-import { getAreas, getTidxEntries, getEgnaEntries, type Area, type TidxEntry, type EgnaEntry } from "@/lib/store";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { getTidxEntries, getEgnaEntries, updateTidxEntry, updateEgnaEntry, type TidxEntry, type EgnaEntry } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Fan, Wind, Clock, ArrowUpRight } from "lucide-react";
+import { Fan, Wind, Check, Clock, Play, ListFilter, CalendarDays, ArrowUpRight, ChevronRight } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Link } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { format, addDays, isToday, isTomorrow, isAfter, parseISO } from "date-fns";
+import { sv } from "date-fns/locale";
 
 type Status = "pending" | "in-progress" | "done";
+type ServiceType = "blow" | "sweep";
 
-interface DashboardArea {
+interface DailyTask {
   id: string;
+  realId: string;
   address: string;
-  blowStatus: Status;
-  sweepStatus: Status;
-  source: "admin" | "tidx" | "egna";
+  projectName: string;
+  serviceType: ServiceType;
+  serviceLabel: string;
+  status: Status;
+  assignedUser: string;
+  scheduledDate: string;
+  source: "tidx" | "egna";
+  sourceField: "status" | "blowStatus" | "sweepStatus";
+}
+
+function parseDateSafe(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  try {
+    // Try ISO format first
+    const d = parseISO(dateStr);
+    if (!isNaN(d.getTime())) return d;
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [allAreas, setAllAreas] = useState<DashboardArea[]>([]);
-  const [todayTimeCount, setTodayTimeCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [tidxEntries, setTidxEntries] = useState<TidxEntry[]>([]);
+  const [egnaEntries, setEgnaEntries] = useState<EgnaEntry[]>([]);
+  const [filterService, setFilterService] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterUser, setFilterUser] = useState<string>("all");
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  // Check admin
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
 
   const refresh = useCallback(async () => {
-    const [adminAreas, tidxEntries, egnaEntries] = await Promise.all([
-      getAreas(), getTidxEntries(), getEgnaEntries(),
-    ]);
-
-    const fromAdmin: DashboardArea[] = adminAreas.map((a) => ({
-      id: `admin-${a.id}`, address: `${a.name} - ${a.address}`, blowStatus: a.blowStatus, sweepStatus: a.sweepStatus, source: "admin",
-    }));
-    const fromTidx: DashboardArea[] = tidxEntries.map((e) => ({
-      id: `tidx-${e.id}`, address: e.address, blowStatus: "pending", sweepStatus: e.status, source: "tidx",
-    }));
-    const fromEgna: DashboardArea[] = egnaEntries.map((e) => ({
-      id: `egna-${e.id}`, address: e.address, blowStatus: e.blowStatus, sweepStatus: e.sweepStatus, source: "egna",
-    }));
-
-    setAllAreas([...fromAdmin, ...fromTidx, ...fromEgna]);
-
-    // Count today's time entries
-    if (user) {
-      const today = new Date().toISOString().split("T")[0];
-      const { count } = await supabase
-        .from("user_time_entries")
-        .select("id", { count: "exact", head: true })
-        .eq("date", today);
-      setTodayTimeCount(count ?? 0);
-    }
-  }, [user]);
+    const [tidx, egna] = await Promise.all([getTidxEntries(), getEgnaEntries()]);
+    setTidxEntries(tidx);
+    setEgnaEntries(egna);
+  }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const blowDone = allAreas.filter((a) => a.blowStatus === "done").length;
-  const sweepDone = allAreas.filter((a) => a.sweepStatus === "done").length;
-  const total = allAreas.length;
-  const blowPct = total > 0 ? Math.round((blowDone / total) * 100) : 0;
-  const sweepPct = total > 0 ? Math.round((sweepDone / total) * 100) : 0;
+  // Build unified task list
+  const allTasks: DailyTask[] = useMemo(() => {
+    const tasks: DailyTask[] = [];
 
-  const sourceLabels: Record<string, { label: string; path: string }> = {
-    admin: { label: "Admin", path: "/admin" },
-    tidx: { label: "Tidx", path: "/tidx" },
-    egna: { label: "Egna", path: "/egna" },
+    tidxEntries.forEach((e) => {
+      tasks.push({
+        id: `tidx-sweep-${e.id}`,
+        realId: e.id,
+        address: e.address,
+        projectName: e.omrade || "Tidx Sopning",
+        serviceType: "sweep",
+        serviceLabel: "Maskinsopning",
+        status: e.status,
+        assignedUser: e.ansvarig,
+        scheduledDate: e.datumPlanerat,
+        source: "tidx",
+        sourceField: "status",
+      });
+    });
+
+    egnaEntries.forEach((e) => {
+      tasks.push({
+        id: `egna-blow-${e.id}`,
+        realId: e.id,
+        address: e.address,
+        projectName: "Egna Områden",
+        serviceType: "blow",
+        serviceLabel: "Framblåsning",
+        status: e.blowStatus,
+        assignedUser: e.ansvarig,
+        scheduledDate: e.datumPlanerat,
+        source: "egna",
+        sourceField: "blowStatus",
+      });
+      tasks.push({
+        id: `egna-sweep-${e.id}`,
+        realId: e.id,
+        address: e.address,
+        projectName: "Egna Områden",
+        serviceType: "sweep",
+        serviceLabel: "Maskinsopning",
+        status: e.sweepStatus,
+        assignedUser: e.ansvarig,
+        scheduledDate: e.datumPlanerat,
+        source: "egna",
+        sourceField: "sweepStatus",
+      });
+    });
+
+    return tasks;
+  }, [tidxEntries, egnaEntries]);
+
+  // Group by date
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
+
+  const filterTasks = useCallback((tasks: DailyTask[]) => {
+    return tasks.filter((t) => {
+      if (filterService !== "all" && t.serviceType !== filterService) return false;
+      if (filterStatus !== "all" && t.status !== filterStatus) return false;
+      if (filterUser !== "all" && t.assignedUser !== filterUser) return false;
+      return true;
+    });
+  }, [filterService, filterStatus, filterUser]);
+
+  const todayTasks = filterTasks(allTasks.filter((t) => t.scheduledDate === todayStr));
+  const tomorrowTasks = filterTasks(allTasks.filter((t) => t.scheduledDate === tomorrowStr));
+  const upcomingTasks = filterTasks(allTasks.filter((t) => {
+    const d = parseDateSafe(t.scheduledDate);
+    return d && isAfter(d, addDays(new Date(), 1)) && t.scheduledDate !== tomorrowStr;
+  }));
+
+  // Stats
+  const todayTotal = todayTasks.length;
+  const todayStarted = todayTasks.filter((t) => t.status === "in-progress").length;
+  const todayDone = todayTasks.filter((t) => t.status === "done").length;
+
+  // Unique users for filter
+  const allUsers = useMemo(() =>
+    Array.from(new Set(allTasks.map((t) => t.assignedUser).filter(Boolean))).sort()
+  , [allTasks]);
+
+  // Status update
+  const handleStatusUpdate = async (task: DailyTask, newStatus: Status) => {
+    setUpdating(task.id);
+    try {
+      if (task.source === "tidx") {
+        await updateTidxEntry(task.realId, { status: newStatus });
+      } else {
+        if (task.sourceField === "blowStatus") {
+          await updateEgnaEntry(task.realId, { blowStatus: newStatus });
+        } else {
+          await updateEgnaEntry(task.realId, { sweepStatus: newStatus });
+        }
+      }
+      await refresh();
+    } finally {
+      setUpdating(null);
+    }
   };
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Översikt över alla områden och uppdrag</p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Arbete idag</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {format(new Date(), "EEEE d MMMM yyyy", { locale: sv })}
+          </p>
+        </div>
+        <Link
+          to="/projects"
+          className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:text-primary/80 transition-colors group"
+        >
+          Visa alla projekt
+          <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </Link>
       </div>
 
-      {/* Hero Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-        {/* Total areas - primary card */}
-        <div className="stat-card-primary sm:col-span-2 lg:col-span-1 animate-slide-up" style={{ animationDelay: "0ms" }}>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="stat-card-primary animate-slide-up" style={{ animationDelay: "0ms" }}>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Totalt områden</p>
-              <p className="text-5xl font-bold mt-2 text-foreground tracking-tight">{total}</p>
-              <p className="text-xs text-muted-foreground mt-2">Alla registrerade områden</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Totalt jobb idag</p>
+              <p className="text-5xl font-bold mt-2 text-foreground tracking-tight">{todayTotal}</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-primary" />
+              <CalendarDays className="h-5 w-5 text-primary" />
             </div>
           </div>
         </div>
 
-        {/* Blow status */}
         <div className="stat-card animate-slide-up" style={{ animationDelay: "80ms" }}>
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Framblåsning</p>
-              <p className="text-3xl font-bold mt-1.5 text-foreground tracking-tight">{blowDone}<span className="text-lg text-muted-foreground font-normal">/{total}</span></p>
-            </div>
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Fan className="h-4 w-4 text-primary" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground">{blowPct}% klart</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${blowPct}%` }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Sweep status */}
-        <div className="stat-card animate-slide-up" style={{ animationDelay: "160ms" }}>
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Maskinsopning</p>
-              <p className="text-3xl font-bold mt-1.5 text-foreground tracking-tight">{sweepDone}<span className="text-lg text-muted-foreground font-normal">/{total}</span></p>
-            </div>
-            <div className="w-9 h-9 rounded-lg bg-accent/30 flex items-center justify-center">
-              <Wind className="h-4 w-4 text-accent-foreground" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground">{sweepPct}% klart</span>
-            </div>
-            <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${sweepPct}%` }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Time today */}
-        <div className="stat-card animate-slide-up" style={{ animationDelay: "240ms" }}>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tid idag</p>
-              <p className="text-3xl font-bold mt-1.5 text-foreground tracking-tight">{todayTimeCount}</p>
-              <p className="text-xs text-muted-foreground mt-2">registreringar idag</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Påbörjade</p>
+              <p className="text-4xl font-bold mt-2 text-foreground tracking-tight">{todayStarted}</p>
             </div>
-            <div className="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center">
-              <Clock className="h-4 w-4 text-success" />
+            <div className="w-9 h-9 rounded-lg bg-warning/15 flex items-center justify-center">
+              <Play className="h-4 w-4 text-warning" />
             </div>
           </div>
+          {todayTotal > 0 && (
+            <div className="mt-4">
+              <div className="progress-track">
+                <div className="progress-fill bg-warning" style={{ width: `${Math.round((todayStarted / todayTotal) * 100)}%` }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="stat-card animate-slide-up" style={{ animationDelay: "160ms" }}>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Klara</p>
+              <p className="text-4xl font-bold mt-2 text-foreground tracking-tight">{todayDone}</p>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-success/15 flex items-center justify-center">
+              <Check className="h-4 w-4 text-success" />
+            </div>
+          </div>
+          {todayTotal > 0 && (
+            <div className="mt-4">
+              <div className="progress-track">
+                <div className="progress-fill" style={{ width: `${Math.round((todayDone / todayTotal) * 100)}%` }} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <ListFilter className="h-4 w-4" />
+          <span className="text-xs font-medium uppercase tracking-wider">Filter</span>
+        </div>
+        <Select value={filterService} onValueChange={setFilterService}>
+          <SelectTrigger className="w-[160px] h-9 text-xs bg-card border-border/50">
+            <SelectValue placeholder="Tjänst" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alla tjänster</SelectItem>
+            <SelectItem value="blow">Framblåsning</SelectItem>
+            <SelectItem value="sweep">Maskinsopning</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[160px] h-9 text-xs bg-card border-border/50">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alla statusar</SelectItem>
+            <SelectItem value="pending">Ej påbörjad</SelectItem>
+            <SelectItem value="in-progress">Påbörjad</SelectItem>
+            <SelectItem value="done">Klar</SelectItem>
+          </SelectContent>
+        </Select>
+        {allUsers.length > 0 && (
+          <Select value={filterUser} onValueChange={setFilterUser}>
+            <SelectTrigger className="w-[160px] h-9 text-xs bg-card border-border/50">
+              <SelectValue placeholder="Ansvarig" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alla ansvariga</SelectItem>
+              {allUsers.map((u) => (
+                <SelectItem key={u} value={u}>{u}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      {/* Today's Tasks */}
+      <TaskSection title="Arbete idag" tasks={todayTasks} onStatusUpdate={handleStatusUpdate} updating={updating} />
+
+      {/* Admin: Tomorrow & Upcoming */}
+      {isAdmin && (
+        <>
+          {tomorrowTasks.length > 0 && (
+            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStatusUpdate={handleStatusUpdate} updating={updating} />
+          )}
+          {upcomingTasks.length > 0 && (
+            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStatusUpdate={handleStatusUpdate} updating={updating} showDate />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// --- Task Section ---
+function TaskSection({
+  title,
+  tasks,
+  onStatusUpdate,
+  updating,
+  showDate = false,
+}: {
+  title: string;
+  tasks: DailyTask[];
+  onStatusUpdate: (task: DailyTask, status: Status) => void;
+  updating: string | null;
+  showDate?: boolean;
+}) {
+  if (tasks.length === 0) {
+    return (
+      <div className="glass-card p-8 text-center animate-fade-in">
+        <p className="text-muted-foreground text-sm">{title === "Arbete idag" ? "Inga uppdrag planerade idag" : `Inga ${title.toLowerCase()}`}</p>
+        {title === "Arbete idag" && (
+          <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm text-primary font-medium mt-4 hover:text-primary/80 transition-colors">
+            Visa alla projekt <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 animate-fade-in">
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{tasks.length}</span>
+      </div>
+      <div className="grid gap-3">
+        {tasks.map((task) => (
+          <TaskCard key={task.id} task={task} onStatusUpdate={onStatusUpdate} updating={updating} showDate={showDate} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- Task Card ---
+function TaskCard({
+  task,
+  onStatusUpdate,
+  updating,
+  showDate,
+}: {
+  task: DailyTask;
+  onStatusUpdate: (task: DailyTask, status: Status) => void;
+  updating: string | null;
+  showDate?: boolean;
+}) {
+  const isUpdating = updating === task.id;
+  const isDone = task.status === "done";
+  const ServiceIcon = task.serviceType === "blow" ? Fan : Wind;
+
+  return (
+    <div className={`glass-card p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4 transition-all duration-300 ${isDone ? "opacity-60" : ""} ${isUpdating ? "animate-pulse" : ""}`}>
+      {/* Icon */}
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${task.serviceType === "blow" ? "bg-primary/15" : "bg-accent/30"}`}>
+        <ServiceIcon className={`h-5 w-5 ${task.serviceType === "blow" ? "text-primary" : "text-accent-foreground"}`} />
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-foreground/90 truncate">{task.address}</p>
+        <div className="flex flex-wrap items-center gap-2 mt-1">
+          <span className="text-xs text-muted-foreground">{task.serviceLabel}</span>
+          {task.assignedUser && (
+            <>
+              <span className="text-border">·</span>
+              <span className="text-xs text-muted-foreground">{task.assignedUser}</span>
+            </>
+          )}
+          {showDate && task.scheduledDate && (
+            <>
+              <span className="text-border">·</span>
+              <span className="text-xs text-muted-foreground">{task.scheduledDate}</span>
+            </>
+          )}
           <Link
-            to="/time"
-            className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-4 hover:text-primary/80 transition-colors group"
+            to={task.source === "tidx" ? "/tidx" : "/egna"}
+            className="inline-flex items-center gap-0.5 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
           >
-            Visa tidrapport
-            <ArrowUpRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            {task.source === "tidx" ? "Tidx" : "Egna"}
+            <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
       </div>
 
-      {/* Areas Table */}
-      <div className="glass-card overflow-hidden animate-fade-in" style={{ animationDelay: "300ms" }}>
-        <div className="px-6 py-5 border-b border-border/40">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">Alla områden</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{total} totalt registrerade</p>
-            </div>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="premium-table">
-            <thead>
-              <tr>
-                <th className="pl-6">Adress</th>
-                <th>Källa</th>
-                <th>Framblåsning</th>
-                <th className="pr-6">Maskinsopning</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allAreas.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="pl-6 text-muted-foreground text-center py-12">
-                    Inga områden registrerade ännu.
-                  </td>
-                </tr>
-              ) : (
-                allAreas.map((area) => (
-                  <tr key={area.id}>
-                    <td className="pl-6 max-w-[280px] truncate font-medium text-foreground/90">{area.address}</td>
-                    <td>
-                      <Link
-                        to={sourceLabels[area.source].path}
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
-                      >
-                        {sourceLabels[area.source].label}
-                        <ArrowUpRight className="h-3 w-3" />
-                      </Link>
-                    </td>
-                    <td><StatusBadge status={area.blowStatus} /></td>
-                    <td className="pr-6"><StatusBadge status={area.sweepStatus} /></td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Status */}
+      <div className="shrink-0">
+        <StatusBadge status={task.status} />
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        {task.status === "pending" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs gap-1.5 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning"
+            onClick={() => onStatusUpdate(task, "in-progress")}
+            disabled={isUpdating}
+          >
+            <Play className="h-3 w-3" />
+            Starta
+          </Button>
+        )}
+        {task.status !== "done" && (
+          <Button
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => onStatusUpdate(task, "done")}
+            disabled={isUpdating}
+          >
+            <Check className="h-3 w-3" />
+            Klar
+          </Button>
+        )}
       </div>
     </div>
   );
