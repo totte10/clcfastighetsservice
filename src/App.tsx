@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import AreasPage from "@/pages/AreasPage";
 import TimePage from "@/pages/TimePage";
+import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
 import AdminPage from "@/pages/AdminPage";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
@@ -38,6 +39,7 @@ function ProtectedRoutes() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/time" element={<TimePage />} />
+        <Route path="/time/reports" element={<AllTimeReportsPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/tidx" element={<TidxSopningarPage />} />
         <Route path="/egna" element={<EgnaOmradenPage />} />

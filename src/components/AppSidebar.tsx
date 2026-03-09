@@ -1,4 +1,4 @@
-import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut } from "lucide-react";
+import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
@@ -22,6 +22,7 @@ const items = [
   { title: "Egna Områden", url: "/egna", icon: Home, adminOnly: false },
   { title: "Chatt", url: "/chat", icon: MessageCircle, adminOnly: false },
   { title: "Tidrapport", url: "/time", icon: Clock, adminOnly: false },
+  { title: "Samlad Rapport", url: "/time/reports", icon: ClipboardList, adminOnly: false },
   { title: "Admin", url: "/admin", icon: Settings, adminOnly: true },
 ];
 
