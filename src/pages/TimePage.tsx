@@ -68,6 +68,7 @@ export default function TimePage() {
         end_time: r.end_time,
         hours: r.hours ? Number(r.hours) : null,
         project: r.project,
+        project_number: r.project_number ?? "",
         notes: r.notes,
       }))
     );
