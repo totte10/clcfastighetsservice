@@ -251,9 +251,15 @@ export default function TimePage() {
                 <Input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Projekt / Uppdrag</Label>
-              <Input value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} placeholder="T.ex. Tidx Sopning Centrum" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Projekt / Uppdrag</Label>
+                <Input value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} placeholder="T.ex. Tidx Sopning Centrum" />
+              </div>
+              <div className="space-y-2">
+                <Label>Projektnummer</Label>
+                <Input value={form.project_number} onChange={(e) => setForm({ ...form, project_number: e.target.value })} placeholder="T.ex. P-2026-0001" />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Anteckning</Label>
