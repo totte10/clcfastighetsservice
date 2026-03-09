@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Clock, Play, Square, Trash2, Send, Pencil, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Clock, Play, Square, Trash2, Send, Pencil, Check, X, ChevronDown, ChevronUp, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface TimeLog {
   id: string;
