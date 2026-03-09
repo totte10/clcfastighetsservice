@@ -29,7 +29,7 @@ const items = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const { user, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -83,6 +83,7 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
+                      onClick={() => isMobile && setOpenMobile(false)}
                       className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
                       activeClassName="text-sidebar-primary bg-sidebar-accent text-sidebar-primary-foreground shadow-[0_0_12px_-4px_hsl(152_50%_42%/0.3),inset_0_1px_0_hsl(152_50%_42%/0.1)]"
                     >
