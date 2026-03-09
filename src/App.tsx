@@ -39,6 +39,7 @@ function ProtectedRoutes() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/time" element={<TimePage />} />
+        <Route path="/time/reports" element={<AllTimeReportsPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/tidx" element={<TidxSopningarPage />} />
         <Route path="/egna" element={<EgnaOmradenPage />} />
