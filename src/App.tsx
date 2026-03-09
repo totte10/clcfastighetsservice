@@ -12,6 +12,7 @@ import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
 import AdminPage from "@/pages/AdminPage";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
+import ProjectsPage from "@/pages/ProjectsPage";
 import ChatPage from "@/pages/ChatPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "./pages/NotFound";
