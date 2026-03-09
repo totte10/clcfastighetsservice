@@ -6,10 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, ChevronLeft, ChevronRight, Wind, Home, FolderOpen, Clock, CalendarIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { CalendarDays, ChevronLeft, ChevronRight, Wind, Home, FolderOpen, Clock, CalendarIcon, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { geocodeAddress } from "@/lib/geocode";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -47,6 +52,8 @@ export default function PlanningPage() {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [filterType, setFilterType] = useState<EntryType | "all">("all");
   const [changingDate, setChangingDate] = useState<PlanningItem | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectForm, setNewProjectForm] = useState({ name: "", address: "", description: "", project_number: "" });
 
   // Admin check
   useEffect(() => {
@@ -66,7 +73,7 @@ export default function PlanningPage() {
     const [tidxRes, egnaRes, projRes, timeRes] = await Promise.all([
       supabase.from("tidx_entries").select("id, omrade, address, datum_planerat, status"),
       supabase.from("egna_entries").select("id, address, datum_planerat, blow_status, sweep_status"),
-      supabase.from("projects").select("id, name, address, status, created_at"),
+      supabase.from("projects").select("id, name, address, status, created_at, datum_planerat"),
       supabase.from("user_time_entries").select("id, date, project, start_time, end_time, hours, user_id"),
     ]);
 
@@ -84,7 +91,7 @@ export default function PlanningPage() {
     });
 
     (projRes.data ?? []).forEach((r) => {
-      const d = r.created_at?.split("T")[0];
+      const d = normalizeDate(r.datum_planerat) || r.created_at?.split("T")[0];
       if (d) result.push({ id: r.id, type: "project", title: r.name, date: d, status: r.status });
     });
 
@@ -175,6 +182,9 @@ export default function PlanningPage() {
               <SelectItem value="time">Tidsrapporter</SelectItem>
             </SelectContent>
           </Select>
+          <Button onClick={() => setShowNewProject(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> Nytt projekt
+          </Button>
         </div>
       </div>
 
@@ -280,7 +290,7 @@ export default function PlanningPage() {
                           {item.extra && <span className="text-[10px] text-muted-foreground">{item.extra}</span>}
                         </div>
                       </div>
-                      {item.type !== "project" && (
+                      {(
                         <Popover
                           open={changingDate?.id === item.id && changingDate?.type === item.type}
                           onOpenChange={(open) => setChangingDate(open ? item : null)}
@@ -309,6 +319,60 @@ export default function PlanningPage() {
           </CardContent>
         </Card>
       )}
+      {/* New project dialog */}
+      <Dialog open={showNewProject} onOpenChange={setShowNewProject}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nytt projekt i planeringen</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label>Projektnamn *</Label>
+              <Input value={newProjectForm.name} onChange={(e) => setNewProjectForm({ ...newProjectForm, name: e.target.value })} placeholder="T.ex. Vinterunderhåll" />
+            </div>
+            <div className="space-y-2">
+              <Label>Adress *</Label>
+              <Input value={newProjectForm.address} onChange={(e) => setNewProjectForm({ ...newProjectForm, address: e.target.value })} placeholder="Gatuadress, stad" />
+            </div>
+            <div className="space-y-2">
+              <Label>Projektnummer (lämna tomt för auto)</Label>
+              <Input value={newProjectForm.project_number} onChange={(e) => setNewProjectForm({ ...newProjectForm, project_number: e.target.value })} placeholder="T.ex. P-2026-0001" />
+            </div>
+            <div className="space-y-2">
+              <Label>Beskrivning</Label>
+              <Textarea value={newProjectForm.description} onChange={(e) => setNewProjectForm({ ...newProjectForm, description: e.target.value })} rows={2} />
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-sm text-muted-foreground">
+              📅 Planerat datum: <span className="font-medium text-foreground">{selectedDay ? format(selectedDay, "d MMMM yyyy", { locale: sv }) : "Idag"}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewProject(false)}>Avbryt</Button>
+            <Button onClick={async () => {
+              if (!newProjectForm.name.trim() || !newProjectForm.address.trim()) {
+                toast({ title: "Fyll i namn och adress", variant: "destructive" });
+                return;
+              }
+              const dateStr = selectedDay ? format(selectedDay, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+              const coords = await geocodeAddress(newProjectForm.address);
+              const { error } = await supabase.from("projects").insert({
+                name: newProjectForm.name,
+                address: newProjectForm.address,
+                description: newProjectForm.description,
+                project_number: newProjectForm.project_number || undefined,
+                datum_planerat: dateStr,
+                lat: coords?.lat ?? null,
+                lng: coords?.lng ?? null,
+              });
+              if (error) { toast({ title: "Kunde inte skapa projekt", variant: "destructive" }); return; }
+              toast({ title: "Projekt skapat!" });
+              setShowNewProject(false);
+              setNewProjectForm({ name: "", address: "", description: "", project_number: "" });
+              loadItems();
+            }}>Skapa projekt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
