@@ -143,6 +143,7 @@ export type Database = {
           kommentar: string
           lat: number | null
           lng: number | null
+          project_number: string
           sweep_status: string
           timmar: number
           updated_at: string
@@ -158,6 +159,7 @@ export type Database = {
           kommentar?: string
           lat?: number | null
           lng?: number | null
+          project_number?: string
           sweep_status?: string
           timmar?: number
           updated_at?: string
@@ -173,6 +175,7 @@ export type Database = {
           kommentar?: string
           lat?: number | null
           lng?: number | null
+          project_number?: string
           sweep_status?: string
           timmar?: number
           updated_at?: string
@@ -203,6 +206,48 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          address: string
+          created_at: string
+          description: string
+          id: string
+          images: string[]
+          lat: number | null
+          lng: number | null
+          name: string
+          project_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[]
+          lat?: number | null
+          lng?: number | null
+          name: string
+          project_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[]
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          project_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tidx_entries: {
         Row: {
           address: string
@@ -215,6 +260,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           omrade: string
+          project_number: string
           status: string
           timmar_maskin: number
           updated_at: string
@@ -230,6 +276,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           omrade?: string
+          project_number?: string
           status?: string
           timmar_maskin?: number
           updated_at?: string
@@ -245,6 +292,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           omrade?: string
+          project_number?: string
           status?: string
           timmar_maskin?: number
           updated_at?: string
@@ -325,6 +373,7 @@ export type Database = {
           id: string
           notes: string
           project: string
+          project_number: string
           start_time: string
           updated_at: string
           user_id: string
@@ -337,6 +386,7 @@ export type Database = {
           id?: string
           notes?: string
           project?: string
+          project_number?: string
           start_time: string
           updated_at?: string
           user_id: string
@@ -349,6 +399,7 @@ export type Database = {
           id?: string
           notes?: string
           project?: string
+          project_number?: string
           start_time?: string
           updated_at?: string
           user_id?: string
