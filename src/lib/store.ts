@@ -213,5 +213,6 @@ export async function updateEgnaEntry(id: string, updates: Partial<EgnaEntry>) {
   if (updates.lat !== undefined) mapped.lat = updates.lat;
   if (updates.lng !== undefined) mapped.lng = updates.lng;
   if (updates.images !== undefined) mapped.images = updates.images;
+  if (updates.projectNumber !== undefined) mapped.project_number = updates.projectNumber;
   await supabase.from("egna_entries").update(mapped).eq("id", id);
 }
