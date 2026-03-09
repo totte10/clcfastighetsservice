@@ -49,7 +49,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <div className="p-4 flex items-center gap-3">
-          <img src={clcLogo} alt="CLC" className="w-9 h-9 rounded-lg shrink-0 object-contain" />
+          <img src={clcLogo} alt="CLC" className="w-9 h-9 rounded-lg shrink-0 object-cover" />
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-base font-semibold text-sidebar-foreground tracking-tight leading-tight">
