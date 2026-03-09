@@ -162,6 +162,9 @@ export default function TidxSopningarPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] tracking-widest uppercase text-muted-foreground/60 font-medium">Område {entry.omrade}</span>
+                    {entry.projectNumber && (
+                      <span className="text-[10px] tracking-wider text-primary font-semibold">#{entry.projectNumber}</span>
+                    )}
                     <StatusBadge status={entry.status} />
                     {entry.lat != null && <span className="text-[10px] text-success">📍</span>}
                   </div>
