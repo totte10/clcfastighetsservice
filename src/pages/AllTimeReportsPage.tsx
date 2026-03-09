@@ -123,9 +123,10 @@ export default function AllTimeReportsPage() {
 
     autoTable(doc, {
       startY: filterFrom || filterTo ? 38 : 32,
-      head: [["Datum", "Adress", "Typ", "Start", "Slut", "Timmar", "Anteckning"]],
+      head: [["Datum", "Användare", "Adress", "Typ", "Start", "Slut", "Timmar", "Anteckning"]],
       body: filtered.map((l) => [
         fmtDate(l.start_time),
+        l.userName ?? "",
         l.address,
         l.entry_type === "tidx" ? "Tidx" : "Egna",
         fmtTime(l.start_time),
@@ -133,7 +134,7 @@ export default function AllTimeReportsPage() {
         l.hours?.toFixed(2) ?? "",
         l.note,
       ]),
-      foot: [["", "", "", "", "Totalt", totalHours.toFixed(2) + "h", ""]],
+      foot: [["", "", "", "", "", "Totalt", totalHours.toFixed(2) + "h", ""]],
       styles: { fontSize: 8 },
     });
 
