@@ -279,6 +279,7 @@ export default function AllTimeReportsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Datum</TableHead>
+                    <TableHead>Användare</TableHead>
                     <TableHead>Adress</TableHead>
                     <TableHead>Typ</TableHead>
                     <TableHead>Start</TableHead>
@@ -291,6 +292,7 @@ export default function AllTimeReportsPage() {
                   {filtered.map((l) => (
                     <TableRow key={l.id}>
                       <TableCell className="whitespace-nowrap">{fmtDate(l.start_time)}</TableCell>
+                      <TableCell className="text-sm">{l.userName}</TableCell>
                       <TableCell className="font-medium max-w-[200px] truncate">{l.address}</TableCell>
                       <TableCell>
                         <span className="text-xs bg-secondary px-2 py-0.5 rounded text-secondary-foreground">
