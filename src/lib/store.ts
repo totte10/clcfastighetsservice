@@ -182,6 +182,7 @@ export interface EgnaEntry {
   lat?: number | null;
   lng?: number | null;
   images: string[];
+  projectNumber: string;
 }
 
 export async function getEgnaEntries(): Promise<EgnaEntry[]> {
