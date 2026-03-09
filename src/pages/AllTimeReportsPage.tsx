@@ -21,6 +21,7 @@ interface TimeLogRow {
   note: string;
   user_id: string;
   address?: string;
+  userName?: string;
 }
 
 export default function AllTimeReportsPage() {
