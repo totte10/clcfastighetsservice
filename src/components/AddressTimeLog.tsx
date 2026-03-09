@@ -143,8 +143,59 @@ export function AddressTimeLog({ entryId, entryType, entryLabel }: AddressTimeLo
   const completedLogs = logs.filter((l) => l.end_time);
   const totalHours = completedLogs.reduce((sum, l) => sum + (l.hours || 0), 0);
 
-  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { month: "short", day: "numeric" });
+  const formatDateFull = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit" });
+  const formatDateShort = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { month: "short", day: "numeric" });
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+
+  const reportTitle = entryLabel || `Uppdrag ${entryType}`;
+
+  const exportCSV = () => {
+    if (completedLogs.length === 0) return;
+    const header = "Datum;Start;Slut;Timmar;Notering";
+    const rows = completedLogs.map((l) =>
+      `${formatDateFull(l.start_time)};${formatTime(l.start_time)};${formatTime(l.end_time!)};${(l.hours ?? 0).toFixed(1)};${l.note || ""}`
+    );
+    const totalRow = `;;Totalt;${totalHours.toFixed(1)};`;
+    const csv = [header, ...rows, totalRow].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tidsrapport-${reportTitle.replace(/\s+/g, "-").toLowerCase()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "CSV exporterad" });
+  };
+
+  const exportPDF = () => {
+    if (completedLogs.length === 0) return;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text(`Tidsrapport – ${reportTitle}`, 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Genererad: ${new Date().toLocaleDateString("sv-SE")}`, 14, 28);
+    doc.text(`Totalt: ${totalHours.toFixed(1)} timmar (${completedLogs.length} poster)`, 14, 34);
+
+    autoTable(doc, {
+      startY: 42,
+      head: [["Datum", "Start", "Slut", "Timmar", "Notering"]],
+      body: completedLogs.map((l) => [
+        formatDateFull(l.start_time),
+        formatTime(l.start_time),
+        formatTime(l.end_time!),
+        (l.hours ?? 0).toFixed(1),
+        l.note || "",
+      ]),
+      foot: [["", "", "Totalt", totalHours.toFixed(1), ""]],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [41, 128, 185] },
+      footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: "bold" },
+    });
+
+    doc.save(`tidsrapport-${reportTitle.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+    toast({ title: "PDF exporterad" });
+  };
+
 
   return (
     <div className="space-y-2 border-t border-border/50 pt-2 mt-2">
