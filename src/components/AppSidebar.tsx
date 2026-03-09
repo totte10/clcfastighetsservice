@@ -48,34 +48,44 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent>
+      <SidebarContent className="bg-sidebar border-r border-sidebar-border/50">
+        {/* Logo */}
         <div className="p-4 flex items-center gap-3">
-          <img src={clcLogo} alt="CLC" className="w-9 h-9 rounded-lg shrink-0 object-cover" />
+          <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 ring-1 ring-sidebar-border/50">
+            <img src={clcLogo} alt="CLC" className="w-full h-full object-cover" />
+          </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-base font-semibold text-sidebar-foreground tracking-tight leading-tight">
+              <span className="text-sm font-semibold text-sidebar-accent-foreground tracking-tight leading-tight">
                 CLC
               </span>
-              <span className="text-[10px] text-sidebar-foreground/50 tracking-widest uppercase">
+              <span className="text-[10px] text-sidebar-foreground/40 tracking-[0.2em] uppercase">
                 Fastighetsservice
               </span>
             </div>
           )}
         </div>
 
+        {/* Separator */}
+        {!collapsed && (
+          <div className="mx-4 mb-2">
+            <div className="h-px bg-gradient-to-r from-sidebar-border/60 via-sidebar-border/20 to-transparent" />
+          </div>
+        )}
+
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-0.5 px-2">
               {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-9">
                     <NavLink
                       to={item.url}
                       end={item.url === "/"}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
+                      activeClassName="text-sidebar-primary bg-sidebar-accent text-sidebar-primary-foreground shadow-[0_0_12px_-4px_hsl(152_50%_42%/0.3),inset_0_1px_0_hsl(152_50%_42%/0.1)]"
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className="h-4 w-4 shrink-0 transition-colors duration-200" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -86,15 +96,18 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="bg-sidebar border-t border-sidebar-border/30">
         <div className="p-2">
           {!collapsed && user && (
-            <p className="text-[10px] text-sidebar-foreground/50 truncate px-2 mb-1">
+            <p className="text-[10px] text-sidebar-foreground/35 truncate px-3 mb-1.5 font-medium">
               {user.email}
             </p>
           )}
-          <SidebarMenuButton onClick={signOut} className="w-full hover:bg-sidebar-accent/50 text-sidebar-foreground/70">
-            <LogOut className="mr-2 h-4 w-4" />
+          <SidebarMenuButton
+            onClick={signOut}
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/50 transition-all duration-200 hover:text-destructive hover:bg-destructive/10"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Logga ut</span>}
           </SidebarMenuButton>
         </div>
