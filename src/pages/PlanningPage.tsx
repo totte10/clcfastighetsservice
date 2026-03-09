@@ -73,7 +73,7 @@ export default function PlanningPage() {
     const [tidxRes, egnaRes, projRes, timeRes] = await Promise.all([
       supabase.from("tidx_entries").select("id, omrade, address, datum_planerat, status"),
       supabase.from("egna_entries").select("id, address, datum_planerat, blow_status, sweep_status"),
-      supabase.from("projects").select("id, name, address, status, created_at"),
+      supabase.from("projects").select("id, name, address, status, created_at, datum_planerat"),
       supabase.from("user_time_entries").select("id, date, project, start_time, end_time, hours, user_id"),
     ]);
 
