@@ -135,6 +135,7 @@ export interface TidxEntry {
   lat?: number | null;
   lng?: number | null;
   images: string[];
+  projectNumber: string;
 }
 
 export async function getTidxEntries(): Promise<TidxEntry[]> {
