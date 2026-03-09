@@ -24,7 +24,7 @@ interface AddressTimeLogProps {
   entryLabel?: string;
 }
 
-export function AddressTimeLog({ entryId, entryType }: AddressTimeLogProps) {
+export function AddressTimeLog({ entryId, entryType, entryLabel }: AddressTimeLogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [logs, setLogs] = useState<TimeLog[]>([]);
