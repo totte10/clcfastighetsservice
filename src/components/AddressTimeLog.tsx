@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Clock, Play, Square, Trash2, Send } from "lucide-react";
+import { Clock, Play, Square, Trash2, Send, Pencil, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface TimeLog {
@@ -26,11 +26,16 @@ export function AddressTimeLog({ entryId, entryType }: AddressTimeLogProps) {
   const { toast } = useToast();
   const [logs, setLogs] = useState<TimeLog[]>([]);
   const [activeLog, setActiveLog] = useState<TimeLog | null>(null);
+  const [manualDate, setManualDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [manualStart, setManualStart] = useState("");
   const [manualEnd, setManualEnd] = useState("");
   const [note, setNote] = useState("");
   const [showManual, setShowManual] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStart, setEditStart] = useState("");
+  const [editEnd, setEditEnd] = useState("");
+  const [editNote, setEditNote] = useState("");
 
   const loadLogs = useCallback(async () => {
     const { data } = await supabase
@@ -86,9 +91,9 @@ export function AddressTimeLog({ entryId, entryType }: AddressTimeLogProps) {
 
   const handleManualSubmit = async () => {
     if (!user || !manualStart || !manualEnd) return;
-    const today = new Date().toISOString().split("T")[0];
-    const startIso = new Date(`${today}T${manualStart}`).toISOString();
-    const endIso = new Date(`${today}T${manualEnd}`).toISOString();
+    const dateStr = manualDate || new Date().toISOString().split("T")[0];
+    const startIso = new Date(`${dateStr}T${manualStart}`).toISOString();
+    const endIso = new Date(`${dateStr}T${manualEnd}`).toISOString();
     await supabase.from("address_time_logs").insert({
       user_id: user.id,
       entry_id: entryId,
@@ -110,8 +115,33 @@ export function AddressTimeLog({ entryId, entryType }: AddressTimeLogProps) {
     await loadLogs();
   };
 
+  const startEdit = (log: TimeLog) => {
+    setEditingId(log.id);
+    setEditStart(new Date(log.start_time).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }));
+    setEditEnd(log.end_time ? new Date(log.end_time).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : "");
+    setEditNote(log.note || "");
+  };
+
+  const handleEditSave = async (log: TimeLog) => {
+    const dateStr = new Date(log.start_time).toISOString().split("T")[0];
+    const updates: Record<string, unknown> = {
+      start_time: new Date(`${dateStr}T${editStart}`).toISOString(),
+      note: editNote,
+    };
+    if (editEnd) {
+      updates.end_time = new Date(`${dateStr}T${editEnd}`).toISOString();
+    }
+    await supabase.from("address_time_logs").update(updates).eq("id", log.id);
+    setEditingId(null);
+    toast({ title: "Tid uppdaterad" });
+    await loadLogs();
+  };
+
   const completedLogs = logs.filter((l) => l.end_time);
   const totalHours = completedLogs.reduce((sum, l) => sum + (l.hours || 0), 0);
+
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { month: "short", day: "numeric" });
+  const formatTime = (iso: string) => new Date(iso).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="space-y-2 border-t border-border/50 pt-2 mt-2">
@@ -120,25 +150,26 @@ export function AddressTimeLog({ entryId, entryType }: AddressTimeLogProps) {
           onClick={() => setExpanded(!expanded)}
           className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
-          <Clock className="h-3 w-3" />
-          Tid: {totalHours.toFixed(1)}h ({completedLogs.length} poster)
+          <Clock className="h-3.5 w-3.5" />
+          <span>Tid: <strong className="text-foreground">{totalHours.toFixed(1)}h</strong> ({completedLogs.length} poster)</span>
+          {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </button>
         <div className="flex gap-1">
           {!activeLog ? (
-            <Button size="sm" variant="outline" onClick={handleStart} className="h-6 text-[10px] gap-1 px-2">
-              <Play className="h-2.5 w-2.5" /> Starta
+            <Button size="sm" variant="outline" onClick={handleStart} className="h-7 text-xs gap-1.5 px-3">
+              <Play className="h-3 w-3" /> Starta tid
             </Button>
           ) : (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse-slow" />
               <Input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Notering..."
-                className="h-6 text-[10px] w-24"
+                className="h-7 text-xs w-28"
               />
-              <Button size="sm" variant="destructive" onClick={handleStop} className="h-6 text-[10px] gap-1 px-2">
-                <Square className="h-2.5 w-2.5" /> Stopp
+              <Button size="sm" variant="destructive" onClick={handleStop} className="h-7 text-xs gap-1.5 px-3">
+                <Square className="h-3 w-3" /> Stopp
               </Button>
             </div>
           )}
@@ -146,45 +177,103 @@ export function AddressTimeLog({ entryId, entryType }: AddressTimeLogProps) {
       </div>
 
       {expanded && (
-        <div className="space-y-2">
+        <div className="space-y-3 pt-1">
+          {/* Manual add */}
           {!showManual ? (
             <button
               onClick={() => setShowManual(true)}
-              className="text-[10px] text-primary hover:underline"
+              className="text-xs text-primary hover:underline font-medium"
             >
-              + Lägg till manuellt
+              + Lägg till tid manuellt
             </button>
           ) : (
-            <div className="flex gap-1.5 items-end">
-              <Input type="time" value={manualStart} onChange={(e) => setManualStart(e.target.value)} className="h-7 text-[10px] w-20" />
-              <span className="text-[10px] text-muted-foreground pb-1">–</span>
-              <Input type="time" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} className="h-7 text-[10px] w-20" />
-              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Not." className="h-7 text-[10px] flex-1" />
-              <Button size="sm" onClick={handleManualSubmit} className="h-7 text-[10px] gap-1 px-2">
-                <Send className="h-2.5 w-2.5" />
-              </Button>
+            <div className="p-3 rounded-lg bg-muted/50 border border-border/50 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Lägg till manuell tid</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Datum</label>
+                  <Input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Start</label>
+                  <Input type="time" value={manualStart} onChange={(e) => setManualStart(e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground">Slut</label>
+                  <Input type="time" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} className="h-8 text-xs" />
+                </div>
+              </div>
+              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notering (valfritt)" className="h-8 text-xs" />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleManualSubmit} className="h-8 text-xs gap-1.5">
+                  <Send className="h-3 w-3" /> Spara
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowManual(false)} className="h-8 text-xs">
+                  Avbryt
+                </Button>
+              </div>
             </div>
           )}
 
+          {/* Time log list */}
           {completedLogs.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Registrerade tider</p>
               {completedLogs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between text-[10px] py-1 px-2 rounded bg-muted/40">
-                  <span className="text-muted-foreground">
-                    {new Date(log.start_time).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}
-                    –
-                    {new Date(log.end_time!).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}
-                    {" "}({log.hours?.toFixed(1)}h)
-                    {log.note && <span className="ml-1 italic">· {log.note}</span>}
-                  </span>
-                  {log.user_id === user?.id && (
-                    <button onClick={() => handleDelete(log.id)} className="text-destructive hover:text-destructive/80 ml-2">
-                      <Trash2 className="h-2.5 w-2.5" />
-                    </button>
+                <div key={log.id} className="rounded-md bg-muted/40 border border-border/30 p-2">
+                  {editingId === log.id ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-muted-foreground">Start</label>
+                          <Input type="time" value={editStart} onChange={(e) => setEditStart(e.target.value)} className="h-7 text-xs" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-muted-foreground">Slut</label>
+                          <Input type="time" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} className="h-7 text-xs" />
+                        </div>
+                      </div>
+                      <Input value={editNote} onChange={(e) => setEditNote(e.target.value)} placeholder="Notering" className="h-7 text-xs" />
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="default" onClick={() => handleEditSave(log)} className="h-6 text-[10px] gap-1 px-2">
+                          <Check className="h-2.5 w-2.5" /> Spara
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-6 text-[10px] gap-1 px-2">
+                          <X className="h-2.5 w-2.5" /> Avbryt
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">
+                            {formatTime(log.start_time)} – {formatTime(log.end_time!)}
+                          </span>
+                          <span className="text-muted-foreground">({log.hours?.toFixed(1)}h)</span>
+                          <span className="text-[10px] text-muted-foreground/60">{formatDate(log.start_time)}</span>
+                        </div>
+                        {log.note && <p className="text-muted-foreground italic text-[11px]">{log.note}</p>}
+                      </div>
+                      {log.user_id === user?.id && (
+                        <div className="flex gap-1 ml-2">
+                          <button onClick={() => startEdit(log)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted">
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                          <button onClick={() => handleDelete(log.id)} className="text-destructive hover:text-destructive/80 transition-colors p-1 rounded hover:bg-destructive/10">
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
             </div>
+          )}
+
+          {completedLogs.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-2">Inga tider registrerade ännu</p>
           )}
         </div>
       )}
