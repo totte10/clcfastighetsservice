@@ -28,6 +28,7 @@ export default function AllTimeReportsPage() {
   const [logs, setLogs] = useState<TimeLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterUser, setFilterUser] = useState<string>("all");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
   const { toast } = useToast();
