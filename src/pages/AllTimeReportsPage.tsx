@@ -36,21 +36,19 @@ export default function AllTimeReportsPage() {
   const loadLogs = useCallback(async () => {
     setLoading(true);
 
-    // Fetch all time logs
-    const { data: timeLogs } = await supabase
-      .from("address_time_logs")
-      .select("*")
-      .order("start_time", { ascending: false });
-
-    // Fetch addresses for tidx and egna entries
-    const [{ data: tidxData }, { data: egnaData }] = await Promise.all([
+    const [{ data: timeLogs }, { data: tidxData }, { data: egnaData }, { data: profilesData }] = await Promise.all([
+      supabase.from("address_time_logs").select("*").order("start_time", { ascending: false }),
       supabase.from("tidx_entries").select("id, address"),
       supabase.from("egna_entries").select("id, address"),
+      supabase.from("profiles").select("id, full_name"),
     ]);
 
     const addressMap = new Map<string, string>();
     tidxData?.forEach((e) => addressMap.set(e.id, e.address));
     egnaData?.forEach((e) => addressMap.set(e.id, e.address));
+
+    const nameMap = new Map<string, string>();
+    profilesData?.forEach((p) => nameMap.set(p.id, p.full_name));
 
     const mapped: TimeLogRow[] = (timeLogs ?? []).map((l) => ({
       id: l.id,
@@ -62,6 +60,7 @@ export default function AllTimeReportsPage() {
       note: l.note,
       user_id: l.user_id,
       address: addressMap.get(l.entry_id) ?? "Okänd adress",
+      userName: nameMap.get(l.user_id) || l.user_id.slice(0, 8),
     }));
 
     setLogs(mapped);
