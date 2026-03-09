@@ -165,6 +165,7 @@ export async function updateTidxEntry(id: string, updates: Partial<TidxEntry>) {
   if (updates.lat !== undefined) mapped.lat = updates.lat;
   if (updates.lng !== undefined) mapped.lng = updates.lng;
   if (updates.images !== undefined) mapped.images = updates.images;
+  if (updates.projectNumber !== undefined) mapped.project_number = updates.projectNumber;
   await supabase.from("tidx_entries").update(mapped).eq("id", id);
 }
 
