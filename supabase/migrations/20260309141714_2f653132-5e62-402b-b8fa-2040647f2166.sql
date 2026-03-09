@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN datum_planerat text NOT NULL DEFAULT '';

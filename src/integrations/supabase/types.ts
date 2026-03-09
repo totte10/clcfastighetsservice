@@ -210,6 +210,7 @@ export type Database = {
         Row: {
           address: string
           created_at: string
+          datum_planerat: string
           description: string
           id: string
           images: string[]
@@ -223,6 +224,7 @@ export type Database = {
         Insert: {
           address?: string
           created_at?: string
+          datum_planerat?: string
           description?: string
           id?: string
           images?: string[]
@@ -236,6 +238,7 @@ export type Database = {
         Update: {
           address?: string
           created_at?: string
+          datum_planerat?: string
           description?: string
           id?: string
           images?: string[]
