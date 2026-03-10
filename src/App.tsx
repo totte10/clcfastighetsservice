@@ -50,6 +50,7 @@ function ProtectedRoutes() {
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/planning" element={<PlanningPage />} />
         <Route path="/optimal" element={<OptimalPage />} />
+        <Route path="/tmm" element={<TmmPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

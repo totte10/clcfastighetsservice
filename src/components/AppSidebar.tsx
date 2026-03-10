@@ -21,6 +21,7 @@ const items = [
   { title: "Tidx Sopningar", url: "/tidx", icon: Wind, adminOnly: false },
   { title: "Egna Områden", url: "/egna", icon: Home, adminOnly: false },
   { title: "Optimal Områden", url: "/optimal", icon: Truck, adminOnly: false },
+  { title: "Sopningar TMM", url: "/tmm", icon: Brush, adminOnly: false },
   { title: "Övriga Projekt", url: "/projects", icon: FolderOpen, adminOnly: false },
   { title: "Chatt", url: "/chat", icon: MessageCircle, adminOnly: false },
   { title: "Tidrapport", url: "/time", icon: Clock, adminOnly: false },
