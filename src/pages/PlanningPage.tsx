@@ -343,8 +343,25 @@ export default function PlanningPage() {
               <Label>Beskrivning</Label>
               <Textarea value={newProjectForm.description} onChange={(e) => setNewProjectForm({ ...newProjectForm, description: e.target.value })} rows={2} />
             </div>
-            <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-sm text-muted-foreground">
-              📅 Planerat datum: <span className="font-medium text-foreground">{selectedDay ? format(selectedDay, "d MMMM yyyy", { locale: sv }) : "Idag"}</span>
+            <div className="space-y-2">
+              <Label>Planerat datum</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newProjectDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {newProjectDate ? format(newProjectDate, "d MMMM yyyy", { locale: sv }) : "Välj datum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newProjectDate}
+                    onSelect={setNewProjectDate}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           <DialogFooter>
