@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { getTidxEntries, getEgnaEntries, updateTidxEntry, updateEgnaEntry, type TidxEntry, type EgnaEntry } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Fan, Wind, Check, Clock, Play, ListFilter, CalendarDays, ArrowUpRight, ChevronRight } from "lucide-react";
+import { Fan, Wind, Check, Clock, Play, ListFilter, CalendarDays, ArrowUpRight, ChevronRight, Trophy, Medal } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,6 +39,12 @@ function parseDateSafe(dateStr: string): Date | null {
   }
 }
 
+interface LeaderboardEntry {
+  userId: string;
+  name: string;
+  totalHours: number;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -48,6 +54,7 @@ export default function Dashboard() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterUser, setFilterUser] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   // Check admin
   useEffect(() => {
@@ -63,6 +70,46 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Leaderboard
+  useEffect(() => {
+    async function loadLeaderboard() {
+      const { data: timeData } = await supabase
+        .from("user_time_entries")
+        .select("user_id, hours");
+
+      if (!timeData || timeData.length === 0) { setLeaderboard([]); return; }
+
+      // Aggregate hours per user
+      const hoursMap = new Map<string, number>();
+      timeData.forEach((row) => {
+        const h = Number(row.hours) || 0;
+        hoursMap.set(row.user_id, (hoursMap.get(row.user_id) ?? 0) + h);
+      });
+
+      // Get profile names
+      const userIds = Array.from(hoursMap.keys());
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+
+      const nameMap = new Map<string, string>();
+      (profiles ?? []).forEach((p) => nameMap.set(p.id, p.full_name || "Okänd"));
+
+      const entries: LeaderboardEntry[] = userIds
+        .map((uid) => ({
+          userId: uid,
+          name: nameMap.get(uid) || "Okänd",
+          totalHours: hoursMap.get(uid) ?? 0,
+        }))
+        .filter((e) => e.totalHours > 0)
+        .sort((a, b) => b.totalHours - a.totalHours);
+
+      setLeaderboard(entries);
+    }
+    loadLeaderboard();
+  }, []);
 
   // Build unified task list
   const allTasks: DailyTask[] = useMemo(() => {
@@ -240,6 +287,41 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Leaderboard */}
+      {leaderboard.length > 0 && (
+        <div className="glass-card p-5 animate-slide-up" style={{ animationDelay: "240ms" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold tracking-tight">Topplista – Registrerade timmar</h2>
+          </div>
+          <div className="space-y-2">
+            {leaderboard.map((entry, i) => {
+              const medalColors = ["text-yellow-400", "text-gray-400", "text-amber-600"];
+              return (
+                <div
+                  key={entry.userId}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50"
+                >
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    {i < 3 ? (
+                      <Medal className={`h-4 w-4 ${medalColors[i]}`} />
+                    ) : (
+                      <span className="text-xs font-bold text-muted-foreground">{i + 1}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{entry.name}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-foreground">{entry.totalHours.toFixed(1)}h</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
