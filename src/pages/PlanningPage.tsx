@@ -371,7 +371,7 @@ export default function PlanningPage() {
                 toast({ title: "Fyll i namn och adress", variant: "destructive" });
                 return;
               }
-              const dateStr = selectedDay ? format(selectedDay, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+              const dateStr = newProjectDate ? format(newProjectDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
               const coords = await geocodeAddress(newProjectForm.address);
               const { error } = await supabase.from("projects").insert({
                 name: newProjectForm.name,
@@ -386,6 +386,7 @@ export default function PlanningPage() {
               toast({ title: "Projekt skapat!" });
               setShowNewProject(false);
               setNewProjectForm({ name: "", address: "", description: "", project_number: "" });
+              setNewProjectDate(undefined);
               loadItems();
             }}>Skapa projekt</Button>
           </DialogFooter>
