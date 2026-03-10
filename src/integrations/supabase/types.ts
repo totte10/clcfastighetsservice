@@ -382,6 +382,45 @@ export type Database = {
           },
         ]
       }
+      tmm_entries: {
+        Row: {
+          ansvarig: string
+          beskrivning: string
+          created_at: string
+          datum: string
+          id: string
+          maskiner: number
+          notes: string
+          status: string
+          tid: string
+          updated_at: string
+        }
+        Insert: {
+          ansvarig?: string
+          beskrivning?: string
+          created_at?: string
+          datum: string
+          id?: string
+          maskiner?: number
+          notes?: string
+          status?: string
+          tid?: string
+          updated_at?: string
+        }
+        Update: {
+          ansvarig?: string
+          beskrivning?: string
+          created_at?: string
+          datum?: string
+          id?: string
+          maskiner?: number
+          notes?: string
+          status?: string
+          tid?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
