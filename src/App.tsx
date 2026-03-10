@@ -48,6 +48,7 @@ function ProtectedRoutes() {
         <Route path="/egna" element={<EgnaOmradenPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/planning" element={<PlanningPage />} />
+        <Route path="/optimal" element={<OptimalPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
