@@ -71,6 +71,46 @@ export default function Dashboard() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // Leaderboard
+  useEffect(() => {
+    async function loadLeaderboard() {
+      const { data: timeData } = await supabase
+        .from("user_time_entries")
+        .select("user_id, hours");
+
+      if (!timeData || timeData.length === 0) { setLeaderboard([]); return; }
+
+      // Aggregate hours per user
+      const hoursMap = new Map<string, number>();
+      timeData.forEach((row) => {
+        const h = Number(row.hours) || 0;
+        hoursMap.set(row.user_id, (hoursMap.get(row.user_id) ?? 0) + h);
+      });
+
+      // Get profile names
+      const userIds = Array.from(hoursMap.keys());
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+
+      const nameMap = new Map<string, string>();
+      (profiles ?? []).forEach((p) => nameMap.set(p.id, p.full_name || "Okänd"));
+
+      const entries: LeaderboardEntry[] = userIds
+        .map((uid) => ({
+          userId: uid,
+          name: nameMap.get(uid) || "Okänd",
+          totalHours: hoursMap.get(uid) ?? 0,
+        }))
+        .filter((e) => e.totalHours > 0)
+        .sort((a, b) => b.totalHours - a.totalHours);
+
+      setLeaderboard(entries);
+    }
+    loadLeaderboard();
+  }, []);
+
   // Build unified task list
   const allTasks: DailyTask[] = useMemo(() => {
     const tasks: DailyTask[] = [];
