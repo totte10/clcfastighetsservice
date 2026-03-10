@@ -15,6 +15,7 @@ import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import ProjectsPage from "@/pages/ProjectsPage";
 import ChatPage from "@/pages/ChatPage";
 import PlanningPage from "@/pages/PlanningPage";
+import OptimalPage from "@/pages/OptimalPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
