@@ -106,6 +106,25 @@ export default function PlanningPage() {
       });
     });
 
+    // Optimal entries – add for each day in the range
+    (optimalRes.data ?? []).forEach((r: any) => {
+      const startD = r.datum_start;
+      const endD = r.datum_end || r.datum_start;
+      // Add entry for start date (calendar will show it)
+      if (startD) {
+        const days = eachDayOfInterval({ start: parseISO(startD), end: parseISO(endD) });
+        days.forEach((day) => {
+          result.push({
+            id: r.id,
+            type: "optimal",
+            title: r.name,
+            date: format(day, "yyyy-MM-dd"),
+            status: r.status,
+          });
+        });
+      }
+    });
+
     setItems(result);
   }, [user]);
 
