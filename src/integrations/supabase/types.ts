@@ -187,30 +187,36 @@ export type Database = {
           created_at: string
           datum_end: string | null
           datum_start: string
+          foretag: string
           id: string
           name: string
           notes: string
           status: string
+          typ: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           datum_end?: string | null
           datum_start: string
+          foretag?: string
           id?: string
           name: string
           notes?: string
           status?: string
+          typ?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           datum_end?: string | null
           datum_start?: string
+          foretag?: string
           id?: string
           name?: string
           notes?: string
           status?: string
+          typ?: string
           updated_at?: string
         }
         Relationships: []
@@ -388,11 +394,13 @@ export type Database = {
           beskrivning: string
           created_at: string
           datum: string
+          foretag: string
           id: string
           maskiner: number
           notes: string
           status: string
           tid: string
+          typ: string
           updated_at: string
         }
         Insert: {
@@ -400,11 +408,13 @@ export type Database = {
           beskrivning?: string
           created_at?: string
           datum: string
+          foretag?: string
           id?: string
           maskiner?: number
           notes?: string
           status?: string
           tid?: string
+          typ?: string
           updated_at?: string
         }
         Update: {
@@ -412,11 +422,13 @@ export type Database = {
           beskrivning?: string
           created_at?: string
           datum?: string
+          foretag?: string
           id?: string
           maskiner?: number
           notes?: string
           status?: string
           tid?: string
+          typ?: string
           updated_at?: string
         }
         Relationships: []
