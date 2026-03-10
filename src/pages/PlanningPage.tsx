@@ -53,6 +53,7 @@ export default function PlanningPage() {
   const [filterType, setFilterType] = useState<EntryType | "all">("all");
   const [changingDate, setChangingDate] = useState<PlanningItem | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectDate, setNewProjectDate] = useState<Date | undefined>(undefined);
   const [newProjectForm, setNewProjectForm] = useState({ name: "", address: "", description: "", project_number: "" });
 
   // Admin check
