@@ -39,6 +39,12 @@ function parseDateSafe(dateStr: string): Date | null {
   }
 }
 
+interface LeaderboardEntry {
+  userId: string;
+  name: string;
+  totalHours: number;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -48,6 +54,7 @@ export default function Dashboard() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterUser, setFilterUser] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   // Check admin
   useEffect(() => {
