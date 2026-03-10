@@ -183,7 +183,7 @@ export default function PlanningPage() {
               <SelectItem value="time">Tidsrapporter</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => setShowNewProject(true)} className="gap-2">
+          <Button onClick={() => { setNewProjectDate(selectedDay ?? new Date()); setShowNewProject(true); }} className="gap-2">
             <Plus className="h-4 w-4" /> Nytt projekt
           </Button>
         </div>
