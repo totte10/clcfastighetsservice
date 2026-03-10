@@ -1,21 +1,21 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Brush, Plus, CalendarIcon, Trash2, Pencil } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { AreaMap } from "@/components/AreaMap";
+import { EntryImageUpload } from "@/components/EntryImageUpload";
+import { AddressTimeLog } from "@/components/AddressTimeLog";
+import { geocodeAddress } from "@/lib/geocode";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Brush, Calendar, Clock, Search, Map, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { sv } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+
+type Status = "pending" | "in-progress" | "done";
 
 interface TmmEntry {
   id: string;
@@ -28,27 +28,23 @@ interface TmmEntry {
   notes: string;
   foretag: string;
   typ: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  images: string[];
 }
 
-const statusOptions = [
-  { value: "pending", label: "Ej påbörjad" },
-  { value: "in-progress", label: "Pågår" },
-  { value: "done", label: "Klar" },
-];
-
-const typOptions = [
-  { value: "maskinsopning", label: "Maskinsopning" },
-  { value: "blasning", label: "Blåsning" },
-];
+function getMarkerColor(status: string): "green" | "orange" | "red" {
+  if (status === "done") return "green";
+  if (status === "in-progress") return "orange";
+  return "red";
+}
 
 export default function TmmPage() {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const [entries, setEntries] = useState<TmmEntry[]>([]);
-  const [showDialog, setShowDialog] = useState(false);
-  const [editing, setEditing] = useState<TmmEntry | null>(null);
-  const [form, setForm] = useState({ beskrivning: "Sopning", ansvarig: "", tid: "07-16", maskiner: "2", notes: "", foretag: "", typ: "maskinsopning" });
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [search, setSearch] = useState("");
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeProgress, setGeocodeProgress] = useState("");
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -60,239 +56,189 @@ export default function TmmPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const openNew = () => {
-    setEditing(null);
-    setForm({ beskrivning: "Sopning", ansvarig: "", tid: "07-16", maskiner: "2", notes: "", foretag: "", typ: "maskinsopning" });
-    setSelectedDate(undefined);
-    setShowDialog(true);
+  const handleUpdate = async (id: string, updates: Partial<TmmEntry>) => {
+    const dbUpdates: Record<string, unknown> = { ...updates };
+    await supabase.from("tmm_entries").update(dbUpdates).eq("id", id);
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
   };
 
-  const openEdit = (e: TmmEntry) => {
-    setEditing(e);
-    setForm({
-      beskrivning: e.beskrivning,
-      ansvarig: e.ansvarig,
-      tid: e.tid,
-      maskiner: String(e.maskiner),
-      notes: e.notes,
-      foretag: e.foretag,
-      typ: e.typ,
-    });
-    setSelectedDate(parseISO(e.datum));
-    setShowDialog(true);
-  };
+  const filteredEntries = useMemo(() => {
+    if (!search.trim()) return entries;
+    const q = search.toLowerCase();
+    return entries.filter(
+      (e) =>
+        e.beskrivning.toLowerCase().includes(q) ||
+        e.address.toLowerCase().includes(q) ||
+        e.ansvarig.toLowerCase().includes(q) ||
+        e.foretag.toLowerCase().includes(q) ||
+        e.notes.toLowerCase().includes(q) ||
+        e.datum.includes(q)
+    );
+  }, [entries, search]);
 
-  const handleSave = async () => {
-    if (!selectedDate || !form.ansvarig.trim()) {
-      toast({ title: "Fyll i datum och ansvarig", variant: "destructive" });
-      return;
+  const mapMarkers = useMemo(
+    () => entries.filter((e) => e.lat != null && e.lng != null).map((e) => ({
+      lat: e.lat!, lng: e.lng!, label: e.beskrivning + (e.address ? ` - ${e.address}` : ""), color: getMarkerColor(e.status),
+    })),
+    [entries]
+  );
+
+  const handleGeocodeAll = useCallback(async () => {
+    const toGeocode = entries.filter((e) => (e.lat == null || e.lng == null) && e.address.trim());
+    if (toGeocode.length === 0) return;
+    setGeocoding(true);
+    let current = [...entries];
+    for (let i = 0; i < toGeocode.length; i++) {
+      const entry = toGeocode[i];
+      setGeocodeProgress(`${i + 1}/${toGeocode.length}: ${entry.address}`);
+      const coords = await geocodeAddress(entry.address);
+      if (coords) {
+        await supabase.from("tmm_entries").update({ lat: coords.lat, lng: coords.lng }).eq("id", entry.id);
+        current = current.map((e) => e.id === entry.id ? { ...e, lat: coords.lat, lng: coords.lng } : e);
+      }
+      if (i < toGeocode.length - 1) await new Promise((r) => setTimeout(r, 1100));
     }
-    const payload = {
-      datum: format(selectedDate, "yyyy-MM-dd"),
-      beskrivning: form.beskrivning,
-      ansvarig: form.ansvarig.trim(),
-      tid: form.tid,
-      maskiner: parseInt(form.maskiner) || 1,
-      notes: form.notes,
-      foretag: form.foretag.trim(),
-      typ: form.typ,
-    };
+    setEntries(current);
+    setGeocoding(false);
+    setGeocodeProgress("");
+  }, [entries]);
 
-    if (editing) {
-      const { error } = await supabase.from("tmm_entries").update(payload).eq("id", editing.id);
-      if (error) { toast({ title: "Kunde inte uppdatera", variant: "destructive" }); return; }
-      toast({ title: "Uppdaterad!" });
-    } else {
-      const { error } = await supabase.from("tmm_entries").insert(payload);
-      if (error) { toast({ title: "Kunde inte skapa", variant: "destructive" }); return; }
-      toast({ title: "Tillagd!" });
-    }
-    setShowDialog(false);
-    load();
-  };
-
-  const handleDelete = async (id: string) => {
-    await supabase.from("tmm_entries").delete().eq("id", id);
-    toast({ title: "Borttagen" });
-    load();
-  };
-
-  const handleStatusChange = async (id: string, status: string) => {
-    await supabase.from("tmm_entries").update({ status }).eq("id", id);
-    load();
-  };
-
-  const stats = {
-    total: entries.length,
-    done: entries.filter(e => e.status === "done").length,
-  };
+  const done = entries.filter((e) => e.status === "done").length;
+  const inProgress = entries.filter((e) => e.status === "in-progress").length;
+  const total = entries.length;
+  const geocodedCount = entries.filter((e) => e.lat != null).length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Brush className="h-6 w-6 text-primary" />
           Sopningar för TMM
         </h1>
-        <Button onClick={openNew} className="gap-2">
-          <Plus className="h-4 w-4" /> Lägg till sopning
-        </Button>
+        <p className="text-muted-foreground text-sm mt-1">
+          {done}/{total} klara · {inProgress} pågår
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <Card className="glass-card">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold">{stats.total}</p>
-            <p className="text-xs text-muted-foreground">Totalt</p>
-          </CardContent>
-        </Card>
-        <Card className="glass-card">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-emerald-400">{stats.done}</p>
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-semibold text-primary">{done}</p>
             <p className="text-xs text-muted-foreground">Klara</p>
           </CardContent>
         </Card>
+        <Card className="glass-card">
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-semibold text-warning">{inProgress}</p>
+            <p className="text-xs text-muted-foreground">Pågår</p>
+          </CardContent>
+        </Card>
+        <Card className="glass-card">
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-semibold text-destructive">{total - done - inProgress}</p>
+            <p className="text-xs text-muted-foreground">Ej påbörjad</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Table */}
+      {/* Map */}
       <Card className="glass-card">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Planerade sopningar</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Map className="h-5 w-5 text-primary" />
+              Karta ({geocodedCount}/{total} positioner)
+            </CardTitle>
+            {geocodedCount < total && (
+              <Button size="sm" variant="outline" onClick={handleGeocodeAll} disabled={geocoding} className="gap-2">
+                {geocoding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Map className="h-3 w-3" />}
+                {geocoding ? "Söker..." : "Hämta kartpositioner"}
+              </Button>
+            )}
+          </div>
+          {geocoding && geocodeProgress && <p className="text-xs text-muted-foreground">{geocodeProgress}</p>}
+          <div className="flex gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-success inline-block" /> Klart</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-warning inline-block" /> Pågår</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-destructive inline-block" /> Ej påbörjad</span>
+          </div>
         </CardHeader>
         <CardContent>
-          {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Inga sopningar tillagda ännu.</p>
+          {mapMarkers.length > 0 ? (
+            <AreaMap className="h-72 md:h-96 w-full rounded-lg overflow-hidden" markers={mapMarkers} />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Beskrivning</TableHead>
-                    <TableHead>Företag</TableHead>
-                    <TableHead>Typ</TableHead>
-                    <TableHead>Ansvarig</TableHead>
-                    <TableHead>Tid</TableHead>
-                    <TableHead>Maskiner</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[100px]" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {entries.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="text-sm whitespace-nowrap font-medium">
-                        {format(parseISO(entry.datum), "yyyy-MM-dd")}
-                      </TableCell>
-                      <TableCell>{entry.beskrivning}</TableCell>
-                      <TableCell className="text-sm">{entry.foretag || "–"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={entry.typ === "blasning" ? "border-sky-500/30 text-sky-400" : "border-amber-500/30 text-amber-400"}>
-                          {entry.typ === "blasning" ? "Blåsning" : "Maskinsopning"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{entry.ansvarig}</TableCell>
-                      <TableCell>{entry.tid}</TableCell>
-                      <TableCell className="text-center">{entry.maskiner}</TableCell>
-                      <TableCell>
-                        <Select value={entry.status} onValueChange={(v) => handleStatusChange(entry.id, v)}>
-                          <SelectTrigger className="w-[130px] h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statusOptions.map(o => (
-                              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(entry)}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(entry.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="h-48 bg-muted rounded-lg flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">Fyll i adresser och tryck "Hämta kartpositioner"</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Add/Edit dialog */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? "Redigera sopning" : "Lägg till sopning"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="space-y-2">
-              <Label>Datum *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "d MMM yyyy", { locale: sv }) : "Välj datum"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus className="p-3 pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label>Beskrivning</Label>
-              <Input value={form.beskrivning} onChange={(e) => setForm({ ...form, beskrivning: e.target.value })} placeholder="T.ex. Sopning" />
-            </div>
-            <div className="space-y-2">
-              <Label>Företag</Label>
-              <Input value={form.foretag} onChange={(e) => setForm({ ...form, foretag: e.target.value })} placeholder="T.ex. TMM AB" />
-            </div>
-            <div className="space-y-2">
-              <Label>Typ</Label>
-              <Select value={form.typ} onValueChange={(v) => setForm({ ...form, typ: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {typOptions.map(o => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Ansvarig *</Label>
-                <Input value={form.ansvarig} onChange={(e) => setForm({ ...form, ansvarig: e.target.value })} placeholder="T.ex. Emelie" />
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Sök beskrivning, adress, ansvarig, företag..." className="pl-10" />
+      </div>
+
+      {/* Entries */}
+      <div className="space-y-3">
+        {filteredEntries.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {search ? `Inga resultat för "${search}"` : "Inga sopningar tillagda ännu."}
+          </p>
+        )}
+        {filteredEntries.map((entry) => (
+          <Card key={entry.id} className="glass-card">
+            <CardContent className="pt-4 pb-4 space-y-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-medium">{entry.beskrivning}</p>
+                  <Badge variant="outline" className={entry.typ === "blasning" ? "border-sky-500/30 text-sky-400 text-[10px]" : "border-amber-500/30 text-amber-400 text-[10px]"}>
+                    {entry.typ === "blasning" ? "Blåsning" : "Maskinsopning"}
+                  </Badge>
+                  <StatusBadge status={entry.status as Status} />
+                  {entry.lat != null && <span className="text-[10px] text-success">📍</span>}
+                </div>
+                {entry.address && <p className="text-xs text-muted-foreground">{entry.address}</p>}
+                <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{entry.datum}</span>
+                  {entry.foretag && <span>🏢 {entry.foretag}</span>}
+                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{entry.tid}</span>
+                  <span>{entry.maskiner} maskiner</span>
+                </div>
+                {entry.notes && <p className="text-xs text-muted-foreground/70 italic mt-1">{entry.notes}</p>}
               </div>
-              <div className="space-y-2">
-                <Label>Tid</Label>
-                <Input value={form.tid} onChange={(e) => setForm({ ...form, tid: e.target.value })} placeholder="T.ex. 07-16" />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <span className="text-xs font-medium">Status</span>
+                  <Select value={entry.status} onValueChange={(v) => handleUpdate(entry.id, { status: v })}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Ej påbörjad</SelectItem>
+                      <SelectItem value="in-progress">Pågår</SelectItem>
+                      <SelectItem value="done">Klart</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Input value={entry.address} onChange={(e) => handleUpdate(entry.id, { address: e.target.value })} placeholder="Adress" className="h-8 text-xs" />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Antal maskiner</Label>
-              <Input type="number" min="1" value={form.maskiner} onChange={(e) => setForm({ ...form, maskiner: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Anteckningar</Label>
-              <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>Avbryt</Button>
-            <Button onClick={handleSave}>{editing ? "Spara" : "Lägg till"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+              <div className="grid grid-cols-3 gap-2">
+                <Input value={entry.ansvarig} onChange={(e) => handleUpdate(entry.id, { ansvarig: e.target.value })} placeholder="Ansvarig" className="h-8 text-xs" />
+                <Input value={entry.foretag} onChange={(e) => handleUpdate(entry.id, { foretag: e.target.value })} placeholder="Företag" className="h-8 text-xs" />
+                <Input value={entry.notes} onChange={(e) => handleUpdate(entry.id, { notes: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
+              </div>
+
+              <EntryImageUpload
+                images={entry.images}
+                onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
+              />
+              <AddressTimeLog entryId={entry.id} entryType="tmm" entryLabel={entry.beskrivning} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
