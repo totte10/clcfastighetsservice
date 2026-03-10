@@ -53,6 +53,7 @@ export default function PlanningPage() {
   const [filterType, setFilterType] = useState<EntryType | "all">("all");
   const [changingDate, setChangingDate] = useState<PlanningItem | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectDate, setNewProjectDate] = useState<Date | undefined>(undefined);
   const [newProjectForm, setNewProjectForm] = useState({ name: "", address: "", description: "", project_number: "" });
 
   // Admin check
@@ -182,7 +183,7 @@ export default function PlanningPage() {
               <SelectItem value="time">Tidsrapporter</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => setShowNewProject(true)} className="gap-2">
+          <Button onClick={() => { setNewProjectDate(selectedDay ?? new Date()); setShowNewProject(true); }} className="gap-2">
             <Plus className="h-4 w-4" /> Nytt projekt
           </Button>
         </div>
@@ -342,8 +343,25 @@ export default function PlanningPage() {
               <Label>Beskrivning</Label>
               <Textarea value={newProjectForm.description} onChange={(e) => setNewProjectForm({ ...newProjectForm, description: e.target.value })} rows={2} />
             </div>
-            <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-sm text-muted-foreground">
-              📅 Planerat datum: <span className="font-medium text-foreground">{selectedDay ? format(selectedDay, "d MMMM yyyy", { locale: sv }) : "Idag"}</span>
+            <div className="space-y-2">
+              <Label>Planerat datum</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !newProjectDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {newProjectDate ? format(newProjectDate, "d MMMM yyyy", { locale: sv }) : "Välj datum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newProjectDate}
+                    onSelect={setNewProjectDate}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           <DialogFooter>
@@ -353,7 +371,7 @@ export default function PlanningPage() {
                 toast({ title: "Fyll i namn och adress", variant: "destructive" });
                 return;
               }
-              const dateStr = selectedDay ? format(selectedDay, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+              const dateStr = newProjectDate ? format(newProjectDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
               const coords = await geocodeAddress(newProjectForm.address);
               const { error } = await supabase.from("projects").insert({
                 name: newProjectForm.name,
@@ -368,6 +386,7 @@ export default function PlanningPage() {
               toast({ title: "Projekt skapat!" });
               setShowNewProject(false);
               setNewProjectForm({ name: "", address: "", description: "", project_number: "" });
+              setNewProjectDate(undefined);
               loadItems();
             }}>Skapa projekt</Button>
           </DialogFooter>
