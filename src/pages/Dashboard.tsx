@@ -288,6 +288,41 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Leaderboard */}
+      {leaderboard.length > 0 && (
+        <div className="glass-card p-5 animate-slide-up" style={{ animationDelay: "240ms" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold tracking-tight">Topplista – Registrerade timmar</h2>
+          </div>
+          <div className="space-y-2">
+            {leaderboard.map((entry, i) => {
+              const medalColors = ["text-yellow-400", "text-gray-400", "text-amber-600"];
+              return (
+                <div
+                  key={entry.userId}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50"
+                >
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    {i < 3 ? (
+                      <Medal className={`h-4 w-4 ${medalColors[i]}`} />
+                    ) : (
+                      <span className="text-xs font-bold text-muted-foreground">{i + 1}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{entry.name}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-foreground">{entry.totalHours.toFixed(1)}h</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="flex items-center gap-2 text-muted-foreground">
