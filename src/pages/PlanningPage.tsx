@@ -12,14 +12,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { CalendarDays, ChevronLeft, ChevronRight, Wind, Home, FolderOpen, Clock, CalendarIcon, Plus } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Wind, Home, FolderOpen, Clock, CalendarIcon, Plus, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { geocodeAddress } from "@/lib/geocode";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, parseISO } from "date-fns";
 import { sv } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-type EntryType = "tidx" | "egna" | "project" | "time";
+type EntryType = "tidx" | "egna" | "project" | "time" | "optimal";
 
 interface PlanningItem {
   id: string;
@@ -35,6 +35,7 @@ const typeConfig: Record<EntryType, { label: string; icon: typeof Wind; color: s
   egna: { label: "Egna", icon: Home, color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
   project: { label: "Projekt", icon: FolderOpen, color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   time: { label: "Tid", icon: Clock, color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  optimal: { label: "Optimal", icon: Truck, color: "bg-rose-500/20 text-rose-400 border-rose-500/30" },
 };
 
 function normalizeDate(raw: string): string | null {
@@ -71,11 +72,12 @@ export default function PlanningPage() {
   const loadItems = useCallback(async () => {
     if (!user) return;
 
-    const [tidxRes, egnaRes, projRes, timeRes] = await Promise.all([
+    const [tidxRes, egnaRes, projRes, timeRes, optimalRes] = await Promise.all([
       supabase.from("tidx_entries").select("id, omrade, address, datum_planerat, status"),
       supabase.from("egna_entries").select("id, address, datum_planerat, blow_status, sweep_status"),
       supabase.from("projects").select("id, name, address, status, created_at, datum_planerat"),
       supabase.from("user_time_entries").select("id, date, project, start_time, end_time, hours, user_id"),
+      supabase.from("optimal_entries").select("id, name, datum_start, datum_end, status"),
     ]);
 
     const result: PlanningItem[] = [];
@@ -102,6 +104,25 @@ export default function PlanningPage() {
         date: r.date, status: r.end_time ? "done" : "active",
         extra: r.hours ? `${Number(r.hours).toFixed(1)}h` : undefined,
       });
+    });
+
+    // Optimal entries – add for each day in the range
+    (optimalRes.data ?? []).forEach((r: any) => {
+      const startD = r.datum_start;
+      const endD = r.datum_end || r.datum_start;
+      // Add entry for start date (calendar will show it)
+      if (startD) {
+        const days = eachDayOfInterval({ start: parseISO(startD), end: parseISO(endD) });
+        days.forEach((day) => {
+          result.push({
+            id: r.id,
+            type: "optimal",
+            title: r.name,
+            date: format(day, "yyyy-MM-dd"),
+            status: r.status,
+          });
+        });
+      }
     });
 
     setItems(result);
@@ -180,6 +201,7 @@ export default function PlanningPage() {
               <SelectItem value="tidx">Tidx Sopningar</SelectItem>
               <SelectItem value="egna">Egna Områden</SelectItem>
               <SelectItem value="project">Projekt</SelectItem>
+              <SelectItem value="optimal">Optimal</SelectItem>
               <SelectItem value="time">Tidsrapporter</SelectItem>
             </SelectContent>
           </Select>
