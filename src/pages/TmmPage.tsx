@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -25,6 +26,8 @@ interface TmmEntry {
   maskiner: number;
   status: string;
   notes: string;
+  foretag: string;
+  typ: string;
 }
 
 const statusOptions = [
@@ -33,13 +36,18 @@ const statusOptions = [
   { value: "done", label: "Klar" },
 ];
 
+const typOptions = [
+  { value: "maskinsopning", label: "Maskinsopning" },
+  { value: "blasning", label: "Blåsning" },
+];
+
 export default function TmmPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [entries, setEntries] = useState<TmmEntry[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<TmmEntry | null>(null);
-  const [form, setForm] = useState({ beskrivning: "Sopning", ansvarig: "", tid: "07-16", maskiner: "2", notes: "" });
+  const [form, setForm] = useState({ beskrivning: "Sopning", ansvarig: "", tid: "07-16", maskiner: "2", notes: "", foretag: "", typ: "maskinsopning" });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const load = useCallback(async () => {
@@ -54,7 +62,7 @@ export default function TmmPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ beskrivning: "Sopning", ansvarig: "", tid: "07-16", maskiner: "2", notes: "" });
+    setForm({ beskrivning: "Sopning", ansvarig: "", tid: "07-16", maskiner: "2", notes: "", foretag: "", typ: "maskinsopning" });
     setSelectedDate(undefined);
     setShowDialog(true);
   };
@@ -67,6 +75,8 @@ export default function TmmPage() {
       tid: e.tid,
       maskiner: String(e.maskiner),
       notes: e.notes,
+      foretag: e.foretag,
+      typ: e.typ,
     });
     setSelectedDate(parseISO(e.datum));
     setShowDialog(true);
@@ -84,6 +94,8 @@ export default function TmmPage() {
       tid: form.tid,
       maskiner: parseInt(form.maskiner) || 1,
       notes: form.notes,
+      foretag: form.foretag.trim(),
+      typ: form.typ,
     };
 
     if (editing) {
@@ -158,6 +170,8 @@ export default function TmmPage() {
                   <TableRow>
                     <TableHead>Datum</TableHead>
                     <TableHead>Beskrivning</TableHead>
+                    <TableHead>Företag</TableHead>
+                    <TableHead>Typ</TableHead>
                     <TableHead>Ansvarig</TableHead>
                     <TableHead>Tid</TableHead>
                     <TableHead>Maskiner</TableHead>
@@ -172,6 +186,12 @@ export default function TmmPage() {
                         {format(parseISO(entry.datum), "yyyy-MM-dd")}
                       </TableCell>
                       <TableCell>{entry.beskrivning}</TableCell>
+                      <TableCell className="text-sm">{entry.foretag || "–"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={entry.typ === "blasning" ? "border-sky-500/30 text-sky-400" : "border-amber-500/30 text-amber-400"}>
+                          {entry.typ === "blasning" ? "Blåsning" : "Maskinsopning"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>{entry.ansvarig}</TableCell>
                       <TableCell>{entry.tid}</TableCell>
                       <TableCell className="text-center">{entry.maskiner}</TableCell>
@@ -230,6 +250,23 @@ export default function TmmPage() {
             <div className="space-y-2">
               <Label>Beskrivning</Label>
               <Input value={form.beskrivning} onChange={(e) => setForm({ ...form, beskrivning: e.target.value })} placeholder="T.ex. Sopning" />
+            </div>
+            <div className="space-y-2">
+              <Label>Företag</Label>
+              <Input value={form.foretag} onChange={(e) => setForm({ ...form, foretag: e.target.value })} placeholder="T.ex. TMM AB" />
+            </div>
+            <div className="space-y-2">
+              <Label>Typ</Label>
+              <Select value={form.typ} onValueChange={(v) => setForm({ ...form, typ: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {typOptions.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

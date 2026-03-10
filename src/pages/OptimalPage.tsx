@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Truck, Plus, CalendarIcon, Trash2, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
@@ -25,6 +25,8 @@ interface OptimalEntry {
   datum_end: string | null;
   status: string;
   notes: string;
+  foretag: string;
+  typ: string;
 }
 
 const statusOptions = [
@@ -33,11 +35,10 @@ const statusOptions = [
   { value: "done", label: "Klar" },
 ];
 
-function statusColor(s: string) {
-  if (s === "done") return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-  if (s === "planned") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-  return "bg-muted text-muted-foreground border-border";
-}
+const typOptions = [
+  { value: "maskinsopning", label: "Maskinsopning" },
+  { value: "blasning", label: "Blåsning" },
+];
 
 export default function OptimalPage() {
   const { user } = useAuth();
@@ -45,7 +46,7 @@ export default function OptimalPage() {
   const [entries, setEntries] = useState<OptimalEntry[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<OptimalEntry | null>(null);
-  const [form, setForm] = useState({ name: "", notes: "" });
+  const [form, setForm] = useState({ name: "", notes: "", foretag: "", typ: "maskinsopning" });
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
@@ -61,7 +62,7 @@ export default function OptimalPage() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", notes: "" });
+    setForm({ name: "", notes: "", foretag: "", typ: "maskinsopning" });
     setStartDate(undefined);
     setEndDate(undefined);
     setShowDialog(true);
@@ -69,7 +70,7 @@ export default function OptimalPage() {
 
   const openEdit = (e: OptimalEntry) => {
     setEditing(e);
-    setForm({ name: e.name, notes: e.notes });
+    setForm({ name: e.name, notes: e.notes, foretag: e.foretag, typ: e.typ });
     setStartDate(parseISO(e.datum_start));
     setEndDate(e.datum_end ? parseISO(e.datum_end) : undefined);
     setShowDialog(true);
@@ -85,6 +86,8 @@ export default function OptimalPage() {
       datum_start: format(startDate, "yyyy-MM-dd"),
       datum_end: endDate ? format(endDate, "yyyy-MM-dd") : null,
       notes: form.notes,
+      foretag: form.foretag.trim(),
+      typ: form.typ,
     };
 
     if (editing) {
@@ -172,6 +175,8 @@ export default function OptimalPage() {
                   <TableRow>
                     <TableHead>Datum</TableHead>
                     <TableHead>Område</TableHead>
+                    <TableHead>Företag</TableHead>
+                    <TableHead>Typ</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Anteckningar</TableHead>
                     <TableHead className="w-[100px]" />
@@ -184,6 +189,12 @@ export default function OptimalPage() {
                         {formatDateRange(entry.datum_start, entry.datum_end)}
                       </TableCell>
                       <TableCell className="font-medium">{entry.name}</TableCell>
+                      <TableCell className="text-sm">{entry.foretag || "–"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={entry.typ === "blasning" ? "border-sky-500/30 text-sky-400" : "border-amber-500/30 text-amber-400"}>
+                          {entry.typ === "blasning" ? "Blåsning" : "Maskinsopning"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Select value={entry.status} onValueChange={(v) => handleStatusChange(entry.id, v)}>
                           <SelectTrigger className="w-[130px] h-8">
@@ -228,6 +239,23 @@ export default function OptimalPage() {
             <div className="space-y-2">
               <Label>Namn *</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="T.ex. Brf Sisjödal" />
+            </div>
+            <div className="space-y-2">
+              <Label>Företag</Label>
+              <Input value={form.foretag} onChange={(e) => setForm({ ...form, foretag: e.target.value })} placeholder="T.ex. Optimal AB" />
+            </div>
+            <div className="space-y-2">
+              <Label>Typ</Label>
+              <Select value={form.typ} onValueChange={(v) => setForm({ ...form, typ: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {typOptions.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
