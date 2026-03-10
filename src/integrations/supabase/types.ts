@@ -184,11 +184,15 @@ export type Database = {
       }
       optimal_entries: {
         Row: {
+          address: string
           created_at: string
           datum_end: string | null
           datum_start: string
           foretag: string
           id: string
+          images: string[]
+          lat: number | null
+          lng: number | null
           name: string
           notes: string
           status: string
@@ -196,11 +200,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string
           created_at?: string
           datum_end?: string | null
           datum_start: string
           foretag?: string
           id?: string
+          images?: string[]
+          lat?: number | null
+          lng?: number | null
           name: string
           notes?: string
           status?: string
@@ -208,11 +216,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string
           created_at?: string
           datum_end?: string | null
           datum_start?: string
           foretag?: string
           id?: string
+          images?: string[]
+          lat?: number | null
+          lng?: number | null
           name?: string
           notes?: string
           status?: string
@@ -390,12 +402,16 @@ export type Database = {
       }
       tmm_entries: {
         Row: {
+          address: string
           ansvarig: string
           beskrivning: string
           created_at: string
           datum: string
           foretag: string
           id: string
+          images: string[]
+          lat: number | null
+          lng: number | null
           maskiner: number
           notes: string
           status: string
@@ -404,12 +420,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string
           ansvarig?: string
           beskrivning?: string
           created_at?: string
           datum: string
           foretag?: string
           id?: string
+          images?: string[]
+          lat?: number | null
+          lng?: number | null
           maskiner?: number
           notes?: string
           status?: string
@@ -418,12 +438,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string
           ansvarig?: string
           beskrivning?: string
           created_at?: string
           datum?: string
           foretag?: string
           id?: string
+          images?: string[]
+          lat?: number | null
+          lng?: number | null
           maskiner?: number
           notes?: string
           status?: string
