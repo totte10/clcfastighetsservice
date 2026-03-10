@@ -20,7 +20,7 @@ interface TimeLog {
 
 interface AddressTimeLogProps {
   entryId: string;
-  entryType: "tidx" | "egna";
+  entryType: "tidx" | "egna" | "tmm" | "optimal";
   entryLabel?: string;
 }
 

@@ -130,7 +130,7 @@ export default function OptimalPage() {
       if (error) { toast({ title: "Kunde inte uppdatera", variant: "destructive" }); return; }
       toast({ title: "Uppdaterad!" });
     } else {
-      const { error } = await supabase.from("optimal_entries").insert(payload);
+      const { error } = await supabase.from("optimal_entries").insert(payload as any);
       if (error) { toast({ title: "Kunde inte skapa", variant: "destructive" }); return; }
       toast({ title: "Område tillagt!" });
     }
