@@ -61,6 +61,8 @@ export default function PlanningPage() {
   const [newJobType, setNewJobType] = useState<string>("maskinsopning");
   const [newEstimatedHours, setNewEstimatedHours] = useState<string>("");
   const [newProjectForm, setNewProjectForm] = useState({ name: "", address: "", description: "", project_number: "" });
+  const [allWorkers, setAllWorkers] = useState<{ id: string; name: string }[]>([]);
+  const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
 
   // Admin check
   useEffect(() => {
