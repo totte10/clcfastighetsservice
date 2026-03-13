@@ -56,6 +56,9 @@ export default function PlanningPage() {
   const [changingDate, setChangingDate] = useState<PlanningItem | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectDate, setNewProjectDate] = useState<Date | undefined>(undefined);
+  const [newEntryType, setNewEntryType] = useState<"tidx" | "egna" | "tmm" | "optimal" | "project">("project");
+  const [newJobType, setNewJobType] = useState<string>("maskinsopning");
+  const [newEstimatedHours, setNewEstimatedHours] = useState<string>("");
   const [newProjectForm, setNewProjectForm] = useState({ name: "", address: "", description: "", project_number: "" });
 
   // Admin check
