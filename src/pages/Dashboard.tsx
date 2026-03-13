@@ -182,13 +182,16 @@ export default function Dashboard() {
       .map(t => ({ id: t.realId, name: t.projectName + " – " + t.address, address: t.address, lat: t.lat!, lng: t.lng!, status: t.status, type: t.source }));
   }, [todayTasks]);
 
-  const handleStatusUpdate = async (task: DailyTask, newStatus: Status) => {
+  const handleStatusUpdate = async (task: DailyTask, newStatus: Status, flisLass?: number) => {
     setUpdating(task.id);
     try {
       const field = task.source === "egna"
         ? task.sourceField === "blowStatus" ? "blow_status" : "sweep_status"
         : "status";
-      const update = { [field]: newStatus };
+      const update: Record<string, any> = { [field]: newStatus };
+      if (flisLass !== undefined && flisLass > 0) {
+        update.flis_lass = flisLass;
+      }
 
       if (task.source === "tidx") await supabase.from("tidx_entries").update(update).eq("id", task.realId);
       else if (task.source === "egna") await supabase.from("egna_entries").update(update).eq("id", task.realId);
