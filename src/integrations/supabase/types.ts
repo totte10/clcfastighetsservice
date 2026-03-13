@@ -138,6 +138,7 @@ export type Database = {
           blow_status: string
           created_at: string
           datum_planerat: string
+          flis_lass: number
           id: string
           images: string[]
           kommentar: string
@@ -154,6 +155,7 @@ export type Database = {
           blow_status?: string
           created_at?: string
           datum_planerat?: string
+          flis_lass?: number
           id?: string
           images?: string[]
           kommentar?: string
@@ -170,6 +172,7 @@ export type Database = {
           blow_status?: string
           created_at?: string
           datum_planerat?: string
+          flis_lass?: number
           id?: string
           images?: string[]
           kommentar?: string
@@ -221,6 +224,7 @@ export type Database = {
           created_at: string
           datum_end: string | null
           datum_start: string
+          flis_lass: number
           foretag: string
           id: string
           images: string[]
@@ -237,6 +241,7 @@ export type Database = {
           created_at?: string
           datum_end?: string | null
           datum_start: string
+          flis_lass?: number
           foretag?: string
           id?: string
           images?: string[]
@@ -253,6 +258,7 @@ export type Database = {
           created_at?: string
           datum_end?: string | null
           datum_start?: string
+          flis_lass?: number
           foretag?: string
           id?: string
           images?: string[]
@@ -353,6 +359,7 @@ export type Database = {
           created_at: string
           datum_planerat: string
           description: string
+          flis_lass: number
           id: string
           images: string[]
           lat: number | null
@@ -367,6 +374,7 @@ export type Database = {
           created_at?: string
           datum_planerat?: string
           description?: string
+          flis_lass?: number
           id?: string
           images?: string[]
           lat?: number | null
@@ -381,6 +389,7 @@ export type Database = {
           created_at?: string
           datum_planerat?: string
           description?: string
+          flis_lass?: number
           id?: string
           images?: string[]
           lat?: number | null
@@ -398,6 +407,7 @@ export type Database = {
           ansvarig: string
           created_at: string
           datum_planerat: string
+          flis_lass: number
           id: string
           images: string[]
           kommentar: string
@@ -414,6 +424,7 @@ export type Database = {
           ansvarig?: string
           created_at?: string
           datum_planerat?: string
+          flis_lass?: number
           id?: string
           images?: string[]
           kommentar?: string
@@ -430,6 +441,7 @@ export type Database = {
           ansvarig?: string
           created_at?: string
           datum_planerat?: string
+          flis_lass?: number
           id?: string
           images?: string[]
           kommentar?: string
@@ -497,6 +509,7 @@ export type Database = {
           beskrivning: string
           created_at: string
           datum: string
+          flis_lass: number
           foretag: string
           id: string
           images: string[]
@@ -515,6 +528,7 @@ export type Database = {
           beskrivning?: string
           created_at?: string
           datum: string
+          flis_lass?: number
           foretag?: string
           id?: string
           images?: string[]
@@ -533,6 +547,7 @@ export type Database = {
           beskrivning?: string
           created_at?: string
           datum?: string
+          flis_lass?: number
           foretag?: string
           id?: string
           images?: string[]
