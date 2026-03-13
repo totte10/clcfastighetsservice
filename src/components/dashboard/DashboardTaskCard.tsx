@@ -150,6 +150,13 @@ export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating,
         task={task}
         onComplete={onComplete}
       />
+
+      <TaskEditDialog
+        open={showEdit}
+        onOpenChange={setShowEdit}
+        task={task}
+        onSaved={() => onTaskUpdated?.()}
+      />
     </>
   );
 }
