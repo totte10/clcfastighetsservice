@@ -94,12 +94,13 @@ export default function Dashboard() {
     // Optimal
     const { data: optimal } = await supabase.from("optimal_entries").select("*");
     (optimal ?? []).forEach(e => {
+      const isSweepType = (e.typ || "").toLowerCase().includes("sopning");
       tasks.push({
         id: `optimal-${e.id}`, realId: e.id, address: e.address || e.name,
         projectName: e.foretag || "Optimal", serviceLabel: e.typ || "Maskinsopning",
         status: e.status as Status, assignedUsers: getAssigned("optimal", e.id),
         scheduledDate: e.datum_start, source: "optimal", sourceField: "status",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: isSweepType, flisLass: e.flis_lass ?? 0,
       });
     });
 
