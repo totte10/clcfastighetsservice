@@ -131,6 +131,14 @@ export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating,
             </Button>
           </div>
         )}
+
+        {isDone && onUndo && (
+          <div className="flex items-center gap-1.5 mt-3 pl-12">
+            <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1 border-muted-foreground/30 text-muted-foreground hover:bg-muted/50" onClick={() => onUndo(task)} disabled={isUpdating}>
+              <Undo2 className="h-3 w-3" />Ångra klar
+            </Button>
+          </div>
+        )}
       </div>
 
       <TaskCompletionDialog
