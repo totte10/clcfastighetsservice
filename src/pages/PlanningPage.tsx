@@ -180,6 +180,12 @@ export default function PlanningPage() {
         await supabase.from("egna_entries").update({ datum_planerat: newDateStr }).eq("id", item.id);
       } else if (item.type === "time") {
         await supabase.from("user_time_entries").update({ date: newDateStr }).eq("id", item.id);
+      } else if (item.type === "tmm") {
+        await supabase.from("tmm_entries").update({ datum: newDateStr }).eq("id", item.id);
+      } else if (item.type === "optimal") {
+        await supabase.from("optimal_entries").update({ datum_start: newDateStr }).eq("id", item.id);
+      } else if (item.type === "project") {
+        await supabase.from("projects").update({ datum_planerat: newDateStr }).eq("id", item.id);
       }
       toast({ title: "Datum uppdaterat!" });
       setChangingDate(null);
