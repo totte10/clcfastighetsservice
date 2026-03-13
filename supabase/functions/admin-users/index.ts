@@ -19,7 +19,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify caller is admin using service role client with user's token
     const userClient = createClient(supabaseUrl, serviceRoleKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -50,11 +49,64 @@ Deno.serve(async (req) => {
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
         full_name: profiles?.find((p: any) => p.id === u.id)?.full_name || "",
+        username: profiles?.find((p: any) => p.id === u.id)?.username || null,
         avatar_url: profiles?.find((p: any) => p.id === u.id)?.avatar_url || null,
         roles: roles?.filter((r: any) => r.user_id === u.id).map((r: any) => r.role) || [],
       }));
 
       return new Response(JSON.stringify(enriched), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (req.method === "POST" && action === "create-user") {
+      const { name, username, password, role } = await req.json();
+      if (!name?.trim() || !username?.trim() || !password?.trim()) {
+        return new Response(JSON.stringify({ error: "Namn, användarnamn och lösenord krävs" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const cleanUsername = username.trim().toLowerCase();
+      const email = `${cleanUsername}@app.internal`;
+
+      // Check if username exists
+      const { data: existingProfile } = await adminClient.from("profiles").select("id").eq("username", cleanUsername).maybeSingle();
+      if (existingProfile) {
+        return new Response(JSON.stringify({ error: "Användarnamnet är redan taget" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+        email,
+        password: password.trim(),
+        email_confirm: true,
+        user_metadata: { full_name: name.trim(), username: cleanUsername },
+      });
+
+      if (createError) throw createError;
+
+      // Ensure profile has username (trigger should create it, but update to be safe)
+      await adminClient.from("profiles").upsert({
+        id: newUser.user.id,
+        full_name: name.trim(),
+        username: cleanUsername,
+      }, { onConflict: "id" });
+
+      // Assign role
+      if (role && (role === "admin" || role === "worker")) {
+        await adminClient.from("user_roles").upsert(
+          { user_id: newUser.user.id, role },
+          { onConflict: "user_id,role" }
+        );
+      }
+
+      return new Response(JSON.stringify({ ok: true, user: { id: newUser.user.id, username: cleanUsername } }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (req.method === "POST" && action === "update-password") {
+      const { userId, password } = await req.json();
+      if (!userId || !password?.trim()) {
+        return new Response(JSON.stringify({ error: "userId och password krävs" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { error } = await adminClient.auth.admin.updateUserById(userId, { password: password.trim() });
+      if (error) throw error;
+      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (req.method === "POST" && action === "set-role") {

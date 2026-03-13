@@ -1,8 +1,6 @@
 import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import clcLogo from "@/assets/clc-logo.png";
 import {
   Sidebar,
@@ -33,26 +31,15 @@ const items = [
 export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
-  const { user, signOut } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle()
-      .then(({ data }) => setIsAdmin(!!data));
-  }, [user]);
+  const { user, signOut, profile, isAdmin } = useAuth();
 
   const visibleItems = items.filter((item) => !item.adminOnly || isAdmin);
+
+  const displayName = profile?.fullName || profile?.username || user?.email || "";
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="bg-sidebar border-r border-sidebar-border/50">
-        {/* Logo */}
         <div className="p-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 ring-1 ring-sidebar-border/50">
             <img src={clcLogo} alt="CLC" className="w-full h-full object-cover" />
@@ -69,7 +56,6 @@ export function AppSidebar() {
           )}
         </div>
 
-        {/* Separator */}
         {!collapsed && (
           <div className="mx-4 mb-2">
             <div className="h-px bg-gradient-to-r from-sidebar-border/60 via-sidebar-border/20 to-transparent" />
@@ -102,9 +88,9 @@ export function AppSidebar() {
 
       <SidebarFooter className="bg-sidebar border-t border-sidebar-border/30">
         <div className="p-2">
-          {!collapsed && user && (
+          {!collapsed && displayName && (
             <p className="text-[10px] text-sidebar-foreground/35 truncate px-3 mb-1.5 font-medium">
-              {user.email}
+              {displayName}
             </p>
           )}
           <SidebarMenuButton
