@@ -154,9 +154,16 @@ export default function Dashboard() {
     loadLeaderboard();
   }, []);
 
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const getDatePart = (s: string) => (s || "").slice(0, 10);
   const todayStr = format(new Date(), "yyyy-MM-dd");
-  const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
+  const selectedStr = format(selectedDate, "yyyy-MM-dd");
+
+  // Generate 7-day range: today -3 to today +3
+  const dateRange = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, i) => addDays(today, i - 3));
+  }, []);
 
   const filterTasks = useCallback((tasks: DailyTask[]) => {
     return tasks.filter(t => {
@@ -166,9 +173,8 @@ export default function Dashboard() {
     });
   }, [filterSource, filterStatus]);
 
-  const todayTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === todayStr));
-  const tomorrowTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === tomorrowStr));
-  const upcomingTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) > tomorrowStr));
+  const selectedDayTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === selectedStr));
+  const isToday = selectedStr === todayStr;
 
   const todayTotal = todayTasks.length;
   const todayStarted = todayTasks.filter(t => t.status === "in-progress").length;
