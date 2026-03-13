@@ -99,7 +99,7 @@ export function TaskCompletionDialog({ open, onOpenChange, task, onComplete }: P
     input.click();
   };
 
-  const isValid = startTime.trim() !== "" && endTime.trim() !== "" && comment.trim() !== "" && images.length > 0 && (!task.isSweep || (flisLass !== "" && parseInt(flisLass) >= 1 && parseInt(flisLass) <= 10));
+  const isValid = startTime.trim() !== "" && endTime.trim() !== "" && comment.trim() !== "" && (!task.isSweep || (flisLass !== "" && parseInt(flisLass) >= 1 && parseInt(flisLass) <= 10));
 
   const handleSubmit = async () => {
     if (!isValid) {
