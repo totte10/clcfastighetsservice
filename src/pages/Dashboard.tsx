@@ -403,20 +403,48 @@ export default function Dashboard() {
         </Select>
       </div>
 
-      {/* Today's Tasks */}
-      <TaskSection title="Arbete idag" tasks={todayTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} />
+      {/* Date Navigation */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+        {dateRange.map(date => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          const isSelected = dateStr === selectedStr;
+          const isDateToday = dateStr === todayStr;
+          const dayLabel = isDateToday ? "Idag" : format(date, "EEE", { locale: sv });
+          const dateLabel = format(date, "d/M");
+          const taskCount = allTasks.filter(t => getDatePart(t.scheduledDate) === dateStr).length;
+          return (
+            <button
+              key={dateStr}
+              onClick={() => setSelectedDate(date)}
+              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all shrink-0 ${
+                isSelected
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : isDateToday
+                    ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                    : "bg-card text-muted-foreground border-border/50 hover:bg-muted/50"
+              }`}
+            >
+              <span className="capitalize text-[11px]">{dayLabel}</span>
+              <span className="text-[10px] opacity-80">{dateLabel}</span>
+              {taskCount > 0 && (
+                <span className={`text-[9px] px-1.5 py-0 rounded-full ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                  {taskCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Admin: Tomorrow & Upcoming */}
-      {isAdmin && (
-        <>
-          {tomorrowTasks.length > 0 && (
-            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} />
-          )}
-          {upcomingTasks.length > 0 && (
-            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} showDate />
-          )}
-        </>
-      )}
+      {/* Selected Day Tasks */}
+      <TaskSection
+        title={isToday ? "Arbete idag" : `Arbete ${format(selectedDate, "EEEE d MMMM", { locale: sv })}`}
+        tasks={selectedDayTasks}
+        onStart={handleStart}
+        onComplete={handleComplete}
+        onUndo={handleUndo}
+        updating={updating}
+      />
     </div>
   );
 }
