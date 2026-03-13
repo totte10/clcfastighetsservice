@@ -475,64 +475,60 @@ export default function PlanningPage() {
               const hours = parseFloat(newEstimatedHours) || 0;
 
               let error: any = null;
+              let newEntryId: string | null = null;
 
               if (newEntryType === "tidx") {
                 const res = await supabase.from("tidx_entries").insert({
-                  address: newProjectForm.address,
-                  omrade: newProjectForm.name,
-                  datum_planerat: dateStr,
+                  address: newProjectForm.address, omrade: newProjectForm.name, datum_planerat: dateStr,
                   kommentar: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
                   project_number: newProjectForm.project_number || undefined,
-                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                  timmar_maskin: hours,
-                });
-                error = res.error;
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null, timmar_maskin: hours,
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               } else if (newEntryType === "egna") {
                 const res = await supabase.from("egna_entries").insert({
-                  address: newProjectForm.address,
-                  datum_planerat: dateStr,
+                  address: newProjectForm.address, datum_planerat: dateStr,
                   kommentar: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
                   project_number: newProjectForm.project_number || undefined,
-                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                  timmar: hours,
-                });
-                error = res.error;
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null, timmar: hours,
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               } else if (newEntryType === "tmm") {
                 const res = await supabase.from("tmm_entries").insert({
-                  address: newProjectForm.address,
-                  beskrivning: newProjectForm.name,
-                  datum: dateStr,
-                  typ: newJobType,
-                  foretag: newProjectForm.project_number || "",
-                  notes: newProjectForm.description,
-                  tid: hours ? `${hours}h` : "",
+                  address: newProjectForm.address, beskrivning: newProjectForm.name, datum: dateStr,
+                  typ: newJobType, foretag: newProjectForm.project_number || "",
+                  notes: newProjectForm.description, tid: hours ? `${hours}h` : "",
                   lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                });
-                error = res.error;
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               } else if (newEntryType === "optimal") {
                 const res = await supabase.from("optimal_entries").insert({
-                  name: newProjectForm.name,
-                  address: newProjectForm.address,
-                  datum_start: dateStr,
-                  typ: newJobType,
-                  foretag: newProjectForm.project_number || "",
+                  name: newProjectForm.name, address: newProjectForm.address, datum_start: dateStr,
+                  typ: newJobType, foretag: newProjectForm.project_number || "",
                   notes: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
                   lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                });
-                error = res.error;
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               } else {
                 const res = await supabase.from("projects").insert({
-                  name: newProjectForm.name,
-                  address: newProjectForm.address,
+                  name: newProjectForm.name, address: newProjectForm.address,
                   description: (newJobType !== "övrigt" ? `[${newJobType}] ` : "") + newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
                   project_number: newProjectForm.project_number || undefined,
-                  datum_planerat: dateStr,
-                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                });
-                error = res.error;
+                  datum_planerat: dateStr, lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               }
 
               if (error) { toast({ title: "Kunde inte skapa uppdrag", variant: "destructive" }); return; }
+
+              // Create assignments for selected workers
+              if (newEntryId && selectedWorkers.length > 0) {
+                const assignments = selectedWorkers.map(uid => ({
+                  user_id: uid, entry_id: newEntryId!, entry_type: newEntryType === "project" ? "project" : newEntryType,
+                }));
+                await supabase.from("project_assignments").insert(assignments);
+              }
+
               toast({ title: "Uppdrag skapat!" });
               setShowNewProject(false);
               setNewProjectForm({ name: "", address: "", description: "", project_number: "" });
@@ -540,6 +536,7 @@ export default function PlanningPage() {
               setNewEstimatedHours("");
               setNewEntryType("project");
               setNewJobType("maskinsopning");
+              setSelectedWorkers([]);
               loadItems();
             }}>Skapa uppdrag</Button>
           </DialogFooter>
