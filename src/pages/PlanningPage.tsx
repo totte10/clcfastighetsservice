@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,8 +61,10 @@ export default function PlanningPage() {
   const [newJobType, setNewJobType] = useState<string>("maskinsopning");
   const [newEstimatedHours, setNewEstimatedHours] = useState<string>("");
   const [newProjectForm, setNewProjectForm] = useState({ name: "", address: "", description: "", project_number: "" });
+  const [allWorkers, setAllWorkers] = useState<{ id: string; name: string }[]>([]);
+  const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
 
-  // Admin check
+  // Admin check + load workers
   useEffect(() => {
     if (!user) return;
     supabase
@@ -71,6 +74,12 @@ export default function PlanningPage() {
       .eq("role", "admin")
       .maybeSingle()
       .then(({ data }) => setIsAdmin(!!data));
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .then(({ data }) => {
+        setAllWorkers((data ?? []).map(p => ({ id: p.id, name: p.full_name || "Okänd" })));
+      });
   }, [user]);
 
   const loadItems = useCallback(async () => {
@@ -429,6 +438,30 @@ export default function PlanningPage() {
                 </PopoverContent>
               </Popover>
             </div>
+            {/* Worker assignment */}
+            {allWorkers.length > 0 && (
+              <div className="space-y-2">
+                <Label>Tilldela arbetare</Label>
+                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto rounded-lg border border-border/50 p-2">
+                  {allWorkers.map(w => (
+                    <label key={w.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/30 rounded p-1">
+                      <Checkbox
+                        checked={selectedWorkers.includes(w.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedWorkers(prev =>
+                            checked ? [...prev, w.id] : prev.filter(id => id !== w.id)
+                          );
+                        }}
+                      />
+                      <span className="truncate">{w.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedWorkers.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground">{selectedWorkers.length} vald(a)</p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewProject(false)}>Avbryt</Button>
@@ -442,64 +475,60 @@ export default function PlanningPage() {
               const hours = parseFloat(newEstimatedHours) || 0;
 
               let error: any = null;
+              let newEntryId: string | null = null;
 
               if (newEntryType === "tidx") {
                 const res = await supabase.from("tidx_entries").insert({
-                  address: newProjectForm.address,
-                  omrade: newProjectForm.name,
-                  datum_planerat: dateStr,
+                  address: newProjectForm.address, omrade: newProjectForm.name, datum_planerat: dateStr,
                   kommentar: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
                   project_number: newProjectForm.project_number || undefined,
-                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                  timmar_maskin: hours,
-                });
-                error = res.error;
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null, timmar_maskin: hours,
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               } else if (newEntryType === "egna") {
                 const res = await supabase.from("egna_entries").insert({
-                  address: newProjectForm.address,
-                  datum_planerat: dateStr,
+                  address: newProjectForm.address, datum_planerat: dateStr,
                   kommentar: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
                   project_number: newProjectForm.project_number || undefined,
-                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                  timmar: hours,
-                });
-                error = res.error;
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null, timmar: hours,
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               } else if (newEntryType === "tmm") {
                 const res = await supabase.from("tmm_entries").insert({
-                  address: newProjectForm.address,
-                  beskrivning: newProjectForm.name,
-                  datum: dateStr,
-                  typ: newJobType,
-                  foretag: newProjectForm.project_number || "",
-                  notes: newProjectForm.description,
-                  tid: hours ? `${hours}h` : "",
+                  address: newProjectForm.address, beskrivning: newProjectForm.name, datum: dateStr,
+                  typ: newJobType, foretag: newProjectForm.project_number || "",
+                  notes: newProjectForm.description, tid: hours ? `${hours}h` : "",
                   lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                });
-                error = res.error;
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               } else if (newEntryType === "optimal") {
                 const res = await supabase.from("optimal_entries").insert({
-                  name: newProjectForm.name,
-                  address: newProjectForm.address,
-                  datum_start: dateStr,
-                  typ: newJobType,
-                  foretag: newProjectForm.project_number || "",
+                  name: newProjectForm.name, address: newProjectForm.address, datum_start: dateStr,
+                  typ: newJobType, foretag: newProjectForm.project_number || "",
                   notes: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
                   lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                });
-                error = res.error;
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               } else {
                 const res = await supabase.from("projects").insert({
-                  name: newProjectForm.name,
-                  address: newProjectForm.address,
+                  name: newProjectForm.name, address: newProjectForm.address,
                   description: (newJobType !== "övrigt" ? `[${newJobType}] ` : "") + newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
                   project_number: newProjectForm.project_number || undefined,
-                  datum_planerat: dateStr,
-                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
-                });
-                error = res.error;
+                  datum_planerat: dateStr, lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+                }).select("id").single();
+                error = res.error; newEntryId = res.data?.id ?? null;
               }
 
               if (error) { toast({ title: "Kunde inte skapa uppdrag", variant: "destructive" }); return; }
+
+              // Create assignments for selected workers
+              if (newEntryId && selectedWorkers.length > 0) {
+                const assignments = selectedWorkers.map(uid => ({
+                  user_id: uid, entry_id: newEntryId!, entry_type: newEntryType === "project" ? "project" : newEntryType,
+                }));
+                await supabase.from("project_assignments").insert(assignments);
+              }
+
               toast({ title: "Uppdrag skapat!" });
               setShowNewProject(false);
               setNewProjectForm({ name: "", address: "", description: "", project_number: "" });
@@ -507,6 +536,7 @@ export default function PlanningPage() {
               setNewEstimatedHours("");
               setNewEntryType("project");
               setNewJobType("maskinsopning");
+              setSelectedWorkers([]);
               loadItems();
             }}>Skapa uppdrag</Button>
           </DialogFooter>
