@@ -12,6 +12,7 @@ import { AddressTimeLog } from "@/components/AddressTimeLog";
 import { geocodeAddress } from "@/lib/geocode";
 import { Fan, Wind, Calendar, Clock, Search, Map, Loader2 } from "lucide-react";
 import { getEgnaEntries, updateEgnaEntry, type EgnaEntry } from "@/lib/store";
+import { WorkerAssignment } from "@/components/WorkerAssignment";
 
 type Status = "pending" | "in-progress" | "done";
 
