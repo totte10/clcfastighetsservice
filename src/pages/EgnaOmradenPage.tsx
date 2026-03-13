@@ -12,6 +12,7 @@ import { AddressTimeLog } from "@/components/AddressTimeLog";
 import { geocodeAddress } from "@/lib/geocode";
 import { Fan, Wind, Calendar, Clock, Search, Map, Loader2 } from "lucide-react";
 import { getEgnaEntries, updateEgnaEntry, type EgnaEntry } from "@/lib/store";
+import { WorkerAssignment } from "@/components/WorkerAssignment";
 
 type Status = "pending" | "in-progress" | "done";
 
@@ -200,6 +201,7 @@ export default function EgnaOmradenPage() {
                 <Input value={entry.projectNumber} onChange={(e) => handleUpdate(entry.id, { projectNumber: e.target.value })} placeholder="Projektnr" className="h-8 text-xs" />
                 <Input value={entry.kommentar} onChange={(e) => handleUpdate(entry.id, { kommentar: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
               </div>
+              <WorkerAssignment entryType="egna" entryId={entry.id} compact />
               <EntryImageUpload
                 images={entry.images}
                 onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}

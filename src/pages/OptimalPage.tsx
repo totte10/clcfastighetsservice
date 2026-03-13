@@ -13,6 +13,7 @@ import { AreaMap } from "@/components/AreaMap";
 import { EntryImageUpload } from "@/components/EntryImageUpload";
 import { AddressTimeLog } from "@/components/AddressTimeLog";
 import { geocodeAddress } from "@/lib/geocode";
+import { WorkerAssignment } from "@/components/WorkerAssignment";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -318,6 +319,7 @@ export default function OptimalPage() {
                 <Input value={entry.notes} onChange={(e) => handleUpdate(entry.id, { notes: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
               </div>
 
+              <WorkerAssignment entryType="optimal" entryId={entry.id} compact />
               <EntryImageUpload
                 images={entry.images}
                 onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}
