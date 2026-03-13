@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Wind, Calendar, Clock, Search, Map, Loader2 } from "lucide-react";
 import { getTidxEntries, updateTidxEntry, type TidxEntry } from "@/lib/store";
+import { WorkerAssignment } from "@/components/WorkerAssignment";
 
 type Status = "pending" | "in-progress" | "done";
 
