@@ -13,6 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Brush, Calendar, Clock, Search, Map, Loader2 } from "lucide-react";
+import { WorkerAssignment } from "@/components/WorkerAssignment";
 import { format, parseISO } from "date-fns";
 
 type Status = "pending" | "in-progress" | "done";
