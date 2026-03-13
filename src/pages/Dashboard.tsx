@@ -421,8 +421,10 @@ function SummaryCard({ label, value, icon, delay, progress, progressColor, subti
   );
 }
 
-function TaskSection({ title, tasks, onStatusUpdate, updating, showDate = false }: {
-  title: string; tasks: DailyTask[]; onStatusUpdate: (task: DailyTask, status: Status, flisLass?: number) => void;
+function TaskSection({ title, tasks, onStart, onComplete, updating, showDate = false }: {
+  title: string; tasks: DailyTask[];
+  onStart: (task: DailyTask) => void;
+  onComplete: (task: DailyTask, data: CompletionData) => Promise<void>;
   updating: string | null; showDate?: boolean;
 }) {
   if (tasks.length === 0) {
@@ -445,7 +447,7 @@ function TaskSection({ title, tasks, onStatusUpdate, updating, showDate = false 
       </div>
       <div className="grid gap-2">
         {tasks.map(task => (
-          <DashboardTaskCard key={task.id} task={task} onStatusUpdate={onStatusUpdate} updating={updating} showDate={showDate} />
+          <DashboardTaskCard key={task.id} task={task} onStart={onStart} onComplete={onComplete} updating={updating} showDate={showDate} />
         ))}
       </div>
     </div>
