@@ -138,6 +138,11 @@ export default function ChatPage() {
         </span>
       </div>
 
+      {/* Voice channels section */}
+      <div className="p-3 border-b border-border">
+        <VoiceChannels />
+      </div>
+
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {grouped.length === 0 && (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
