@@ -440,10 +440,11 @@ function SummaryCard({ label, value, icon, delay, progress, progressColor, subti
   );
 }
 
-function TaskSection({ title, tasks, onStart, onComplete, updating, showDate = false }: {
+function TaskSection({ title, tasks, onStart, onComplete, onUndo, updating, showDate = false }: {
   title: string; tasks: DailyTask[];
   onStart: (task: DailyTask) => void;
   onComplete: (task: DailyTask, data: CompletionData) => Promise<void>;
+  onUndo?: (task: DailyTask) => void;
   updating: string | null; showDate?: boolean;
 }) {
   if (tasks.length === 0) {
