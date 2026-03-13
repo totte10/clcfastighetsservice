@@ -379,16 +379,16 @@ export default function Dashboard() {
       </div>
 
       {/* Today's Tasks */}
-      <TaskSection title="Arbete idag" tasks={todayTasks} onStatusUpdate={handleStatusUpdate} updating={updating} />
+      <TaskSection title="Arbete idag" tasks={todayTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} />
 
       {/* Admin: Tomorrow & Upcoming */}
       {isAdmin && (
         <>
           {tomorrowTasks.length > 0 && (
-            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStatusUpdate={handleStatusUpdate} updating={updating} />
+            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} />
           )}
           {upcomingTasks.length > 0 && (
-            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStatusUpdate={handleStatusUpdate} updating={updating} showDate />
+            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} showDate />
           )}
         </>
       )}
