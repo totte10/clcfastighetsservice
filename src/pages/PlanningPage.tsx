@@ -76,12 +76,13 @@ export default function PlanningPage() {
   const loadItems = useCallback(async () => {
     if (!user) return;
 
-    const [tidxRes, egnaRes, projRes, timeRes, optimalRes] = await Promise.all([
+    const [tidxRes, egnaRes, projRes, timeRes, optimalRes, tmmRes] = await Promise.all([
       supabase.from("tidx_entries").select("id, omrade, address, datum_planerat, status"),
       supabase.from("egna_entries").select("id, address, datum_planerat, blow_status, sweep_status"),
       supabase.from("projects").select("id, name, address, status, created_at, datum_planerat"),
       supabase.from("user_time_entries").select("id, date, project, start_time, end_time, hours, user_id"),
       supabase.from("optimal_entries").select("id, name, datum_start, datum_end, status"),
+      supabase.from("tmm_entries").select("id, beskrivning, address, datum, status, foretag"),
     ]);
 
     const result: PlanningItem[] = [];
