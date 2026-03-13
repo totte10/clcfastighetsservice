@@ -46,7 +46,7 @@ export default function Dashboard() {
 
     const tasks: DailyTask[] = [];
 
-    // Tidx
+    // Tidx - always sweep
     const { data: tidx } = await supabase.from("tidx_entries").select("*");
     (tidx ?? []).forEach(e => {
       tasks.push({
@@ -54,7 +54,7 @@ export default function Dashboard() {
         projectName: e.omrade || "Tidx Sopning", serviceLabel: "Maskinsopning",
         status: e.status as Status, assignedUsers: getAssigned("tidx", e.id),
         scheduledDate: e.datum_planerat, source: "tidx", sourceField: "status",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: true, flisLass: e.flis_lass ?? 0,
       });
     });
 
