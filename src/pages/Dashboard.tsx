@@ -444,6 +444,7 @@ export default function Dashboard() {
         onComplete={handleComplete}
         onUndo={handleUndo}
         updating={updating}
+        onTaskUpdated={loadTasks}
       />
     </div>
   );
