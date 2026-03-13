@@ -51,6 +51,7 @@ interface Props {
   task: DailyTask;
   onStart: (task: DailyTask) => void;
   onComplete: (task: DailyTask, data: CompletionData) => Promise<void>;
+  onUndo?: (task: DailyTask) => void;
   updating: string | null;
   showDate?: boolean;
 }
