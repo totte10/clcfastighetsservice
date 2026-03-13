@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Fan, Wind, Wrench, Building2, Hammer, Check, Play, MapPin, Truck } from "lucide-react";
+import { Fan, Wind, Wrench, Building2, Hammer, Check, Play, MapPin, Truck, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TaskCompletionDialog, type CompletionData } from "./TaskCompletionDialog";
