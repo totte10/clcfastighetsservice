@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Check, Clock, Play, ListFilter, CalendarDays, ArrowUpRight, Trophy, Medal, Timer } from "lucide-react";
 import { AdminTimeReminder } from "@/components/AdminTimeReminder";
 import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
-import { DashboardTaskCard, type DailyTask, type Status, type SourceType } from "@/components/dashboard/DashboardTaskCard";
+import { DashboardTaskCard, type DailyTask, type Status, type SourceType, type CompletionData } from "@/components/dashboard/DashboardTaskCard";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, addDays, startOfWeek, endOfWeek, getISOWeek } from "date-fns";
