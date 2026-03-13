@@ -211,7 +211,7 @@ export function TaskCompletionDialog({ open, onOpenChange, task, onComplete }: P
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
               <MessageSquare className="h-3.5 w-3.5 text-primary" />
-              <Label className="text-xs font-medium">Kommentar *</Label>
+              <Label className="text-xs font-medium">Kommentar</Label>
             </div>
             <Textarea
               value={comment}
