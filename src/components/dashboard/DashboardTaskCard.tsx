@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Fan, Wind, Wrench, Building2, Hammer, Check, Play, MapPin, Truck } from "lucide-react";
+import { Fan, Wind, Wrench, Building2, Hammer, Check, Play, MapPin, Truck, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TaskCompletionDialog, type CompletionData } from "./TaskCompletionDialog";
@@ -51,11 +51,12 @@ interface Props {
   task: DailyTask;
   onStart: (task: DailyTask) => void;
   onComplete: (task: DailyTask, data: CompletionData) => Promise<void>;
+  onUndo?: (task: DailyTask) => void;
   updating: string | null;
   showDate?: boolean;
 }
 
-export function DashboardTaskCard({ task, onStart, onComplete, updating, showDate }: Props) {
+export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating, showDate }: Props) {
   const isUpdating = updating === task.id;
   const isDone = task.status === "done";
   const config = sourceConfig[task.source];
@@ -127,6 +128,14 @@ export function DashboardTaskCard({ task, onStart, onComplete, updating, showDat
             )}
             <Button size="sm" className="h-7 text-[11px] gap-1" onClick={() => setShowCompletion(true)} disabled={isUpdating}>
               <Check className="h-3 w-3" />Klar
+            </Button>
+          </div>
+        )}
+
+        {isDone && onUndo && (
+          <div className="flex items-center gap-1.5 mt-3 pl-12">
+            <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1 border-muted-foreground/30 text-muted-foreground hover:bg-muted/50" onClick={() => onUndo(task)} disabled={isUpdating}>
+              <Undo2 className="h-3 w-3" />Ångra klar
             </Button>
           </div>
         )}

@@ -291,6 +291,25 @@ export default function Dashboard() {
     }
   };
 
+  const handleUndo = async (task: DailyTask) => {
+    if (!user) return;
+    setUpdating(task.id);
+    try {
+      const field = task.source === "egna"
+        ? task.sourceField === "blowStatus" ? "blow_status" : "sweep_status"
+        : "status";
+      const update = { [field]: "pending" };
+      if (task.source === "tidx") await supabase.from("tidx_entries").update(update).eq("id", task.realId);
+      else if (task.source === "egna") await supabase.from("egna_entries").update(update).eq("id", task.realId);
+      else if (task.source === "tmm") await supabase.from("tmm_entries").update(update).eq("id", task.realId);
+      else if (task.source === "optimal") await supabase.from("optimal_entries").update(update).eq("id", task.realId);
+      else if (task.source === "project") await supabase.from("projects").update(update).eq("id", task.realId);
+      await loadTasks();
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -379,16 +398,16 @@ export default function Dashboard() {
       </div>
 
       {/* Today's Tasks */}
-      <TaskSection title="Arbete idag" tasks={todayTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} />
+      <TaskSection title="Arbete idag" tasks={todayTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} />
 
       {/* Admin: Tomorrow & Upcoming */}
       {isAdmin && (
         <>
           {tomorrowTasks.length > 0 && (
-            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} />
+            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} />
           )}
           {upcomingTasks.length > 0 && (
-            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} showDate />
+            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} showDate />
           )}
         </>
       )}
@@ -421,10 +440,11 @@ function SummaryCard({ label, value, icon, delay, progress, progressColor, subti
   );
 }
 
-function TaskSection({ title, tasks, onStart, onComplete, updating, showDate = false }: {
+function TaskSection({ title, tasks, onStart, onComplete, onUndo, updating, showDate = false }: {
   title: string; tasks: DailyTask[];
   onStart: (task: DailyTask) => void;
   onComplete: (task: DailyTask, data: CompletionData) => Promise<void>;
+  onUndo?: (task: DailyTask) => void;
   updating: string | null; showDate?: boolean;
 }) {
   if (tasks.length === 0) {
@@ -447,7 +467,7 @@ function TaskSection({ title, tasks, onStart, onComplete, updating, showDate = f
       </div>
       <div className="grid gap-2">
         {tasks.map(task => (
-          <DashboardTaskCard key={task.id} task={task} onStart={onStart} onComplete={onComplete} updating={updating} showDate={showDate} />
+          <DashboardTaskCard key={task.id} task={task} onStart={onStart} onComplete={onComplete} onUndo={onUndo} updating={updating} showDate={showDate} />
         ))}
       </div>
     </div>
