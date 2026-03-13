@@ -3,6 +3,7 @@ import { getTidxEntries, getEgnaEntries, updateTidxEntry, updateEgnaEntry, type 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Fan, Wind, Check, Clock, Play, ListFilter, CalendarDays, ArrowUpRight, ChevronRight, Trophy, Medal, Timer } from "lucide-react";
+import { AdminTimeReminder } from "@/components/AdminTimeReminder";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
 import { Link } from "react-router-dom";
