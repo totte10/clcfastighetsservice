@@ -176,17 +176,17 @@ export default function Dashboard() {
   const selectedDayTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === selectedStr));
   const isToday = selectedStr === todayStr;
 
-  const todayTotal = todayTasks.length;
-  const todayStarted = todayTasks.filter(t => t.status === "in-progress").length;
-  const todayDone = todayTasks.filter(t => t.status === "done").length;
+  const dayTotal = selectedDayTasks.length;
+  const dayStarted = selectedDayTasks.filter(t => t.status === "in-progress").length;
+  const dayDone = selectedDayTasks.filter(t => t.status === "done").length;
 
   const mapJobs = useMemo(() => {
     const seen = new Set<string>();
-    return todayTasks
+    return selectedDayTasks
       .filter(t => t.lat && t.lng)
       .filter(t => { if (seen.has(t.realId)) return false; seen.add(t.realId); return true; })
       .map(t => ({ id: t.realId, name: t.projectName + " – " + t.address, address: t.address, lat: t.lat!, lng: t.lng!, status: t.status, type: t.source }));
-  }, [todayTasks]);
+  }, [selectedDayTasks]);
 
   const handleStart = async (task: DailyTask) => {
     if (!user) return;
