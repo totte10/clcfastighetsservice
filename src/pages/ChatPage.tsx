@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import { VoiceChannels } from "@/components/voice/VoiceChannels";
 
 interface ChatMessage {
   id: string;
@@ -135,6 +136,11 @@ export default function ChatPage() {
         <span className="text-xs text-muted-foreground">
           Inloggad som <strong className="text-foreground">{senderName}</strong>
         </span>
+      </div>
+
+      {/* Voice channels section */}
+      <div className="p-3 border-b border-border">
+        <VoiceChannels />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

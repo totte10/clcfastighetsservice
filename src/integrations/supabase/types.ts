@@ -625,6 +625,33 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_channel_participants: {
+        Row: {
+          channel_name: string
+          display_name: string
+          id: string
+          is_muted: boolean
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_name: string
+          display_name?: string
+          id?: string
+          is_muted?: boolean
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_name?: string
+          display_name?: string
+          id?: string
+          is_muted?: boolean
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
