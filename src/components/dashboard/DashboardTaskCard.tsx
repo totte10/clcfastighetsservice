@@ -4,6 +4,7 @@ import { Fan, Wind, Wrench, Building2, Hammer, Check, Play, MapPin, Truck, Undo2
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TaskCompletionDialog, type CompletionData } from "./TaskCompletionDialog";
+import { TaskEditDialog } from "./TaskEditDialog";
 
 export type Status = "pending" | "in-progress" | "done";
 export type SourceType = "tidx" | "egna" | "tmm" | "optimal" | "project";
