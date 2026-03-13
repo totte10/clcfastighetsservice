@@ -337,9 +337,9 @@ export default function Dashboard() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <SummaryCard label="Totalt idag" value={todayTotal} icon={<CalendarDays className="h-4 w-4 text-primary" />} delay="0ms" />
-        <SummaryCard label="Påbörjade" value={todayStarted} icon={<Play className="h-4 w-4 text-warning" />} delay="60ms" progress={todayTotal > 0 ? todayStarted / todayTotal : 0} progressColor="bg-warning" />
-        <SummaryCard label="Klara" value={todayDone} icon={<Check className="h-4 w-4 text-success" />} delay="120ms" progress={todayTotal > 0 ? todayDone / todayTotal : 0} />
+        <SummaryCard label="Totalt" value={dayTotal} icon={<CalendarDays className="h-4 w-4 text-primary" />} delay="0ms" />
+        <SummaryCard label="Påbörjade" value={dayStarted} icon={<Play className="h-4 w-4 text-warning" />} delay="60ms" progress={dayTotal > 0 ? dayStarted / dayTotal : 0} progressColor="bg-warning" />
+        <SummaryCard label="Klara" value={dayDone} icon={<Check className="h-4 w-4 text-success" />} delay="120ms" progress={dayTotal > 0 ? dayDone / dayTotal : 0} />
         <SummaryCard label={`Vecka ${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer className="h-4 w-4 text-primary" />} delay="180ms" subtitle="Registrerade timmar" />
       </div>
 
