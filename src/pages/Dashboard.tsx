@@ -67,14 +67,14 @@ export default function Dashboard() {
         projectName: "Egna Områden", serviceLabel: "Framblåsning",
         status: e.blow_status as Status, assignedUsers: assigned,
         scheduledDate: e.datum_planerat, source: "egna", sourceField: "blowStatus",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: false,
       });
       tasks.push({
         id: `egna-sweep-${e.id}`, realId: e.id, address: e.address,
         projectName: "Egna Områden", serviceLabel: "Maskinsopning",
         status: e.sweep_status as Status, assignedUsers: assigned,
         scheduledDate: e.datum_planerat, source: "egna", sourceField: "sweepStatus",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: true, flisLass: e.flis_lass ?? 0,
       });
     });
 
