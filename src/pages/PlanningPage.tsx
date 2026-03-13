@@ -438,6 +438,30 @@ export default function PlanningPage() {
                 </PopoverContent>
               </Popover>
             </div>
+            {/* Worker assignment */}
+            {allWorkers.length > 0 && (
+              <div className="space-y-2">
+                <Label>Tilldela arbetare</Label>
+                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto rounded-lg border border-border/50 p-2">
+                  {allWorkers.map(w => (
+                    <label key={w.id} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/30 rounded p-1">
+                      <Checkbox
+                        checked={selectedWorkers.includes(w.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedWorkers(prev =>
+                            checked ? [...prev, w.id] : prev.filter(id => id !== w.id)
+                          );
+                        }}
+                      />
+                      <span className="truncate">{w.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedWorkers.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground">{selectedWorkers.length} vald(a)</p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewProject(false)}>Avbryt</Button>
