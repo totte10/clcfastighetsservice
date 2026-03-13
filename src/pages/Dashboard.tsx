@@ -404,10 +404,10 @@ export default function Dashboard() {
       {isAdmin && (
         <>
           {tomorrowTasks.length > 0 && (
-            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} />
+            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} />
           )}
           {upcomingTasks.length > 0 && (
-            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} showDate />
+            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} showDate />
           )}
         </>
       )}
