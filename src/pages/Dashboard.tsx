@@ -475,12 +475,13 @@ function SummaryCard({ label, value, icon, delay, progress, progressColor, subti
   );
 }
 
-function TaskSection({ title, tasks, onStart, onComplete, onUndo, updating, showDate = false }: {
+function TaskSection({ title, tasks, onStart, onComplete, onUndo, updating, showDate = false, onTaskUpdated }: {
   title: string; tasks: DailyTask[];
   onStart: (task: DailyTask) => void;
   onComplete: (task: DailyTask, data: CompletionData) => Promise<void>;
   onUndo?: (task: DailyTask) => void;
   updating: string | null; showDate?: boolean;
+  onTaskUpdated?: () => void;
 }) {
   if (tasks.length === 0) {
     return (
@@ -502,7 +503,7 @@ function TaskSection({ title, tasks, onStart, onComplete, onUndo, updating, show
       </div>
       <div className="grid gap-2">
         {tasks.map(task => (
-          <DashboardTaskCard key={task.id} task={task} onStart={onStart} onComplete={onComplete} onUndo={onUndo} updating={updating} showDate={showDate} />
+          <DashboardTaskCard key={task.id} task={task} onStart={onStart} onComplete={onComplete} onUndo={onUndo} updating={updating} showDate={showDate} onTaskUpdated={onTaskUpdated} />
         ))}
       </div>
     </div>
