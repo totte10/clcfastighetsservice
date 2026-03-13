@@ -99,7 +99,7 @@ export function TaskCompletionDialog({ open, onOpenChange, task, onComplete }: P
     input.click();
   };
 
-  const isValid = startTime.trim() !== "" && endTime.trim() !== "" && comment.trim() !== "" && (!task.isSweep || (flisLass !== "" && parseInt(flisLass) >= 1 && parseInt(flisLass) <= 10));
+  const isValid = startTime.trim() !== "" && endTime.trim() !== "" && (!task.isSweep || (flisLass !== "" && parseInt(flisLass) >= 1 && parseInt(flisLass) <= 10));
 
   const handleSubmit = async () => {
     if (!isValid) {
@@ -124,7 +124,6 @@ export function TaskCompletionDialog({ open, onOpenChange, task, onComplete }: P
   const missingFields: string[] = [];
   if (!startTime.trim()) missingFields.push("Starttid");
   if (!endTime.trim()) missingFields.push("Sluttid");
-  if (!comment.trim()) missingFields.push("Kommentar");
   
   if (task.isSweep && (!flisLass || parseInt(flisLass) < 1)) missingFields.push("Deponi (lass flis)");
 
@@ -212,7 +211,7 @@ export function TaskCompletionDialog({ open, onOpenChange, task, onComplete }: P
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
               <MessageSquare className="h-3.5 w-3.5 text-primary" />
-              <Label className="text-xs font-medium">Kommentar *</Label>
+              <Label className="text-xs font-medium">Kommentar</Label>
             </div>
             <Textarea
               value={comment}
