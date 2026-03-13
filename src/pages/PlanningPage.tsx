@@ -218,7 +218,7 @@ export default function PlanningPage() {
             </SelectContent>
           </Select>
           <Button onClick={() => { setNewProjectDate(selectedDay ?? new Date()); setShowNewProject(true); }} className="gap-2">
-            <Plus className="h-4 w-4" /> Nytt projekt
+            <Plus className="h-4 w-4" /> Nytt uppdrag
           </Button>
         </div>
       </div>
