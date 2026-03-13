@@ -354,27 +354,59 @@ export default function PlanningPage() {
           </CardContent>
         </Card>
       )}
-      {/* New project dialog */}
+      {/* New entry dialog */}
       <Dialog open={showNewProject} onOpenChange={setShowNewProject}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Nytt projekt i planeringen</DialogTitle>
+            <DialogTitle>Nytt uppdrag i planeringen</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="space-y-2">
-              <Label>Projektnamn *</Label>
+              <Label>Projekttyp *</Label>
+              <Select value={newEntryType} onValueChange={(v) => setNewEntryType(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tidx">Tidx Sopningar</SelectItem>
+                  <SelectItem value="egna">Egna Områden</SelectItem>
+                  <SelectItem value="tmm">TMM</SelectItem>
+                  <SelectItem value="optimal">Optimal</SelectItem>
+                  <SelectItem value="project">Övriga Projekt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Typ av jobb *</Label>
+              <Select value={newJobType} onValueChange={setNewJobType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="maskinsopning">Maskinsopning</SelectItem>
+                  <SelectItem value="framblåsning">Framblåsning</SelectItem>
+                  <SelectItem value="snöröjning">Snöröjning</SelectItem>
+                  <SelectItem value="halkbekämpning">Halkbekämpning</SelectItem>
+                  <SelectItem value="övrigt">Övrigt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{newEntryType === "project" ? "Projektnamn" : "Namn / Beskrivning"} *</Label>
               <Input value={newProjectForm.name} onChange={(e) => setNewProjectForm({ ...newProjectForm, name: e.target.value })} placeholder="T.ex. Vinterunderhåll" />
             </div>
             <div className="space-y-2">
               <Label>Adress *</Label>
               <Input value={newProjectForm.address} onChange={(e) => setNewProjectForm({ ...newProjectForm, address: e.target.value })} placeholder="Gatuadress, stad" />
             </div>
-            <div className="space-y-2">
-              <Label>Projektnummer (lämna tomt för auto)</Label>
-              <Input value={newProjectForm.project_number} onChange={(e) => setNewProjectForm({ ...newProjectForm, project_number: e.target.value })} placeholder="T.ex. P-2026-0001" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Uppskattad tid (h)</Label>
+                <Input type="number" step="0.5" min="0" value={newEstimatedHours} onChange={(e) => setNewEstimatedHours(e.target.value)} placeholder="T.ex. 2.5" />
+              </div>
+              <div className="space-y-2">
+                <Label>Projektnummer</Label>
+                <Input value={newProjectForm.project_number} onChange={(e) => setNewProjectForm({ ...newProjectForm, project_number: e.target.value })} placeholder="Auto" />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Beskrivning</Label>
+              <Label>Beskrivning / Kommentar</Label>
               <Textarea value={newProjectForm.description} onChange={(e) => setNewProjectForm({ ...newProjectForm, description: e.target.value })} rows={2} />
             </div>
             <div className="space-y-2">
@@ -387,13 +419,7 @@ export default function PlanningPage() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={newProjectDate}
-                    onSelect={setNewProjectDate}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
+                  <Calendar mode="single" selected={newProjectDate} onSelect={setNewProjectDate} initialFocus className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
@@ -407,22 +433,76 @@ export default function PlanningPage() {
               }
               const dateStr = newProjectDate ? format(newProjectDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
               const coords = await geocodeAddress(newProjectForm.address);
-              const { error } = await supabase.from("projects").insert({
-                name: newProjectForm.name,
-                address: newProjectForm.address,
-                description: newProjectForm.description,
-                project_number: newProjectForm.project_number || undefined,
-                datum_planerat: dateStr,
-                lat: coords?.lat ?? null,
-                lng: coords?.lng ?? null,
-              });
-              if (error) { toast({ title: "Kunde inte skapa projekt", variant: "destructive" }); return; }
-              toast({ title: "Projekt skapat!" });
+              const hours = parseFloat(newEstimatedHours) || 0;
+
+              let error: any = null;
+
+              if (newEntryType === "tidx") {
+                const res = await supabase.from("tidx_entries").insert({
+                  address: newProjectForm.address,
+                  omrade: newProjectForm.name,
+                  datum_planerat: dateStr,
+                  kommentar: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
+                  project_number: newProjectForm.project_number || undefined,
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+                  timmar_maskin: hours,
+                });
+                error = res.error;
+              } else if (newEntryType === "egna") {
+                const res = await supabase.from("egna_entries").insert({
+                  address: newProjectForm.address,
+                  datum_planerat: dateStr,
+                  kommentar: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
+                  project_number: newProjectForm.project_number || undefined,
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+                  timmar: hours,
+                });
+                error = res.error;
+              } else if (newEntryType === "tmm") {
+                const res = await supabase.from("tmm_entries").insert({
+                  address: newProjectForm.address,
+                  beskrivning: newProjectForm.name,
+                  datum: dateStr,
+                  typ: newJobType,
+                  foretag: newProjectForm.project_number || "",
+                  notes: newProjectForm.description,
+                  tid: hours ? `${hours}h` : "",
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+                });
+                error = res.error;
+              } else if (newEntryType === "optimal") {
+                const res = await supabase.from("optimal_entries").insert({
+                  name: newProjectForm.name,
+                  address: newProjectForm.address,
+                  datum_start: dateStr,
+                  typ: newJobType,
+                  foretag: newProjectForm.project_number || "",
+                  notes: newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+                });
+                error = res.error;
+              } else {
+                const res = await supabase.from("projects").insert({
+                  name: newProjectForm.name,
+                  address: newProjectForm.address,
+                  description: (newJobType !== "övrigt" ? `[${newJobType}] ` : "") + newProjectForm.description + (hours ? ` [Uppskattad tid: ${hours}h]` : ""),
+                  project_number: newProjectForm.project_number || undefined,
+                  datum_planerat: dateStr,
+                  lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+                });
+                error = res.error;
+              }
+
+              if (error) { toast({ title: "Kunde inte skapa uppdrag", variant: "destructive" }); return; }
+              toast({ title: "Uppdrag skapat!" });
               setShowNewProject(false);
               setNewProjectForm({ name: "", address: "", description: "", project_number: "" });
               setNewProjectDate(undefined);
+              setNewEstimatedHours("");
+              setNewEntryType("project");
+              setNewJobType("maskinsopning");
               loadItems();
-            }}>Skapa projekt</Button>
+            }}>Skapa uppdrag</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
