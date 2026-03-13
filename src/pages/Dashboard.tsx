@@ -398,7 +398,7 @@ export default function Dashboard() {
       </div>
 
       {/* Today's Tasks */}
-      <TaskSection title="Arbete idag" tasks={todayTasks} onStart={handleStart} onComplete={handleComplete} updating={updating} />
+      <TaskSection title="Arbete idag" tasks={todayTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} />
 
       {/* Admin: Tomorrow & Upcoming */}
       {isAdmin && (
