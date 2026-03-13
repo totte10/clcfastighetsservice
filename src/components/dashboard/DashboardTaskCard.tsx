@@ -4,6 +4,7 @@ import { Fan, Wind, Wrench, Building2, Hammer, Check, Play, MapPin, Truck, Undo2
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TaskCompletionDialog, type CompletionData } from "./TaskCompletionDialog";
+import { TaskEditDialog } from "./TaskEditDialog";
 
 export type Status = "pending" | "in-progress" | "done";
 export type SourceType = "tidx" | "egna" | "tmm" | "optimal" | "project";
@@ -54,14 +55,16 @@ interface Props {
   onUndo?: (task: DailyTask) => void;
   updating: string | null;
   showDate?: boolean;
+  onTaskUpdated?: () => void;
 }
 
-export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating, showDate }: Props) {
+export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating, showDate, onTaskUpdated }: Props) {
   const isUpdating = updating === task.id;
   const isDone = task.status === "done";
   const config = sourceConfig[task.source];
   const Icon = config.icon;
   const [showCompletion, setShowCompletion] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   return (
     <>
@@ -73,7 +76,7 @@ export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating,
 
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="flex items-start justify-between gap-2">
-              <p className="font-medium text-sm text-foreground leading-tight truncate">{task.address}</p>
+              <button onClick={() => setShowEdit(true)} className="font-medium text-sm text-foreground leading-tight truncate hover:text-primary transition-colors text-left cursor-pointer underline-offset-2 hover:underline">{task.address}</button>
               <Badge variant="outline" className={`shrink-0 text-[10px] px-1.5 py-0 h-5 border ${statusStyles[task.status]}`}>
                 {statusLabels[task.status]}
               </Badge>
@@ -146,6 +149,13 @@ export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating,
         onOpenChange={setShowCompletion}
         task={task}
         onComplete={onComplete}
+      />
+
+      <TaskEditDialog
+        open={showEdit}
+        onOpenChange={setShowEdit}
+        task={task}
+        onSaved={() => onTaskUpdated?.()}
       />
     </>
   );

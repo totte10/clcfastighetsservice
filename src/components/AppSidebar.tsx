@@ -1,4 +1,5 @@
-import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush, MapPin, DollarSign, Route, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush, Route, AlertTriangle, DollarSign, ChevronDown, Paintbrush } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import clcLogo from "@/assets/clc-logo.png";
@@ -14,12 +15,39 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
+interface MenuItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  adminOnly: boolean;
+}
+
+interface MenuGroup {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  adminOnly: boolean;
+  children: MenuItem[];
+}
+
+type MenuEntry = MenuItem | MenuGroup;
+
+function isGroup(entry: MenuEntry): entry is MenuGroup {
+  return "children" in entry;
+}
+
+const menuEntries: MenuEntry[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: false },
-  { title: "Tidx Sopningar", url: "/tidx", icon: Wind, adminOnly: false },
-  { title: "Egna Områden", url: "/egna", icon: Home, adminOnly: false },
-  { title: "Optimal Områden", url: "/optimal", icon: Truck, adminOnly: false },
-  { title: "Sopningar TMM", url: "/tmm", icon: Brush, adminOnly: false },
+  {
+    title: "Maskinsopning",
+    icon: Paintbrush,
+    adminOnly: false,
+    children: [
+      { title: "Tidx Sopningar", url: "/tidx", icon: Wind, adminOnly: false },
+      { title: "Egna Områden", url: "/egna", icon: Home, adminOnly: false },
+      { title: "Optimal Områden", url: "/optimal", icon: Truck, adminOnly: false },
+      { title: "Sopningar TMM", url: "/tmm", icon: Brush, adminOnly: false },
+    ],
+  },
   { title: "Övriga Projekt", url: "/projects", icon: FolderOpen, adminOnly: false },
   { title: "Ruttplanering", url: "/route", icon: Route, adminOnly: false },
   { title: "Chatt", url: "/chat", icon: MessageCircle, adminOnly: false },
@@ -35,10 +63,25 @@ export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const { user, signOut, profile, isAdmin } = useAuth();
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(["Maskinsopning"]));
 
-  const visibleItems = items.filter((item) => !item.adminOnly || isAdmin);
+  const toggleGroup = (title: string) => {
+    setOpenGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
+  };
 
   const displayName = profile?.fullName || profile?.username || user?.email || "";
+
+  const visibleEntries = menuEntries.filter(entry => {
+    if (isGroup(entry)) {
+      return !entry.adminOnly || isAdmin;
+    }
+    return !entry.adminOnly || isAdmin;
+  });
 
   return (
     <Sidebar collapsible="icon">
@@ -68,22 +111,69 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5 px-2">
-              {visibleItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-9">
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      onClick={() => isMobile && setOpenMobile(false)}
-                      className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
-                      activeClassName="text-sidebar-primary bg-sidebar-accent text-sidebar-primary-foreground shadow-[0_0_12px_-4px_hsl(152_50%_42%/0.3),inset_0_1px_0_hsl(152_50%_42%/0.1)]"
-                    >
-                      <item.icon className="h-4 w-4 shrink-0 transition-colors duration-200" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {visibleEntries.map((entry) => {
+                if (isGroup(entry)) {
+                  const isOpen = openGroups.has(entry.title);
+                  const visibleChildren = entry.children.filter(c => !c.adminOnly || isAdmin);
+                  if (visibleChildren.length === 0) return null;
+                  const GroupIcon = entry.icon;
+
+                  return (
+                    <div key={entry.title}>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          onClick={() => toggleGroup(entry.title)}
+                          className="h-9 w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
+                        >
+                          <GroupIcon className="h-4 w-4 shrink-0 transition-colors duration-200" />
+                          {!collapsed && (
+                            <>
+                              <span className="flex-1 text-left">{entry.title}</span>
+                              <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-0" : "-rotate-90"}`} />
+                            </>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                      {isOpen && !collapsed && (
+                        <div className="ml-3 border-l border-sidebar-border/30 pl-2 space-y-0.5 mt-0.5">
+                          {visibleChildren.map((child) => (
+                            <SidebarMenuItem key={child.title}>
+                              <SidebarMenuButton asChild className="h-8">
+                                <NavLink
+                                  to={child.url}
+                                  onClick={() => isMobile && setOpenMobile(false)}
+                                  className="group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/60 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
+                                  activeClassName="text-sidebar-primary bg-sidebar-accent text-sidebar-primary-foreground shadow-[0_0_12px_-4px_hsl(152_50%_42%/0.3),inset_0_1px_0_hsl(152_50%_42%/0.1)]"
+                                >
+                                  <child.icon className="h-3.5 w-3.5 shrink-0 transition-colors duration-200" />
+                                  <span>{child.title}</span>
+                                </NavLink>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <SidebarMenuItem key={entry.title}>
+                    <SidebarMenuButton asChild className="h-9">
+                      <NavLink
+                        to={entry.url}
+                        end={entry.url === "/"}
+                        onClick={() => isMobile && setOpenMobile(false)}
+                        className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
+                        activeClassName="text-sidebar-primary bg-sidebar-accent text-sidebar-primary-foreground shadow-[0_0_12px_-4px_hsl(152_50%_42%/0.3),inset_0_1px_0_hsl(152_50%_42%/0.1)]"
+                      >
+                        <entry.icon className="h-4 w-4 shrink-0 transition-colors duration-200" />
+                        {!collapsed && <span>{entry.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
