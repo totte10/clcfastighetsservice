@@ -201,6 +201,7 @@ export default function EgnaOmradenPage() {
                 <Input value={entry.projectNumber} onChange={(e) => handleUpdate(entry.id, { projectNumber: e.target.value })} placeholder="Projektnr" className="h-8 text-xs" />
                 <Input value={entry.kommentar} onChange={(e) => handleUpdate(entry.id, { kommentar: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
               </div>
+              <WorkerAssignment entryType="egna" entryId={entry.id} compact />
               <EntryImageUpload
                 images={entry.images}
                 onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}

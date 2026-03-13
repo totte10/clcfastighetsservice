@@ -231,6 +231,7 @@ export default function TmmPage() {
                 <Input value={entry.notes} onChange={(e) => handleUpdate(entry.id, { notes: e.target.value })} placeholder="Kommentar" className="h-8 text-xs" />
               </div>
 
+              <WorkerAssignment entryType="tmm" entryId={entry.id} compact />
               <EntryImageUpload
                 images={entry.images}
                 onImagesChange={(imgs) => handleUpdate(entry.id, { images: imgs })}

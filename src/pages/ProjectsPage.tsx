@@ -291,6 +291,7 @@ export default function ProjectsPage() {
                 className="h-8 text-xs"
               />
 
+              <WorkerAssignment entryType="project" entryId={project.id} compact />
               <EntryImageUpload
                 images={project.images}
                 onImagesChange={(imgs) => handleUpdate(project.id, { images: imgs })}
