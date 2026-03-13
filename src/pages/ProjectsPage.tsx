@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FolderOpen, Plus, Search, Map, Loader2, Trash2, Hash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { WorkerAssignment } from "@/components/WorkerAssignment";
 
 type Status = "pending" | "in-progress" | "done";
 
