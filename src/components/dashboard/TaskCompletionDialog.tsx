@@ -124,7 +124,6 @@ export function TaskCompletionDialog({ open, onOpenChange, task, onComplete }: P
   const missingFields: string[] = [];
   if (!startTime.trim()) missingFields.push("Starttid");
   if (!endTime.trim()) missingFields.push("Sluttid");
-  if (!comment.trim()) missingFields.push("Kommentar");
   
   if (task.isSweep && (!flisLass || parseInt(flisLass) < 1)) missingFields.push("Deponi (lass flis)");
 
