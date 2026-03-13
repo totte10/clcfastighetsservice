@@ -18,6 +18,9 @@ import PlanningPage from "@/pages/PlanningPage";
 import OptimalPage from "@/pages/OptimalPage";
 import TmmPage from "@/pages/TmmPage";
 import LoginPage from "@/pages/LoginPage";
+import MissingCoordinatesPage from "@/pages/MissingCoordinatesPage";
+import PayrollPage from "@/pages/PayrollPage";
+import RoutePlanningPage from "@/pages/RoutePlanningPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -52,6 +55,9 @@ function ProtectedRoutes() {
         <Route path="/optimal" element={<OptimalPage />} />
         <Route path="/tmm" element={<TmmPage />} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/missing-coords" element={<MissingCoordinatesPage />} />
+        <Route path="/payroll" element={<PayrollPage />} />
+        <Route path="/route" element={<RoutePlanningPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
