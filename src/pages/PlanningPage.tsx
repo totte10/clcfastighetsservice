@@ -64,7 +64,7 @@ export default function PlanningPage() {
   const [allWorkers, setAllWorkers] = useState<{ id: string; name: string }[]>([]);
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
 
-  // Admin check
+  // Admin check + load workers
   useEffect(() => {
     if (!user) return;
     supabase
@@ -73,6 +73,13 @@ export default function PlanningPage() {
       .eq("user_id", user.id)
       .eq("role", "admin")
       .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .then(({ data }) => {
+        setAllWorkers((data ?? []).map(p => ({ id: p.id, name: p.full_name || "Okänd" })));
+      });
       .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
