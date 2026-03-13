@@ -335,7 +335,7 @@ function SummaryCard({ label, value, icon, delay, progress, progressColor, subti
 }
 
 function TaskSection({ title, tasks, onStatusUpdate, updating, showDate = false }: {
-  title: string; tasks: DailyTask[]; onStatusUpdate: (task: DailyTask, status: Status) => void;
+  title: string; tasks: DailyTask[]; onStatusUpdate: (task: DailyTask, status: Status, flisLass?: number) => void;
   updating: string | null; showDate?: boolean;
 }) {
   if (tasks.length === 0) {
