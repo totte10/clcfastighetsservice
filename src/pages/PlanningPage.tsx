@@ -211,8 +211,9 @@ export default function PlanningPage() {
               <SelectItem value="all">Alla typer</SelectItem>
               <SelectItem value="tidx">Tidx Sopningar</SelectItem>
               <SelectItem value="egna">Egna Områden</SelectItem>
-              <SelectItem value="project">Projekt</SelectItem>
+              <SelectItem value="tmm">TMM</SelectItem>
               <SelectItem value="optimal">Optimal</SelectItem>
+              <SelectItem value="project">Projekt</SelectItem>
               <SelectItem value="time">Tidsrapporter</SelectItem>
             </SelectContent>
           </Select>
