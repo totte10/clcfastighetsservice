@@ -154,9 +154,16 @@ export default function Dashboard() {
     loadLeaderboard();
   }, []);
 
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const getDatePart = (s: string) => (s || "").slice(0, 10);
   const todayStr = format(new Date(), "yyyy-MM-dd");
-  const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
+  const selectedStr = format(selectedDate, "yyyy-MM-dd");
+
+  // Generate 7-day range: today -3 to today +3
+  const dateRange = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, i) => addDays(today, i - 3));
+  }, []);
 
   const filterTasks = useCallback((tasks: DailyTask[]) => {
     return tasks.filter(t => {
@@ -166,21 +173,20 @@ export default function Dashboard() {
     });
   }, [filterSource, filterStatus]);
 
-  const todayTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === todayStr));
-  const tomorrowTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === tomorrowStr));
-  const upcomingTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) > tomorrowStr));
+  const selectedDayTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === selectedStr));
+  const isToday = selectedStr === todayStr;
 
-  const todayTotal = todayTasks.length;
-  const todayStarted = todayTasks.filter(t => t.status === "in-progress").length;
-  const todayDone = todayTasks.filter(t => t.status === "done").length;
+  const dayTotal = selectedDayTasks.length;
+  const dayStarted = selectedDayTasks.filter(t => t.status === "in-progress").length;
+  const dayDone = selectedDayTasks.filter(t => t.status === "done").length;
 
   const mapJobs = useMemo(() => {
     const seen = new Set<string>();
-    return todayTasks
+    return selectedDayTasks
       .filter(t => t.lat && t.lng)
       .filter(t => { if (seen.has(t.realId)) return false; seen.add(t.realId); return true; })
       .map(t => ({ id: t.realId, name: t.projectName + " – " + t.address, address: t.address, lat: t.lat!, lng: t.lng!, status: t.status, type: t.source }));
-  }, [todayTasks]);
+  }, [selectedDayTasks]);
 
   const handleStart = async (task: DailyTask) => {
     if (!user) return;
@@ -331,9 +337,9 @@ export default function Dashboard() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <SummaryCard label="Totalt idag" value={todayTotal} icon={<CalendarDays className="h-4 w-4 text-primary" />} delay="0ms" />
-        <SummaryCard label="Påbörjade" value={todayStarted} icon={<Play className="h-4 w-4 text-warning" />} delay="60ms" progress={todayTotal > 0 ? todayStarted / todayTotal : 0} progressColor="bg-warning" />
-        <SummaryCard label="Klara" value={todayDone} icon={<Check className="h-4 w-4 text-success" />} delay="120ms" progress={todayTotal > 0 ? todayDone / todayTotal : 0} />
+        <SummaryCard label="Totalt" value={dayTotal} icon={<CalendarDays className="h-4 w-4 text-primary" />} delay="0ms" />
+        <SummaryCard label="Påbörjade" value={dayStarted} icon={<Play className="h-4 w-4 text-warning" />} delay="60ms" progress={dayTotal > 0 ? dayStarted / dayTotal : 0} progressColor="bg-warning" />
+        <SummaryCard label="Klara" value={dayDone} icon={<Check className="h-4 w-4 text-success" />} delay="120ms" progress={dayTotal > 0 ? dayDone / dayTotal : 0} />
         <SummaryCard label={`Vecka ${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer className="h-4 w-4 text-primary" />} delay="180ms" subtitle="Registrerade timmar" />
       </div>
 
@@ -397,20 +403,48 @@ export default function Dashboard() {
         </Select>
       </div>
 
-      {/* Today's Tasks */}
-      <TaskSection title="Arbete idag" tasks={todayTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} />
+      {/* Date Navigation */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+        {dateRange.map(date => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          const isSelected = dateStr === selectedStr;
+          const isDateToday = dateStr === todayStr;
+          const dayLabel = isDateToday ? "Idag" : format(date, "EEE", { locale: sv });
+          const dateLabel = format(date, "d/M");
+          const taskCount = allTasks.filter(t => getDatePart(t.scheduledDate) === dateStr).length;
+          return (
+            <button
+              key={dateStr}
+              onClick={() => setSelectedDate(date)}
+              className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all shrink-0 ${
+                isSelected
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : isDateToday
+                    ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                    : "bg-card text-muted-foreground border-border/50 hover:bg-muted/50"
+              }`}
+            >
+              <span className="capitalize text-[11px]">{dayLabel}</span>
+              <span className="text-[10px] opacity-80">{dateLabel}</span>
+              {taskCount > 0 && (
+                <span className={`text-[9px] px-1.5 py-0 rounded-full ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                  {taskCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Admin: Tomorrow & Upcoming */}
-      {isAdmin && (
-        <>
-          {tomorrowTasks.length > 0 && (
-            <TaskSection title="Arbete imorgon" tasks={tomorrowTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} />
-          )}
-          {upcomingTasks.length > 0 && (
-            <TaskSection title="Kommande uppdrag" tasks={upcomingTasks} onStart={handleStart} onComplete={handleComplete} onUndo={handleUndo} updating={updating} showDate />
-          )}
-        </>
-      )}
+      {/* Selected Day Tasks */}
+      <TaskSection
+        title={isToday ? "Arbete idag" : `Arbete ${format(selectedDate, "EEEE d MMMM", { locale: sv })}`}
+        tasks={selectedDayTasks}
+        onStart={handleStart}
+        onComplete={handleComplete}
+        onUndo={handleUndo}
+        updating={updating}
+      />
     </div>
   );
 }
