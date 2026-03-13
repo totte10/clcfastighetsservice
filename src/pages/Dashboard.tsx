@@ -46,7 +46,7 @@ export default function Dashboard() {
 
     const tasks: DailyTask[] = [];
 
-    // Tidx
+    // Tidx - always sweep
     const { data: tidx } = await supabase.from("tidx_entries").select("*");
     (tidx ?? []).forEach(e => {
       tasks.push({
@@ -54,7 +54,7 @@ export default function Dashboard() {
         projectName: e.omrade || "Tidx Sopning", serviceLabel: "Maskinsopning",
         status: e.status as Status, assignedUsers: getAssigned("tidx", e.id),
         scheduledDate: e.datum_planerat, source: "tidx", sourceField: "status",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: true, flisLass: e.flis_lass ?? 0,
       });
     });
 
@@ -67,38 +67,40 @@ export default function Dashboard() {
         projectName: "Egna Områden", serviceLabel: "Framblåsning",
         status: e.blow_status as Status, assignedUsers: assigned,
         scheduledDate: e.datum_planerat, source: "egna", sourceField: "blowStatus",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: false,
       });
       tasks.push({
         id: `egna-sweep-${e.id}`, realId: e.id, address: e.address,
         projectName: "Egna Områden", serviceLabel: "Maskinsopning",
         status: e.sweep_status as Status, assignedUsers: assigned,
         scheduledDate: e.datum_planerat, source: "egna", sourceField: "sweepStatus",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: true, flisLass: e.flis_lass ?? 0,
       });
     });
 
     // TMM
     const { data: tmm } = await supabase.from("tmm_entries").select("*");
     (tmm ?? []).forEach(e => {
+      const isSweepType = (e.typ || "").toLowerCase().includes("sopning");
       tasks.push({
         id: `tmm-${e.id}`, realId: e.id, address: e.address || e.beskrivning,
         projectName: e.foretag || "TMM", serviceLabel: e.typ || "Maskinsopning",
         status: e.status as Status, assignedUsers: getAssigned("tmm", e.id),
         scheduledDate: e.datum, source: "tmm", sourceField: "status",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: isSweepType, flisLass: e.flis_lass ?? 0,
       });
     });
 
     // Optimal
     const { data: optimal } = await supabase.from("optimal_entries").select("*");
     (optimal ?? []).forEach(e => {
+      const isSweepType = (e.typ || "").toLowerCase().includes("sopning");
       tasks.push({
         id: `optimal-${e.id}`, realId: e.id, address: e.address || e.name,
         projectName: e.foretag || "Optimal", serviceLabel: e.typ || "Maskinsopning",
         status: e.status as Status, assignedUsers: getAssigned("optimal", e.id),
         scheduledDate: e.datum_start, source: "optimal", sourceField: "status",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: isSweepType, flisLass: e.flis_lass ?? 0,
       });
     });
 
@@ -180,13 +182,16 @@ export default function Dashboard() {
       .map(t => ({ id: t.realId, name: t.projectName + " – " + t.address, address: t.address, lat: t.lat!, lng: t.lng!, status: t.status, type: t.source }));
   }, [todayTasks]);
 
-  const handleStatusUpdate = async (task: DailyTask, newStatus: Status) => {
+  const handleStatusUpdate = async (task: DailyTask, newStatus: Status, flisLass?: number) => {
     setUpdating(task.id);
     try {
       const field = task.source === "egna"
         ? task.sourceField === "blowStatus" ? "blow_status" : "sweep_status"
         : "status";
-      const update = { [field]: newStatus };
+      const update: Record<string, any> = { [field]: newStatus };
+      if (flisLass !== undefined && flisLass > 0) {
+        update.flis_lass = flisLass;
+      }
 
       if (task.source === "tidx") await supabase.from("tidx_entries").update(update).eq("id", task.realId);
       else if (task.source === "egna") await supabase.from("egna_entries").update(update).eq("id", task.realId);
@@ -330,7 +335,7 @@ function SummaryCard({ label, value, icon, delay, progress, progressColor, subti
 }
 
 function TaskSection({ title, tasks, onStatusUpdate, updating, showDate = false }: {
-  title: string; tasks: DailyTask[]; onStatusUpdate: (task: DailyTask, status: Status) => void;
+  title: string; tasks: DailyTask[]; onStatusUpdate: (task: DailyTask, status: Status, flisLass?: number) => void;
   updating: string | null; showDate?: boolean;
 }) {
   if (tasks.length === 0) {
