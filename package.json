@@ -13,6 +13,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/app": "^8.0.1",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0",
+    "@capacitor/network": "^8.0.1",
     "@hookform/resolvers": "^3.10.0",
     "@livekit/components-react": "^2.9.20",
     "@lovable.dev/cloud-auth-js": "^0.0.3",
