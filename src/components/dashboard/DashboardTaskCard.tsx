@@ -56,7 +56,7 @@ interface Props {
   showDate?: boolean;
 }
 
-export function DashboardTaskCard({ task, onStart, onComplete, updating, showDate }: Props) {
+export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating, showDate }: Props) {
   const isUpdating = updating === task.id;
   const isDone = task.status === "done";
   const config = sourceConfig[task.source];
