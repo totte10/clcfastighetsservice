@@ -125,7 +125,7 @@ export function TaskCompletionDialog({ open, onOpenChange, task, onComplete }: P
   if (!startTime.trim()) missingFields.push("Starttid");
   if (!endTime.trim()) missingFields.push("Sluttid");
   if (!comment.trim()) missingFields.push("Kommentar");
-  if (images.length === 0) missingFields.push("Minst 1 bild");
+  
   if (task.isSweep && (!flisLass || parseInt(flisLass) < 1)) missingFields.push("Deponi (lass flis)");
 
   return (
