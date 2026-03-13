@@ -240,6 +240,7 @@ export type Database = {
           full_name: string
           id: string
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -247,6 +248,7 @@ export type Database = {
           full_name?: string
           id: string
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -254,6 +256,61 @@ export type Database = {
           full_name?: string
           id?: string
           updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      project_assignments: {
+        Row: {
+          created_at: string
+          entry_id: string
+          entry_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_id: string
+          entry_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string
+          entry_type?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      project_images: {
+        Row: {
+          created_at: string
+          entry_id: string
+          entry_type: string
+          id: string
+          image_url: string
+          uploaded_by: string
+          uploader_name: string
+        }
+        Insert: {
+          created_at?: string
+          entry_id: string
+          entry_type: string
+          id?: string
+          image_url: string
+          uploaded_by: string
+          uploader_name?: string
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string
+          entry_type?: string
+          id?: string
+          image_url?: string
+          uploaded_by?: string
+          uploader_name?: string
         }
         Relationships: []
       }
@@ -530,6 +587,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_assigned_to: {
+        Args: { _entry_id: string; _entry_type: string; _user_id: string }
         Returns: boolean
       }
     }
