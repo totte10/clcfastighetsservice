@@ -19,7 +19,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { sv } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-type EntryType = "tidx" | "egna" | "project" | "time" | "optimal";
+type EntryType = "tidx" | "egna" | "project" | "time" | "optimal" | "tmm";
 
 interface PlanningItem {
   id: string;
