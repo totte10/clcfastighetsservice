@@ -130,6 +130,12 @@ export default function PlanningPage() {
       }
     });
 
+    // TMM entries
+    (tmmRes.data ?? []).forEach((r) => {
+      const d = r.datum;
+      if (d) result.push({ id: r.id, type: "tmm", title: `${r.foretag || "TMM"} – ${r.address || r.beskrivning}`, date: d, status: r.status });
+    });
+
     setItems(result);
   }, [user]);
 
