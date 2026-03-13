@@ -175,7 +175,7 @@ export function VoiceChannels() {
                     {m.is_muted ? (
                       <MicOff className="h-3 w-3 text-destructive" />
                     ) : (
-                      <Mic className="h-3 w-3 text-green-500" />
+                      <Mic className="h-3 w-3 text-primary" />
                     )}
                     <span className={m.user_id === user?.id ? "text-foreground font-medium" : ""}>
                       {m.display_name}
