@@ -182,22 +182,109 @@ export default function Dashboard() {
       .map(t => ({ id: t.realId, name: t.projectName + " – " + t.address, address: t.address, lat: t.lat!, lng: t.lng!, status: t.status, type: t.source }));
   }, [todayTasks]);
 
-  const handleStatusUpdate = async (task: DailyTask, newStatus: Status, flisLass?: number) => {
+  const handleStart = async (task: DailyTask) => {
+    if (!user) return;
     setUpdating(task.id);
     try {
+      // Update status to in-progress
       const field = task.source === "egna"
         ? task.sourceField === "blowStatus" ? "blow_status" : "sweep_status"
         : "status";
-      const update: Record<string, any> = { [field]: newStatus };
-      if (flisLass !== undefined && flisLass > 0) {
-        update.flis_lass = flisLass;
-      }
-
+      const update = { [field]: "in-progress" };
       if (task.source === "tidx") await supabase.from("tidx_entries").update(update).eq("id", task.realId);
       else if (task.source === "egna") await supabase.from("egna_entries").update(update).eq("id", task.realId);
       else if (task.source === "tmm") await supabase.from("tmm_entries").update(update).eq("id", task.realId);
       else if (task.source === "optimal") await supabase.from("optimal_entries").update(update).eq("id", task.realId);
       else if (task.source === "project") await supabase.from("projects").update(update).eq("id", task.realId);
+
+      // Create a time log entry (start timer)
+      await supabase.from("address_time_logs").insert({
+        user_id: user.id,
+        entry_id: task.realId,
+        entry_type: task.source,
+        start_time: new Date().toISOString(),
+        note: "",
+      });
+
+      await loadTasks();
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleComplete = async (task: DailyTask, data: CompletionData) => {
+    if (!user) return;
+    setUpdating(task.id);
+    try {
+      const field = task.source === "egna"
+        ? task.sourceField === "blowStatus" ? "blow_status" : "sweep_status"
+        : "status";
+      const statusUpdate: Record<string, any> = { [field]: "done" };
+      if (data.flisLass !== undefined && data.flisLass > 0) {
+        statusUpdate.flis_lass = data.flisLass;
+      }
+      // Add comment
+      if (task.source === "tidx") {
+        statusUpdate.kommentar = data.comment;
+        await supabase.from("tidx_entries").update(statusUpdate).eq("id", task.realId);
+      } else if (task.source === "egna") {
+        statusUpdate.kommentar = data.comment;
+        await supabase.from("egna_entries").update(statusUpdate).eq("id", task.realId);
+      } else if (task.source === "tmm") {
+        statusUpdate.notes = data.comment;
+        await supabase.from("tmm_entries").update(statusUpdate).eq("id", task.realId);
+      } else if (task.source === "optimal") {
+        statusUpdate.notes = data.comment;
+        await supabase.from("optimal_entries").update(statusUpdate).eq("id", task.realId);
+      } else if (task.source === "project") {
+        statusUpdate.description = data.comment;
+        await supabase.from("projects").update(statusUpdate).eq("id", task.realId);
+      }
+
+      // Save images via project_images
+      if (data.images.length > 0) {
+        const imageRows = data.images.map(url => ({
+          entry_id: task.realId,
+          entry_type: task.source,
+          image_url: url,
+          uploaded_by: user.id,
+          uploader_name: "",
+        }));
+        await supabase.from("project_images").insert(imageRows);
+      }
+
+      // Close any active time log and create/update the time entry
+      const today = new Date().toISOString().split("T")[0];
+      const startIso = new Date(`${today}T${data.startTime}`).toISOString();
+      const endIso = new Date(`${today}T${data.endTime}`).toISOString();
+
+      // Try to find and update existing active log
+      const { data: activeLog } = await supabase
+        .from("address_time_logs")
+        .select("id")
+        .eq("entry_id", task.realId)
+        .eq("entry_type", task.source)
+        .eq("user_id", user.id)
+        .is("end_time", null)
+        .limit(1);
+
+      if (activeLog && activeLog.length > 0) {
+        await supabase.from("address_time_logs").update({
+          start_time: startIso,
+          end_time: endIso,
+          note: data.comment,
+        }).eq("id", activeLog[0].id);
+      } else {
+        await supabase.from("address_time_logs").insert({
+          user_id: user.id,
+          entry_id: task.realId,
+          entry_type: task.source,
+          start_time: startIso,
+          end_time: endIso,
+          note: data.comment,
+        });
+      }
+
       await loadTasks();
     } finally {
       setUpdating(null);
