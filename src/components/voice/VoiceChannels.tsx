@@ -190,8 +190,8 @@ export function VoiceChannels() {
 
       {activeChannel && (
         <div className="flex items-center gap-2 pt-1">
-          <div className="flex-1 text-xs text-green-500 font-medium flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <div className="flex-1 text-xs text-primary font-medium flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             Ansluten till {activeChannel}
           </div>
           <Button
