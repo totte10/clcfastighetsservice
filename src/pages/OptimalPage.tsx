@@ -13,6 +13,7 @@ import { AreaMap } from "@/components/AreaMap";
 import { EntryImageUpload } from "@/components/EntryImageUpload";
 import { AddressTimeLog } from "@/components/AddressTimeLog";
 import { geocodeAddress } from "@/lib/geocode";
+import { WorkerAssignment } from "@/components/WorkerAssignment";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
