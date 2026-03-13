@@ -467,7 +467,7 @@ function TaskSection({ title, tasks, onStart, onComplete, onUndo, updating, show
       </div>
       <div className="grid gap-2">
         {tasks.map(task => (
-          <DashboardTaskCard key={task.id} task={task} onStart={onStart} onComplete={onComplete} updating={updating} showDate={showDate} />
+          <DashboardTaskCard key={task.id} task={task} onStart={onStart} onComplete={onComplete} onUndo={onUndo} updating={updating} showDate={showDate} />
         ))}
       </div>
     </div>
