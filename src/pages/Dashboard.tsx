@@ -189,10 +189,13 @@ export default function Dashboard() {
             {format(new Date(), "EEEE d MMMM yyyy", { locale: sv })}
           </p>
         </div>
-        <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:text-primary/80 transition-colors group">
-          Visa alla projekt
-          <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <AdminTimeReminder />
+          <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:text-primary/80 transition-colors group">
+            Visa alla projekt
+            <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </Link>
+        </div>
       </div>
 
       {/* Summary Cards */}
