@@ -1,35 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { getTidxEntries, getEgnaEntries, updateTidxEntry, updateEgnaEntry, type TidxEntry, type EgnaEntry } from "@/lib/store";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Fan, Wind, Check, Clock, Play, ListFilter, CalendarDays, ArrowUpRight, ChevronRight, Trophy, Medal, Timer } from "lucide-react";
+import { Check, Clock, Play, ListFilter, CalendarDays, ArrowUpRight, Trophy, Medal, Timer } from "lucide-react";
 import { AdminTimeReminder } from "@/components/AdminTimeReminder";
-import { StatusBadge } from "@/components/StatusBadge";
 import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
+import { DashboardTaskCard, type DailyTask, type Status, type SourceType } from "@/components/dashboard/DashboardTaskCard";
 import { Link } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { format, addDays, startOfWeek, endOfWeek, getISOWeek } from "date-fns";
 import { sv } from "date-fns/locale";
-
-type Status = "pending" | "in-progress" | "done";
-type ServiceType = "blow" | "sweep";
-
-interface DailyTask {
-  id: string;
-  realId: string;
-  address: string;
-  projectName: string;
-  serviceType: ServiceType;
-  serviceLabel: string;
-  status: Status;
-  assignedUser: string;
-  scheduledDate: string;
-  source: "tidx" | "egna";
-  sourceField: "status" | "blowStatus" | "sweepStatus";
-  lat?: number | null;
-  lng?: number | null;
-}
 
 interface LeaderboardEntry {
   userId: string;
@@ -39,22 +18,107 @@ interface LeaderboardEntry {
 
 export default function Dashboard() {
   const { user, isAdmin } = useAuth();
-  const [tidxEntries, setTidxEntries] = useState<TidxEntry[]>([]);
-  const [egnaEntries, setEgnaEntries] = useState<EgnaEntry[]>([]);
-  const [filterService, setFilterService] = useState<string>("all");
+  const [allTasks, setAllTasks] = useState<DailyTask[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterUser, setFilterUser] = useState<string>("all");
+  const [filterSource, setFilterSource] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [weeklyHours, setWeeklyHours] = useState<number>(0);
 
-  const refresh = useCallback(async () => {
-    const [tidx, egna] = await Promise.all([getTidxEntries(), getEgnaEntries()]);
-    setTidxEntries(tidx);
-    setEgnaEntries(egna);
+  // Load all tasks from all sources
+  const loadTasks = useCallback(async () => {
+    // Load assignments to map user names
+    const { data: assignments } = await supabase.from("project_assignments").select("entry_id, entry_type, user_id");
+    const { data: profiles } = await supabase.from("profiles").select("id, full_name");
+    const nameMap = new Map<string, string>();
+    (profiles ?? []).forEach(p => nameMap.set(p.id, p.full_name || "Okänd"));
+
+    // Build assignment lookup: entryType-entryId -> user names[]
+    const assignMap = new Map<string, string[]>();
+    (assignments ?? []).forEach(a => {
+      const key = `${a.entry_type}-${a.entry_id}`;
+      const names = assignMap.get(key) ?? [];
+      names.push(nameMap.get(a.user_id) || "Okänd");
+      assignMap.set(key, names);
+    });
+
+    const getAssigned = (type: string, id: string) => assignMap.get(`${type}-${id}`) ?? [];
+
+    const tasks: DailyTask[] = [];
+
+    // Tidx
+    const { data: tidx } = await supabase.from("tidx_entries").select("*");
+    (tidx ?? []).forEach(e => {
+      tasks.push({
+        id: `tidx-${e.id}`, realId: e.id, address: e.address,
+        projectName: e.omrade || "Tidx Sopning", serviceLabel: "Maskinsopning",
+        status: e.status as Status, assignedUsers: getAssigned("tidx", e.id),
+        scheduledDate: e.datum_planerat, source: "tidx", sourceField: "status",
+        lat: e.lat, lng: e.lng,
+      });
+    });
+
+    // Egna – two sub-tasks per entry
+    const { data: egna } = await supabase.from("egna_entries").select("*");
+    (egna ?? []).forEach(e => {
+      const assigned = getAssigned("egna", e.id);
+      tasks.push({
+        id: `egna-blow-${e.id}`, realId: e.id, address: e.address,
+        projectName: "Egna Områden", serviceLabel: "Framblåsning",
+        status: e.blow_status as Status, assignedUsers: assigned,
+        scheduledDate: e.datum_planerat, source: "egna", sourceField: "blowStatus",
+        lat: e.lat, lng: e.lng,
+      });
+      tasks.push({
+        id: `egna-sweep-${e.id}`, realId: e.id, address: e.address,
+        projectName: "Egna Områden", serviceLabel: "Maskinsopning",
+        status: e.sweep_status as Status, assignedUsers: assigned,
+        scheduledDate: e.datum_planerat, source: "egna", sourceField: "sweepStatus",
+        lat: e.lat, lng: e.lng,
+      });
+    });
+
+    // TMM
+    const { data: tmm } = await supabase.from("tmm_entries").select("*");
+    (tmm ?? []).forEach(e => {
+      tasks.push({
+        id: `tmm-${e.id}`, realId: e.id, address: e.address || e.beskrivning,
+        projectName: e.foretag || "TMM", serviceLabel: e.typ || "Maskinsopning",
+        status: e.status as Status, assignedUsers: getAssigned("tmm", e.id),
+        scheduledDate: e.datum, source: "tmm", sourceField: "status",
+        lat: e.lat, lng: e.lng,
+      });
+    });
+
+    // Optimal
+    const { data: optimal } = await supabase.from("optimal_entries").select("*");
+    (optimal ?? []).forEach(e => {
+      tasks.push({
+        id: `optimal-${e.id}`, realId: e.id, address: e.address || e.name,
+        projectName: e.foretag || "Optimal", serviceLabel: e.typ || "Maskinsopning",
+        status: e.status as Status, assignedUsers: getAssigned("optimal", e.id),
+        scheduledDate: e.datum_start, source: "optimal", sourceField: "status",
+        lat: e.lat, lng: e.lng,
+      });
+    });
+
+    // Projects
+    const { data: projects } = await supabase.from("projects").select("*");
+    (projects ?? []).forEach(e => {
+      tasks.push({
+        id: `project-${e.id}`, realId: e.id, address: e.address || e.name,
+        projectName: e.name, serviceLabel: e.description || "Projekt",
+        status: e.status as Status, assignedUsers: getAssigned("project", e.id),
+        scheduledDate: e.datum_planerat, source: "project", sourceField: "status",
+        lat: e.lat, lng: e.lng,
+      });
+    });
+
+    tasks.sort((a, b) => (a.scheduledDate || "").localeCompare(b.scheduledDate || ""));
+    setAllTasks(tasks);
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { loadTasks(); }, [loadTasks]);
 
   // Weekly hours
   useEffect(() => {
@@ -62,12 +126,8 @@ export default function Dashboard() {
       const ws = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
       const we = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
       const { data } = await supabase
-        .from("user_time_entries")
-        .select("hours")
-        .gte("date", ws)
-        .lte("date", we);
-      const total = (data ?? []).reduce((s, r) => s + (Number(r.hours) || 0), 0);
-      setWeeklyHours(total);
+        .from("user_time_entries").select("hours").gte("date", ws).lte("date", we);
+      setWeeklyHours((data ?? []).reduce((s, r) => s + (Number(r.hours) || 0), 0));
     }
     loadWeeklyHours();
   }, []);
@@ -76,220 +136,121 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadLeaderboard() {
       const { data: timeData } = await supabase.from("user_time_entries").select("user_id, hours");
-      if (!timeData || timeData.length === 0) { setLeaderboard([]); return; }
+      if (!timeData?.length) { setLeaderboard([]); return; }
       const hoursMap = new Map<string, number>();
-      timeData.forEach((row) => {
-        const h = Number(row.hours) || 0;
-        hoursMap.set(row.user_id, (hoursMap.get(row.user_id) ?? 0) + h);
-      });
+      timeData.forEach(r => hoursMap.set(r.user_id, (hoursMap.get(r.user_id) ?? 0) + (Number(r.hours) || 0)));
       const userIds = Array.from(hoursMap.keys());
       const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
       const nameMap = new Map<string, string>();
-      (profiles ?? []).forEach((p) => nameMap.set(p.id, p.full_name || "Okänd"));
-      const entries: LeaderboardEntry[] = userIds
-        .map((uid) => ({ userId: uid, name: nameMap.get(uid) || "Okänd", totalHours: hoursMap.get(uid) ?? 0 }))
-        .filter((e) => e.totalHours > 0)
-        .sort((a, b) => b.totalHours - a.totalHours);
-      setLeaderboard(entries);
+      (profiles ?? []).forEach(p => nameMap.set(p.id, p.full_name || "Okänd"));
+      setLeaderboard(
+        userIds.map(uid => ({ userId: uid, name: nameMap.get(uid) || "Okänd", totalHours: hoursMap.get(uid) ?? 0 }))
+          .filter(e => e.totalHours > 0)
+          .sort((a, b) => b.totalHours - a.totalHours)
+      );
     }
     loadLeaderboard();
   }, []);
-
-  // Build unified task list
-  const allTasks: DailyTask[] = useMemo(() => {
-    const tasks: DailyTask[] = [];
-    tidxEntries.forEach((e) => {
-      tasks.push({
-        id: `tidx-sweep-${e.id}`, realId: e.id, address: e.address,
-        projectName: e.omrade || "Tidx Sopning", serviceType: "sweep", serviceLabel: "Maskinsopning",
-        status: e.status, assignedUser: e.ansvarig, scheduledDate: e.datumPlanerat,
-        source: "tidx", sourceField: "status", lat: e.lat, lng: e.lng,
-      });
-    });
-    egnaEntries.forEach((e) => {
-      tasks.push({
-        id: `egna-blow-${e.id}`, realId: e.id, address: e.address,
-        projectName: "Egna Områden", serviceType: "blow", serviceLabel: "Framblåsning",
-        status: e.blowStatus, assignedUser: e.ansvarig, scheduledDate: e.datumPlanerat,
-        source: "egna", sourceField: "blowStatus", lat: e.lat, lng: e.lng,
-      });
-      tasks.push({
-        id: `egna-sweep-${e.id}`, realId: e.id, address: e.address,
-        projectName: "Egna Områden", serviceType: "sweep", serviceLabel: "Maskinsopning",
-        status: e.sweepStatus, assignedUser: e.ansvarig, scheduledDate: e.datumPlanerat,
-        source: "egna", sourceField: "sweepStatus", lat: e.lat, lng: e.lng,
-      });
-    });
-    tasks.sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
-    return tasks;
-  }, [tidxEntries, egnaEntries]);
 
   const getDatePart = (s: string) => (s || "").slice(0, 10);
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
 
   const filterTasks = useCallback((tasks: DailyTask[]) => {
-    return tasks.filter((t) => {
-      if (filterService !== "all" && t.serviceType !== filterService) return false;
+    return tasks.filter(t => {
+      if (filterSource !== "all" && t.source !== filterSource) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
-      if (filterUser !== "all" && t.assignedUser !== filterUser) return false;
       return true;
     });
-  }, [filterService, filterStatus, filterUser]);
+  }, [filterSource, filterStatus]);
 
-  const todayTasks = filterTasks(allTasks.filter((t) => getDatePart(t.scheduledDate) === todayStr));
-  const tomorrowTasks = filterTasks(allTasks.filter((t) => getDatePart(t.scheduledDate) === tomorrowStr));
-  const upcomingTasks = filterTasks(allTasks.filter((t) => getDatePart(t.scheduledDate) > tomorrowStr));
+  const todayTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === todayStr));
+  const tomorrowTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) === tomorrowStr));
+  const upcomingTasks = filterTasks(allTasks.filter(t => getDatePart(t.scheduledDate) > tomorrowStr));
 
   const todayTotal = todayTasks.length;
-  const todayStarted = todayTasks.filter((t) => t.status === "in-progress").length;
-  const todayDone = todayTasks.filter((t) => t.status === "done").length;
+  const todayStarted = todayTasks.filter(t => t.status === "in-progress").length;
+  const todayDone = todayTasks.filter(t => t.status === "done").length;
 
-  const allUsers = useMemo(() =>
-    Array.from(new Set(allTasks.map((t) => t.assignedUser).filter(Boolean))).sort()
-  , [allTasks]);
-
-  // Map jobs for worker
   const mapJobs = useMemo(() => {
     const seen = new Set<string>();
     return todayTasks
       .filter(t => t.lat && t.lng)
       .filter(t => { if (seen.has(t.realId)) return false; seen.add(t.realId); return true; })
-      .map(t => ({
-        id: t.realId, name: t.projectName + " – " + t.address, address: t.address,
-        lat: t.lat!, lng: t.lng!, status: t.status, type: t.source,
-      }));
+      .map(t => ({ id: t.realId, name: t.projectName + " – " + t.address, address: t.address, lat: t.lat!, lng: t.lng!, status: t.status, type: t.source }));
   }, [todayTasks]);
 
   const handleStatusUpdate = async (task: DailyTask, newStatus: Status) => {
     setUpdating(task.id);
     try {
-      if (task.source === "tidx") {
-        await updateTidxEntry(task.realId, { status: newStatus });
-      } else {
-        if (task.sourceField === "blowStatus") {
-          await updateEgnaEntry(task.realId, { blowStatus: newStatus });
-        } else {
-          await updateEgnaEntry(task.realId, { sweepStatus: newStatus });
-        }
-      }
-      await refresh();
+      const field = task.source === "egna"
+        ? task.sourceField === "blowStatus" ? "blow_status" : "sweep_status"
+        : "status";
+      const update = { [field]: newStatus };
+
+      if (task.source === "tidx") await supabase.from("tidx_entries").update(update).eq("id", task.realId);
+      else if (task.source === "egna") await supabase.from("egna_entries").update(update).eq("id", task.realId);
+      else if (task.source === "tmm") await supabase.from("tmm_entries").update(update).eq("id", task.realId);
+      else if (task.source === "optimal") await supabase.from("optimal_entries").update(update).eq("id", task.realId);
+      else if (task.source === "project") await supabase.from("projects").update(update).eq("id", task.realId);
+      await loadTasks();
     } finally {
       setUpdating(null);
     }
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Arbete idag</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <h1 className="text-2xl font-bold tracking-tight">Arbete idag</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">
             {format(new Date(), "EEEE d MMMM yyyy", { locale: sv })}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <AdminTimeReminder />
-          <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:text-primary/80 transition-colors group">
-            Visa alla projekt
-            <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <Link to="/projects" className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:text-primary/80 transition-colors group">
+            Alla projekt
+            <ArrowUpRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Link>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="stat-card-primary animate-slide-up" style={{ animationDelay: "0ms" }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Totalt jobb idag</p>
-              <p className="text-5xl font-bold mt-2 text-foreground tracking-tight">{todayTotal}</p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-              <CalendarDays className="h-5 w-5 text-primary" />
-            </div>
-          </div>
-        </div>
-
-        <div className="stat-card animate-slide-up" style={{ animationDelay: "80ms" }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Påbörjade</p>
-              <p className="text-4xl font-bold mt-2 text-foreground tracking-tight">{todayStarted}</p>
-            </div>
-            <div className="w-9 h-9 rounded-lg bg-warning/15 flex items-center justify-center">
-              <Play className="h-4 w-4 text-warning" />
-            </div>
-          </div>
-          {todayTotal > 0 && (
-            <div className="mt-4">
-              <div className="progress-track">
-                <div className="progress-fill bg-warning" style={{ width: `${Math.round((todayStarted / todayTotal) * 100)}%` }} />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="stat-card animate-slide-up" style={{ animationDelay: "160ms" }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Klara</p>
-              <p className="text-4xl font-bold mt-2 text-foreground tracking-tight">{todayDone}</p>
-            </div>
-            <div className="w-9 h-9 rounded-lg bg-success/15 flex items-center justify-center">
-              <Check className="h-4 w-4 text-success" />
-            </div>
-          </div>
-          {todayTotal > 0 && (
-            <div className="mt-4">
-              <div className="progress-track">
-                <div className="progress-fill" style={{ width: `${Math.round((todayDone / todayTotal) * 100)}%` }} />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Weekly hours card */}
-        <div className="stat-card animate-slide-up" style={{ animationDelay: "240ms" }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Vecka {getISOWeek(new Date())}</p>
-              <p className="text-4xl font-bold mt-2 text-foreground tracking-tight">{weeklyHours.toFixed(1)}h</p>
-            </div>
-            <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
-              <Timer className="h-4 w-4 text-primary" />
-            </div>
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2">Totalt registrerade timmar</p>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <SummaryCard label="Totalt idag" value={todayTotal} icon={<CalendarDays className="h-4 w-4 text-primary" />} delay="0ms" />
+        <SummaryCard label="Påbörjade" value={todayStarted} icon={<Play className="h-4 w-4 text-warning" />} delay="60ms" progress={todayTotal > 0 ? todayStarted / todayTotal : 0} progressColor="bg-warning" />
+        <SummaryCard label="Klara" value={todayDone} icon={<Check className="h-4 w-4 text-success" />} delay="120ms" progress={todayTotal > 0 ? todayDone / todayTotal : 0} />
+        <SummaryCard label={`Vecka ${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer className="h-4 w-4 text-primary" />} delay="180ms" subtitle="Registrerade timmar" />
       </div>
 
       {/* Worker Map */}
       {mapJobs.length > 0 && (
-        <div className="space-y-2 animate-slide-up" style={{ animationDelay: "300ms" }}>
-          <h2 className="text-lg font-semibold tracking-tight">Dagens jobb på kartan</h2>
+        <div className="space-y-2 animate-slide-up" style={{ animationDelay: "220ms" }}>
+          <h2 className="text-sm font-semibold tracking-tight">Dagens jobb på kartan</h2>
           <DashboardWorkerMap jobs={mapJobs} />
         </div>
       )}
 
       {/* Leaderboard */}
       {leaderboard.length > 0 && (
-        <div className="glass-card p-5 animate-slide-up" style={{ animationDelay: "320ms" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight">Topplista – Registrerade timmar</h2>
+        <div className="rounded-xl border border-border/50 bg-card/80 p-4 animate-slide-up" style={{ animationDelay: "260ms" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold tracking-tight">Topplista – Timmar</h2>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {leaderboard.map((entry, i) => {
               const medalColors = ["text-yellow-400", "text-gray-400", "text-amber-600"];
               return (
-                <div key={entry.userId} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    {i < 3 ? <Medal className={`h-4 w-4 ${medalColors[i]}`} /> : <span className="text-xs font-bold text-muted-foreground">{i + 1}</span>}
+                <div key={entry.userId} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/30 border border-border/30">
+                  <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    {i < 3 ? <Medal className={`h-3.5 w-3.5 ${medalColors[i]}`} /> : <span className="text-[10px] font-bold text-muted-foreground">{i + 1}</span>}
                   </div>
-                  <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{entry.name}</p></div>
-                  <div className="text-right shrink-0"><p className="text-sm font-bold text-foreground">{entry.totalHours.toFixed(1)}h</p></div>
+                  <p className="flex-1 text-xs font-medium truncate">{entry.name}</p>
+                  <p className="text-xs font-bold text-foreground shrink-0">{entry.totalHours.toFixed(1)}h</p>
                 </div>
               );
             })}
@@ -298,37 +259,31 @@ export default function Dashboard() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <ListFilter className="h-4 w-4" />
-          <span className="text-xs font-medium uppercase tracking-wider">Filter</span>
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <ListFilter className="h-3.5 w-3.5" />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Filter</span>
         </div>
-        <Select value={filterService} onValueChange={setFilterService}>
-          <SelectTrigger className="w-[160px] h-9 text-xs bg-card border-border/50"><SelectValue placeholder="Tjänst" /></SelectTrigger>
+        <Select value={filterSource} onValueChange={setFilterSource}>
+          <SelectTrigger className="w-[140px] h-8 text-xs bg-card border-border/50"><SelectValue placeholder="Källa" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alla tjänster</SelectItem>
-            <SelectItem value="blow">Framblåsning</SelectItem>
-            <SelectItem value="sweep">Maskinsopning</SelectItem>
+            <SelectItem value="all">Alla typer</SelectItem>
+            <SelectItem value="tidx">Tidx</SelectItem>
+            <SelectItem value="egna">Egna</SelectItem>
+            <SelectItem value="tmm">TMM</SelectItem>
+            <SelectItem value="optimal">Optimal</SelectItem>
+            <SelectItem value="project">Projekt</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[160px] h-9 text-xs bg-card border-border/50"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-[140px] h-8 text-xs bg-card border-border/50"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alla statusar</SelectItem>
             <SelectItem value="pending">Ej påbörjad</SelectItem>
-            <SelectItem value="in-progress">Påbörjad</SelectItem>
+            <SelectItem value="in-progress">Pågår</SelectItem>
             <SelectItem value="done">Klar</SelectItem>
           </SelectContent>
         </Select>
-        {allUsers.length > 0 && (
-          <Select value={filterUser} onValueChange={setFilterUser}>
-            <SelectTrigger className="w-[160px] h-9 text-xs bg-card border-border/50"><SelectValue placeholder="Ansvarig" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla ansvariga</SelectItem>
-              {allUsers.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       {/* Today's Tasks */}
@@ -349,70 +304,57 @@ export default function Dashboard() {
   );
 }
 
+function SummaryCard({ label, value, icon, delay, progress, progressColor, subtitle }: {
+  label: string; value: string | number; icon: React.ReactNode; delay: string;
+  progress?: number; progressColor?: string; subtitle?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-card/80 p-3.5 animate-slide-up" style={{ animationDelay: delay }}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+          <p className="text-2xl font-bold mt-1 text-foreground tracking-tight">{value}</p>
+        </div>
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">{icon}</div>
+      </div>
+      {progress !== undefined && (
+        <div className="mt-2.5">
+          <div className="h-1 rounded-full bg-muted overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-500 ${progressColor || "bg-success"}`} style={{ width: `${Math.round(progress * 100)}%` }} />
+          </div>
+        </div>
+      )}
+      {subtitle && <p className="text-[10px] text-muted-foreground mt-1.5">{subtitle}</p>}
+    </div>
+  );
+}
+
 function TaskSection({ title, tasks, onStatusUpdate, updating, showDate = false }: {
   title: string; tasks: DailyTask[]; onStatusUpdate: (task: DailyTask, status: Status) => void;
   updating: string | null; showDate?: boolean;
 }) {
   if (tasks.length === 0) {
     return (
-      <div className="glass-card p-8 text-center animate-fade-in">
-        <p className="text-muted-foreground text-sm">{title === "Arbete idag" ? "Inga uppdrag planerade idag" : `Inga ${title.toLowerCase()}`}</p>
+      <div className="rounded-xl border border-dashed border-border/50 p-8 text-center animate-fade-in">
+        <p className="text-muted-foreground text-xs">{title === "Arbete idag" ? "Inga uppdrag planerade idag" : `Inga ${title.toLowerCase()}`}</p>
         {title === "Arbete idag" && (
-          <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm text-primary font-medium mt-4 hover:text-primary/80 transition-colors">
-            Visa alla projekt <ArrowUpRight className="h-3.5 w-3.5" />
+          <Link to="/projects" className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-3 hover:text-primary/80 transition-colors">
+            Visa alla projekt <ArrowUpRight className="h-3 w-3" />
           </Link>
         )}
       </div>
     );
   }
   return (
-    <div className="space-y-3 animate-fade-in">
+    <div className="space-y-2.5 animate-fade-in">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{tasks.length}</span>
+        <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+        <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{tasks.length}</span>
       </div>
-      <div className="grid gap-3">
-        {tasks.map((task) => <TaskCard key={task.id} task={task} onStatusUpdate={onStatusUpdate} updating={updating} showDate={showDate} />)}
-      </div>
-    </div>
-  );
-}
-
-function TaskCard({ task, onStatusUpdate, updating, showDate }: {
-  task: DailyTask; onStatusUpdate: (task: DailyTask, status: Status) => void;
-  updating: string | null; showDate?: boolean;
-}) {
-  const isUpdating = updating === task.id;
-  const isDone = task.status === "done";
-  const ServiceIcon = task.serviceType === "blow" ? Fan : Wind;
-  return (
-    <div className={`glass-card p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4 transition-all duration-300 ${isDone ? "opacity-60" : ""} ${isUpdating ? "animate-pulse" : ""}`}>
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${task.serviceType === "blow" ? "bg-primary/15" : "bg-accent/30"}`}>
-        <ServiceIcon className={`h-5 w-5 ${task.serviceType === "blow" ? "text-primary" : "text-accent-foreground"}`} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-foreground/90 truncate">{task.address}</p>
-        <div className="flex flex-wrap items-center gap-2 mt-1">
-          <span className="text-xs text-muted-foreground">{task.serviceLabel}</span>
-          {task.assignedUser && (<><span className="text-border">·</span><span className="text-xs text-muted-foreground">{task.assignedUser}</span></>)}
-          {showDate && task.scheduledDate && (<><span className="text-border">·</span><span className="text-xs text-muted-foreground">{task.scheduledDate}</span></>)}
-          <Link to={task.source === "tidx" ? "/tidx" : "/egna"} className="inline-flex items-center gap-0.5 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors">
-            {task.source === "tidx" ? "Tidx" : "Egna"}<ChevronRight className="h-3 w-3" />
-          </Link>
-        </div>
-      </div>
-      <div className="shrink-0"><StatusBadge status={task.status} /></div>
-      <div className="flex items-center gap-2 shrink-0">
-        {task.status === "pending" && (
-          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 border-warning/30 text-warning hover:bg-warning/10 hover:text-warning" onClick={() => onStatusUpdate(task, "in-progress")} disabled={isUpdating}>
-            <Play className="h-3 w-3" />Starta
-          </Button>
-        )}
-        {task.status !== "done" && (
-          <Button size="sm" className="h-8 text-xs gap-1.5" onClick={() => onStatusUpdate(task, "done")} disabled={isUpdating}>
-            <Check className="h-3 w-3" />Klar
-          </Button>
-        )}
+      <div className="grid gap-2">
+        {tasks.map(task => (
+          <DashboardTaskCard key={task.id} task={task} onStatusUpdate={onStatusUpdate} updating={updating} showDate={showDate} />
+        ))}
       </div>
     </div>
   );
