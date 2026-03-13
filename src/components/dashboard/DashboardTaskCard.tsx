@@ -58,12 +58,13 @@ interface Props {
   onTaskUpdated?: () => void;
 }
 
-export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating, showDate }: Props) {
+export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating, showDate, onTaskUpdated }: Props) {
   const isUpdating = updating === task.id;
   const isDone = task.status === "done";
   const config = sourceConfig[task.source];
   const Icon = config.icon;
   const [showCompletion, setShowCompletion] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   return (
     <>
