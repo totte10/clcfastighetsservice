@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { Clock, Plus, Pencil, Trash2, Save, X, Search, ImagePlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -16,6 +16,14 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { EntryImageUpload } from "@/components/EntryImageUpload";
 
 interface TimeEntry {
   id: string;
@@ -29,6 +37,22 @@ interface TimeEntry {
   notes: string;
 }
 
+interface ProjectOption {
+  id: string;
+  label: string;
+  address: string;
+  source: string;
+  projectNumber: string;
+}
+
+const JOB_TYPES = [
+  "Maskinsopning",
+  "Framblåsning",
+  "Snöröjning",
+  "Halkbekämpning",
+  "Övrigt",
+];
+
 const emptyForm = {
   date: new Date().toISOString().split("T")[0],
   start_time: "",
@@ -36,6 +60,9 @@ const emptyForm = {
   project: "",
   project_number: "",
   notes: "",
+  job_type: "",
+  flis_lass: "",
+  images: [] as string[],
 };
 
 export default function TimePage() {
@@ -46,6 +73,11 @@ export default function TimePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const { toast } = useToast();
+
+  // Project search
+  const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
+  const [projectSearchOpen, setProjectSearchOpen] = useState(false);
+  const [projectSearch, setProjectSearch] = useState("");
 
   const loadEntries = useCallback(async () => {
     if (!user) return;
@@ -75,9 +107,45 @@ export default function TimePage() {
     setLoading(false);
   }, [user, toast]);
 
-  useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
+  useEffect(() => { loadEntries(); }, [loadEntries]);
+
+  // Load available projects from all sources
+  const loadProjectOptions = useCallback(async () => {
+    const options: ProjectOption[] = [];
+
+    const [tidx, egna, tmm, optimal, projects] = await Promise.all([
+      supabase.from("tidx_entries").select("id, address, omrade, project_number"),
+      supabase.from("egna_entries").select("id, address, project_number"),
+      supabase.from("tmm_entries").select("id, address, beskrivning, foretag"),
+      supabase.from("optimal_entries").select("id, address, name, foretag"),
+      supabase.from("projects").select("id, address, name, project_number"),
+    ]);
+
+    (tidx.data ?? []).forEach(e => options.push({
+      id: e.id, label: `Tidx: ${e.omrade || e.address}`, address: e.address,
+      source: "tidx", projectNumber: e.project_number || "",
+    }));
+    (egna.data ?? []).forEach(e => options.push({
+      id: e.id, label: `Egna: ${e.address}`, address: e.address,
+      source: "egna", projectNumber: e.project_number || "",
+    }));
+    (tmm.data ?? []).forEach(e => options.push({
+      id: e.id, label: `TMM: ${e.foretag || e.beskrivning} - ${e.address}`, address: e.address,
+      source: "tmm", projectNumber: "",
+    }));
+    (optimal.data ?? []).forEach(e => options.push({
+      id: e.id, label: `Optimal: ${e.name} - ${e.address}`, address: e.address,
+      source: "optimal", projectNumber: "",
+    }));
+    (projects.data ?? []).forEach(e => options.push({
+      id: e.id, label: `Projekt: ${e.name} - ${e.address}`, address: e.address,
+      source: "project", projectNumber: e.project_number || "",
+    }));
+
+    setProjectOptions(options);
+  }, []);
+
+  useEffect(() => { loadProjectOptions(); }, [loadProjectOptions]);
 
   // Realtime subscription
   useEffect(() => {
@@ -90,6 +158,16 @@ export default function TimePage() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, loadEntries]);
+
+  const filteredProjects = useMemo(() => {
+    if (!projectSearch) return projectOptions;
+    const q = projectSearch.toLowerCase();
+    return projectOptions.filter(p =>
+      p.label.toLowerCase().includes(q) || p.address.toLowerCase().includes(q)
+    );
+  }, [projectOptions, projectSearch]);
+
+  const isSweepType = form.job_type.toLowerCase().includes("maskinsopning");
 
   const openAdd = () => {
     setEditingId(null);
@@ -106,6 +184,9 @@ export default function TimePage() {
       project: entry.project,
       project_number: entry.project_number,
       notes: entry.notes,
+      job_type: "",
+      flis_lass: "",
+      images: [],
     });
     setShowDialog(true);
   };
@@ -115,15 +196,36 @@ export default function TimePage() {
       toast({ title: "Fyll i datum och starttid", variant: "destructive" });
       return;
     }
+    if (!editingId && !form.job_type) {
+      toast({ title: "Välj typ av uppdrag", variant: "destructive" });
+      return;
+    }
+    if (!editingId && isSweepType) {
+      if (!form.end_time) {
+        toast({ title: "Sluttid är obligatoriskt för maskinsopning", variant: "destructive" });
+        return;
+      }
+      const flis = parseInt(form.flis_lass);
+      if (!flis || flis < 1 || flis > 10) {
+        toast({ title: "Deponi måste vara mellan 1-10", variant: "destructive" });
+        return;
+      }
+    }
+
+    const projectLabel = form.job_type ? `${form.project} (${form.job_type})` : form.project;
+    const noteParts: string[] = [];
+    if (form.notes) noteParts.push(form.notes);
+    if (isSweepType && form.flis_lass) noteParts.push(`Deponi: ${form.flis_lass} lass`);
+    if (form.images.length > 0) noteParts.push(`Bilder: ${form.images.length} st`);
 
     const payload = {
       user_id: user.id,
       date: form.date,
       start_time: form.start_time,
       end_time: form.end_time || null,
-      project: form.project,
+      project: editingId ? form.project : projectLabel,
       project_number: form.project_number,
-      notes: form.notes,
+      notes: noteParts.join(" | "),
     };
 
     if (editingId) {
@@ -149,6 +251,11 @@ export default function TimePage() {
 
   const fmtDate = (d: string) => {
     try { return new Date(d).toLocaleDateString("sv-SE"); } catch { return d; }
+  };
+
+  const selectProject = (opt: ProjectOption) => {
+    setForm(f => ({ ...f, project: opt.label, project_number: opt.projectNumber }));
+    setProjectSearchOpen(false);
   };
 
   return (
@@ -232,38 +339,138 @@ export default function TimePage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "Redigera tidspost" : "Ny tidspost"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
+            {/* Project search - only for new entries */}
+            {!editingId && (
+              <div className="space-y-2">
+                <Label>Sök adress / projekt *</Label>
+                <Popover open={projectSearchOpen} onOpenChange={setProjectSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal truncate">
+                      <Search className="mr-2 h-4 w-4 shrink-0" />
+                      {form.project || "Välj projekt..."}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Sök adress eller projektnamn..."
+                        value={projectSearch}
+                        onValueChange={setProjectSearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>Inga projekt hittades.</CommandEmpty>
+                        <CommandGroup>
+                          {filteredProjects.slice(0, 20).map(opt => (
+                            <CommandItem
+                              key={`${opt.source}-${opt.id}`}
+                              value={opt.label}
+                              onSelect={() => selectProject(opt)}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm">{opt.label}</span>
+                                {opt.projectNumber && (
+                                  <span className="text-xs text-muted-foreground">{opt.projectNumber}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {/* Job type - only for new entries */}
+            {!editingId && (
+              <div className="space-y-2">
+                <Label>Typ av uppdrag *</Label>
+                <Select value={form.job_type} onValueChange={v => setForm(f => ({ ...f, job_type: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Välj typ..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {JOB_TYPES.map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Date + time */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Datum</Label>
-                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                <Label>Datum *</Label>
+                <Input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label>Starttid</Label>
-                <Input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+                <Label>Starttid *</Label>
+                <Input type="time" value={form.start_time} onChange={(e) => setForm(f => ({ ...f, start_time: e.target.value }))} />
               </div>
               <div className="space-y-2">
-                <Label>Sluttid</Label>
-                <Input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+                <Label>Sluttid {isSweepType && !editingId ? "*" : ""}</Label>
+                <Input type="time" value={form.end_time} onChange={(e) => setForm(f => ({ ...f, end_time: e.target.value }))} />
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {/* Deponi - only for maskinsopning on new entries */}
+            {!editingId && isSweepType && (
               <div className="space-y-2">
-                <Label>Projekt / Uppdrag</Label>
-                <Input value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} placeholder="T.ex. Tidx Sopning Centrum" />
+                <Label>Deponi (fulla lass med flis) * (1-10)</Label>
+                <Select value={form.flis_lass} onValueChange={v => setForm(f => ({ ...f, flis_lass: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Välj antal..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            )}
+
+            {/* Edit mode: project fields */}
+            {editingId && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Projekt / Uppdrag</Label>
+                  <Input value={form.project} onChange={(e) => setForm(f => ({ ...f, project: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Projektnummer</Label>
+                  <Input value={form.project_number} onChange={(e) => setForm(f => ({ ...f, project_number: e.target.value }))} />
+                </div>
+              </div>
+            )}
+
+            {/* Images - only for new entries */}
+            {!editingId && (
               <div className="space-y-2">
-                <Label>Projektnummer</Label>
-                <Input value={form.project_number} onChange={(e) => setForm({ ...form, project_number: e.target.value })} placeholder="T.ex. P-2026-0001" />
+                <Label>Bilder (valfritt)</Label>
+                <EntryImageUpload
+                  images={form.images}
+                  onImagesChange={(imgs) => setForm(f => ({ ...f, images: imgs }))}
+                />
               </div>
-            </div>
+            )}
+
+            {/* Comment */}
             <div className="space-y-2">
-              <Label>Anteckning</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Valfri anteckning..." rows={2} />
+              <Label>Kommentar (valfritt)</Label>
+              <Textarea
+                value={form.notes}
+                onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Valfri anteckning..."
+                rows={2}
+              />
             </div>
           </div>
           <DialogFooter>
