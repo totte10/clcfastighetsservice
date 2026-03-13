@@ -291,6 +291,25 @@ export default function Dashboard() {
     }
   };
 
+  const handleUndo = async (task: DailyTask) => {
+    if (!user) return;
+    setUpdating(task.id);
+    try {
+      const field = task.source === "egna"
+        ? task.sourceField === "blowStatus" ? "blow_status" : "sweep_status"
+        : "status";
+      const update = { [field]: "pending" };
+      if (task.source === "tidx") await supabase.from("tidx_entries").update(update).eq("id", task.realId);
+      else if (task.source === "egna") await supabase.from("egna_entries").update(update).eq("id", task.realId);
+      else if (task.source === "tmm") await supabase.from("tmm_entries").update(update).eq("id", task.realId);
+      else if (task.source === "optimal") await supabase.from("optimal_entries").update(update).eq("id", task.realId);
+      else if (task.source === "project") await supabase.from("projects").update(update).eq("id", task.realId);
+      await loadTasks();
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
