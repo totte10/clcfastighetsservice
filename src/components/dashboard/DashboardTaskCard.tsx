@@ -55,6 +55,7 @@ interface Props {
   onUndo?: (task: DailyTask) => void;
   updating: string | null;
   showDate?: boolean;
+  onTaskUpdated?: () => void;
 }
 
 export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating, showDate }: Props) {
