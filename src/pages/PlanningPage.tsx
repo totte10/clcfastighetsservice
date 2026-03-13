@@ -36,6 +36,7 @@ const typeConfig: Record<EntryType, { label: string; icon: typeof Wind; color: s
   project: { label: "Projekt", icon: FolderOpen, color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   time: { label: "Tid", icon: Clock, color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
   optimal: { label: "Optimal", icon: Truck, color: "bg-rose-500/20 text-rose-400 border-rose-500/30" },
+  tmm: { label: "TMM", icon: Wrench, color: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
 };
 
 function normalizeDate(raw: string): string | null {
