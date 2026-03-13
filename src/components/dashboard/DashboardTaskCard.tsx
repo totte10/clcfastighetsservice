@@ -76,7 +76,7 @@ export function DashboardTaskCard({ task, onStart, onComplete, onUndo, updating,
 
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="flex items-start justify-between gap-2">
-              <p className="font-medium text-sm text-foreground leading-tight truncate">{task.address}</p>
+              <button onClick={() => setShowEdit(true)} className="font-medium text-sm text-foreground leading-tight truncate hover:text-primary transition-colors text-left cursor-pointer underline-offset-2 hover:underline">{task.address}</button>
               <Badge variant="outline" className={`shrink-0 text-[10px] px-1.5 py-0 h-5 border ${statusStyles[task.status]}`}>
                 {statusLabels[task.status]}
               </Badge>
