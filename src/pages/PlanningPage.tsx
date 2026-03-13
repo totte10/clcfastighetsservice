@@ -80,7 +80,6 @@ export default function PlanningPage() {
       .then(({ data }) => {
         setAllWorkers((data ?? []).map(p => ({ id: p.id, name: p.full_name || "Okänd" })));
       });
-      .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
   const loadItems = useCallback(async () => {
