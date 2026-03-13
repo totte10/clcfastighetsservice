@@ -1,4 +1,4 @@
-import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush } from "lucide-react";
+import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush, MapPin, DollarSign, Route, AlertTriangle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import clcLogo from "@/assets/clc-logo.png";
@@ -21,10 +21,13 @@ const items = [
   { title: "Optimal Områden", url: "/optimal", icon: Truck, adminOnly: false },
   { title: "Sopningar TMM", url: "/tmm", icon: Brush, adminOnly: false },
   { title: "Övriga Projekt", url: "/projects", icon: FolderOpen, adminOnly: false },
+  { title: "Ruttplanering", url: "/route", icon: Route, adminOnly: false },
   { title: "Chatt", url: "/chat", icon: MessageCircle, adminOnly: false },
   { title: "Tidrapport", url: "/time", icon: Clock, adminOnly: false },
   { title: "Planering", url: "/planning", icon: CalendarDays, adminOnly: true },
   { title: "Samlad Rapport", url: "/time/reports", icon: ClipboardList, adminOnly: true },
+  { title: "Lönerapport", url: "/payroll", icon: DollarSign, adminOnly: true },
+  { title: "Saknade koordinater", url: "/missing-coords", icon: AlertTriangle, adminOnly: true },
   { title: "Admin", url: "/admin", icon: Settings, adminOnly: true },
 ];
 
