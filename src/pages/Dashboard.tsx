@@ -81,12 +81,13 @@ export default function Dashboard() {
     // TMM
     const { data: tmm } = await supabase.from("tmm_entries").select("*");
     (tmm ?? []).forEach(e => {
+      const isSweepType = (e.typ || "").toLowerCase().includes("sopning");
       tasks.push({
         id: `tmm-${e.id}`, realId: e.id, address: e.address || e.beskrivning,
         projectName: e.foretag || "TMM", serviceLabel: e.typ || "Maskinsopning",
         status: e.status as Status, assignedUsers: getAssigned("tmm", e.id),
         scheduledDate: e.datum, source: "tmm", sourceField: "status",
-        lat: e.lat, lng: e.lng,
+        lat: e.lat, lng: e.lng, isSweep: isSweepType, flisLass: e.flis_lass ?? 0,
       });
     });
 
