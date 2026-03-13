@@ -66,10 +66,15 @@ export default function MissingCoordinatesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const tableMap: Record<string, string> = {
-    tidx: "tidx_entries", egna: "egna_entries", tmm: "tmm_entries",
-    optimal: "optimal_entries", project: "projects", area: "areas",
-  };
+  async function updateCoords(type: string, id: string, lat: number, lng: number) {
+    const update = { lat, lng };
+    if (type === "tidx") await supabase.from("tidx_entries").update(update).eq("id", id);
+    else if (type === "egna") await supabase.from("egna_entries").update(update).eq("id", id);
+    else if (type === "tmm") await supabase.from("tmm_entries").update(update).eq("id", id);
+    else if (type === "optimal") await supabase.from("optimal_entries").update(update).eq("id", id);
+    else if (type === "project") await supabase.from("projects").update(update).eq("id", id);
+    else if (type === "area") await supabase.from("areas").update(update).eq("id", id);
+  }
 
   const handleGeocode = async (entry: MissingEntry) => {
     if (!entry.address) {
@@ -83,8 +88,7 @@ export default function MissingCoordinatesPage() {
         toast({ title: "Kunde inte hitta koordinater för adressen", variant: "destructive" });
         return;
       }
-      const table = tableMap[entry.type];
-      await supabase.from(table).update({ lat: coords.lat, lng: coords.lng }).eq("id", entry.id);
+      await updateCoords(entry.type, entry.id, coords.lat, coords.lng);
       toast({ title: `Koordinater sparade för ${entry.name}` });
       load();
     } finally {
@@ -104,8 +108,7 @@ export default function MissingCoordinatesPage() {
       toast({ title: "Ogiltiga koordinater", variant: "destructive" });
       return;
     }
-    const table = tableMap[entry.type];
-    await supabase.from(table).update({ lat, lng }).eq("id", entry.id);
+    await updateCoords(entry.type, entry.id, lat, lng);
     toast({ title: `Koordinater sparade för ${entry.name}` });
     setManualCoords(prev => { const copy = { ...prev }; delete copy[entry.id]; return copy; });
     load();
@@ -119,12 +122,10 @@ export default function MissingCoordinatesPage() {
       try {
         const coords = await geocodeAddress(entry.address);
         if (coords) {
-          const table = tableMap[entry.type];
-          await supabase.from(table).update({ lat: coords.lat, lng: coords.lng }).eq("id", entry.id);
+          await updateCoords(entry.type, entry.id, coords.lat, coords.lng);
           fixed++;
         }
       } catch { /* skip */ }
-      // Rate limit
       await new Promise(r => setTimeout(r, 1200));
     }
     toast({ title: `Geokodade ${fixed} av ${entries.length} adresser` });
