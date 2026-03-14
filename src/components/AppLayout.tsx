@@ -1,74 +1,28 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationBell } from "@/components/NotificationBell";
-import BottomNav from "@/components/BottomNav";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-
   return (
-
     <SidebarProvider>
-
-      <div className="min-h-screen flex w-full bg-background">
-
-        {/* Desktop Sidebar */}
-
-        <div className="hidden md:block">
-          <AppSidebar />
-        </div>
-
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-
-          {/* Header */}
-
           <header className="h-14 flex items-center justify-between border-b border-border/30 bg-background/80 backdrop-blur-xl px-4 md:px-6 shrink-0 sticky top-0 z-10">
-
             <div className="flex items-center">
-
-              {/* Sidebar button (desktop) */}
-
-              <div className="hidden md:block">
-                <SidebarTrigger className="mr-4 text-muted-foreground hover:text-foreground transition-colors" />
-              </div>
-
+              <SidebarTrigger className="mr-4 text-muted-foreground hover:text-foreground transition-colors" />
               <div className="flex items-center gap-2">
-
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-slow" />
-
                 <span className="text-xs font-medium text-muted-foreground tracking-wide">
                   CLC Fastighetsservice
                 </span>
-
               </div>
-
             </div>
-
             <NotificationBell />
-
           </header>
-
-          {/* Scrollable content */}
-
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 pt-safe">
-
-            {children}
-
-          </main>
-
-          {/* Bottom navigation (mobile) */}
-
-          <div className="md:hidden">
-
-            <BottomNav />
-
-          </div>
-
+          <main className="flex-1 p-4 md:p-8 overflow-auto">{children}</main>
         </div>
-
       </div>
-
     </SidebarProvider>
-
   );
-
 }
