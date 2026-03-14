@@ -21,6 +21,7 @@ subMonths
 
 import { sv } from "date-fns/locale"
 
+
 type EntryType =
 | "tidx"
 | "egna"
@@ -28,7 +29,9 @@ type EntryType =
 | "optimal"
 | "tmm"
 
+
 interface PlanningItem {
+
 id:string
 type:EntryType
 title:string
@@ -36,7 +39,33 @@ address:string
 date:string
 status:string
 project_number?:string
+
 }
+
+
+function color(type:EntryType){
+
+switch(type){
+
+case "tidx":
+return "bg-blue-500/20"
+
+case "egna":
+return "bg-emerald-500/20"
+
+case "optimal":
+return "bg-purple-500/20"
+
+case "tmm":
+return "bg-orange-500/20"
+
+default:
+return "bg-cyan-500/20"
+
+}
+
+}
+
 
 export default function PlanningPage(){
 
@@ -44,10 +73,11 @@ const { user } = useAuth()
 
 const [items,setItems] = useState<PlanningItem[]>([])
 const [workers,setWorkers] = useState<any[]>([])
-const [selectedDay,setSelectedDay] = useState<Date | null>(null)
+const [selectedDay,setSelectedDay] = useState<Date|null>(null)
+
 const [currentMonth,setCurrentMonth] = useState(new Date())
 
-const [editing,setEditing] = useState<PlanningItem | null>(null)
+const [editing,setEditing] = useState<PlanningItem|null>(null)
 const [creating,setCreating] = useState(false)
 
 const [form,setForm] = useState<any>({
@@ -58,7 +88,11 @@ project_number:"",
 worker:""
 })
 
-const [isAdmin,setIsAdmin] = useState<boolean | null>(null)
+const [isAdmin,setIsAdmin] = useState<boolean|null>(null)
+
+
+
+/* ADMIN CHECK */
 
 useEffect(()=>{
 
@@ -71,11 +105,16 @@ supabase
 .eq("role","admin")
 .maybeSingle()
 .then(({data})=>{
+
 setIsAdmin(!!data)
+
 })
 
 },[user])
 
+
+
+/* LOAD WORKERS */
 
 useEffect(()=>{
 
@@ -83,11 +122,16 @@ supabase
 .from("profiles")
 .select("id,full_name")
 .then(({data})=>{
+
 setWorkers(data ?? [])
+
 })
 
 },[])
 
+
+
+/* LOAD PROJECTS */
 
 async function loadItems(){
 
@@ -123,35 +167,52 @@ supabase
 
 ])
 
+
 const result:PlanningItem[] = []
 
+
 tidxRes.data?.forEach(r=>{
+
 if(!r.datum_planerat) return
+
 result.push({
+
 id:r.id,
 type:"tidx",
 title:r.omrade,
 address:r.address ?? "",
 date:r.datum_planerat.slice(0,10),
 status:r.status
-})
+
 })
 
+})
+
+
 egnaRes.data?.forEach(r=>{
+
 if(!r.datum_planerat) return
+
 result.push({
+
 id:r.id,
 type:"egna",
 title:r.address,
 address:r.address,
 date:r.datum_planerat.slice(0,10),
 status:"pending"
-})
+
 })
 
+})
+
+
 projRes.data?.forEach(r=>{
+
 if(!r.datum_planerat) return
+
 result.push({
+
 id:r.id,
 type:"project",
 title:r.name,
@@ -159,62 +220,93 @@ address:r.address ?? "",
 date:r.datum_planerat.slice(0,10),
 status:r.status,
 project_number:r.project_number
-})
+
 })
 
+})
+
+
 optimalRes.data?.forEach(r=>{
+
 if(!r.datum_start) return
+
 result.push({
+
 id:r.id,
 type:"optimal",
 title:r.name,
 address:"",
 date:r.datum_start.slice(0,10),
 status:r.status
-})
+
 })
 
+})
+
+
 tmmRes.data?.forEach(r=>{
+
 if(!r.datum) return
+
 result.push({
+
 id:r.id,
 type:"tmm",
 title:r.beskrivning,
 address:r.address ?? "",
 date:r.datum.slice(0,10),
 status:r.status
+
 })
+
 })
+
 
 setItems(result)
 
 }
 
+
 useEffect(()=>{
+
 loadItems()
+
 },[])
+
+
+
+/* CALENDAR */
 
 const monthStart = startOfMonth(currentMonth)
 const monthEnd = endOfMonth(currentMonth)
 
 const days = eachDayOfInterval({
+
 start:monthStart,
 end:monthEnd
+
 })
+
 
 const itemsByDate = useMemo(()=>{
 
 const map = new Map<string,PlanningItem[]>()
 
 items.forEach(i=>{
+
 const arr = map.get(i.date) ?? []
+
 arr.push(i)
+
 map.set(i.date,arr)
+
 })
 
 return map
 
 },[items])
+
+
 
 const selectedItems = useMemo(()=>{
 
@@ -227,13 +319,16 @@ return itemsByDate.get(key) ?? []
 },[selectedDay,itemsByDate])
 
 
+
 if(isAdmin===null) return null
 if(!isAdmin) return <Navigate to="/" replace/>
+
 
 
 return(
 
 <div className="space-y-6 pb-24">
+
 
 {/* HEADER */}
 
@@ -247,21 +342,28 @@ Planering
 
 </h1>
 
+
 <div className="flex gap-2">
 
 <Button
 variant="ghost"
 onClick={()=>setCurrentMonth(subMonths(currentMonth,1))}
 >
+
 ←
+
 </Button>
+
 
 <Button
 variant="ghost"
 onClick={()=>setCurrentMonth(addMonths(currentMonth,1))}
 >
+
 →
+
 </Button>
+
 
 <Button
 onClick={()=>{
@@ -286,6 +388,8 @@ Nytt uppdrag
 </div>
 
 </div>
+
+
 
 {/* CALENDAR */}
 
@@ -315,13 +419,14 @@ className="min-h-[120px] border border-border/40 p-2 cursor-pointer hover:bg-acc
 
 </div>
 
+
 <div className="space-y-1">
 
 {dayItems.map(item=>(
 
 <div
 key={item.id}
-className="text-xs px-2 py-1 rounded bg-emerald-600/30 truncate"
+className={`text-xs px-2 py-1 rounded truncate ${color(item.type)}`}
 >
 
 {item.title}
@@ -343,6 +448,7 @@ className="text-xs px-2 py-1 rounded bg-emerald-600/30 truncate"
 </CardContent>
 
 </Card>
+
 
 
 {/* DAY DETAILS */}
@@ -383,7 +489,11 @@ worker:""
 className="border rounded-lg p-3 cursor-pointer hover:bg-accent"
 >
 
-<p className="font-medium">{item.title}</p>
+<p className="font-medium">
+
+{item.title}
+
+</p>
 
 <p className="text-xs text-muted-foreground">
 
