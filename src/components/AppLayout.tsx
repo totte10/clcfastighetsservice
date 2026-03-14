@@ -64,7 +64,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Content */}
 
           <main
-            className="flex-1 overflow-y-auto px-4 pt-4 pb-[120px] md:px-8 border-2">
+            className="flex-1 overflow-y-auto px-4 pt-4 pb-[120px] md:px-8 border-2 border-secondary">
 
 
 
