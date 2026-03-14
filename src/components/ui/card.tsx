@@ -11,14 +11,14 @@ ref={ref}
 className={cn(
 `
 rounded-xl
-border border-border/40
-bg-card/90
+border
+border-border
+bg-card
 text-card-foreground
-shadow-md
-backdrop-blur-sm
+shadow-lg
 transition-all
 duration-200
-hover:shadow-xl
+hover:shadow-2xl
 `,
 className
 )}
@@ -45,7 +45,7 @@ flex-col
 space-y-2
 p-6
 border-b
-border-border/40
+border-border
 `,
 className
 )}
@@ -67,7 +67,7 @@ React.HTMLAttributes<HTMLHeadingElement>
 ref={ref}
 className={cn(
 `
-text-xl
+text-lg
 font-semibold
 tracking-tight
 `,
@@ -143,7 +143,7 @@ justify-between
 p-6
 pt-0
 border-t
-border-border/30
+border-border
 `,
 className
 )}
