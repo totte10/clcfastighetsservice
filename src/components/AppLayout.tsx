@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationBell } from "@/components/NotificationBell";
 import BottomNav from "@/components/BottomNav";
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+export function AppLayout({ children }: {children: React.ReactNode;}) {
 
   return (
 
@@ -22,20 +22,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Premium Header */}
 
           <header
-            className="
-            pt-[env(safe-area-inset-top)]
-            h-[64px]
-            flex
-            items-center
-            justify-between
-            px-4 md:px-6
-            border-b border-white/5
-            bg-[rgba(2,6,23,0.65)]
-            backdrop-blur-2xl
-            sticky
-            top-0
-            z-40
-          ">
+            className="pt-[env(safe-area-inset-top)] h-[64px] flex items-center justify-between md:px-6 border-b border-white/5 bg-[rgba(2,6,23,0.65)] backdrop-blur-2xl sticky top-0 z-40 my-[15px] py-0 px-[10px] gap-0">
+
+
+
+
+
+
+
+
+
+
+
+
+            
 
             <div className="flex items-center gap-3">
 
@@ -47,7 +47,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
               <div className="flex items-center gap-2">
 
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/>
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
 
                 <span className="text-xs font-medium text-muted-foreground tracking-wide">
                   CLC Fastighetsservice
@@ -71,8 +71,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             pt-4
             pb-[120px]
             md:px-8
-          "
-          >
+          ">
+            
 
             {children}
 
@@ -90,8 +90,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       </div>
 
-    </SidebarProvider>
+    </SidebarProvider>);
 
-  );
+
 
 }
