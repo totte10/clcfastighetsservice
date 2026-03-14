@@ -95,7 +95,7 @@ export default function BottomNav() {
         
 
         <div
-          className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] border border-primary/40 shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 flex items-center justify-center rounded-sm">
+          className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] border border-primary/40 shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 flex items-center justify-center rounded-none">
 
 
 
@@ -111,12 +111,12 @@ export default function BottomNav() {
 
           <img
 
-            className="w-[32px] h-[32px] object-fill border-0 border-none rounded-sm"
+            className="w-[32px] h-[32px] object-fill border-0 border-none rounded-sm" src="/lovable-uploads/9302de27-0008-45ef-928d-5b0cad3f43b9.png" />
 
 
 
 
-            src="/lovable-uploads/beb39a0a-fb53-420d-9459-6ef8b369da4e.png" />
+          
           
 
         </div>
