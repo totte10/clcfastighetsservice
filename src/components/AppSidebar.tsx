@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush, Route, AlertTriangle, DollarSign, ChevronDown, Paintbrush } from "lucide-react";
+import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush, Route, AlertTriangle, DollarSign, ChevronDown, Paintbrush, Volume2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import clcLogo from "@/assets/clc-logo.png";
