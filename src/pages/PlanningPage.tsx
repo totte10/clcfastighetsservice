@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { Navigate } from "react-router-dom"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
 import { CalendarDays } from "lucide-react"
 
 import {
@@ -13,12 +15,12 @@ format,
 startOfMonth,
 endOfMonth,
 eachDayOfInterval,
-isSameDay,
 addMonths,
 subMonths
 } from "date-fns"
 
 import { sv } from "date-fns/locale"
+
 
 type EntryType =
 | "tidx"
@@ -27,25 +29,46 @@ type EntryType =
 | "optimal"
 | "tmm"
 
+
 interface PlanningItem {
 
 id:string
 type:EntryType
 title:string
+address:string
 date:string
 status:string
+project_number?:string
 
 }
+
 
 export default function PlanningPage(){
 
 const { user } = useAuth()
 
 const [items,setItems] = useState<PlanningItem[]>([])
+const [workers,setWorkers] = useState<any[]>([])
+
+const [selectedDay,setSelectedDay] = useState<Date|null>(null)
+
 const [currentMonth,setCurrentMonth] = useState(new Date())
-const [selectedDay,setSelectedDay] = useState<Date | null>(null)
-const [editingItem,setEditingItem] = useState<PlanningItem | null>(null)
-const [isAdmin,setIsAdmin] = useState<boolean | null>(null)
+
+const [editing,setEditing] = useState<PlanningItem|null>(null)
+const [creating,setCreating] = useState(false)
+
+const [form,setForm] = useState<any>({
+
+name:"",
+address:"",
+date:"",
+project_number:"",
+worker:""
+
+})
+
+const [isAdmin,setIsAdmin] = useState<boolean|null>(null)
+
 
 useEffect(()=>{
 
@@ -58,12 +81,30 @@ supabase
 .eq("role","admin")
 .maybeSingle()
 .then(({data})=>{
+
 setIsAdmin(!!data)
+
 })
 
 },[user])
 
-const loadItems = useCallback(async()=>{
+
+useEffect(()=>{
+
+supabase
+.from("profiles")
+.select("id,full_name")
+.then(({data})=>{
+
+setWorkers(data ?? [])
+
+})
+
+},[])
+
+
+
+async function loadItems(){
 
 const [
 
@@ -85,7 +126,7 @@ supabase
 
 supabase
 .from("projects")
-.select("id,name,datum_planerat,status"),
+.select("id,name,address,datum_planerat,status,project_number"),
 
 supabase
 .from("optimal_entries")
@@ -93,11 +134,13 @@ supabase
 
 supabase
 .from("tmm_entries")
-.select("id,address,beskrivning,datum,status,foretag")
+.select("id,address,beskrivning,datum,status")
 
 ])
 
+
 const result:PlanningItem[] = []
+
 
 tidxRes.data?.forEach(r=>{
 
@@ -107,13 +150,15 @@ result.push({
 
 id:r.id,
 type:"tidx",
-title:`${r.omrade} – ${r.address?.split(",")[0]}`,
+title:r.omrade,
+address:r.address ?? "",
 date:r.datum_planerat.slice(0,10),
 status:r.status
 
 })
 
 })
+
 
 egnaRes.data?.forEach(r=>{
 
@@ -123,13 +168,15 @@ result.push({
 
 id:r.id,
 type:"egna",
-title:r.address?.split(",")[0],
+title:r.address,
+address:r.address,
 date:r.datum_planerat.slice(0,10),
 status:"pending"
 
 })
 
 })
+
 
 projRes.data?.forEach(r=>{
 
@@ -140,12 +187,15 @@ result.push({
 id:r.id,
 type:"project",
 title:r.name,
+address:r.address ?? "",
 date:r.datum_planerat.slice(0,10),
-status:r.status
+status:r.status,
+project_number:r.project_number
 
 })
 
 })
+
 
 optimalRes.data?.forEach(r=>{
 
@@ -156,12 +206,14 @@ result.push({
 id:r.id,
 type:"optimal",
 title:r.name,
+address:"",
 date:r.datum_start.slice(0,10),
 status:r.status
 
 })
 
 })
+
 
 tmmRes.data?.forEach(r=>{
 
@@ -171,7 +223,8 @@ result.push({
 
 id:r.id,
 type:"tmm",
-title:`${r.foretag ?? "TMM"} – ${(r.address ?? r.beskrivning)?.split(",")[0]}`,
+title:r.beskrivning,
+address:r.address ?? "",
 date:r.datum.slice(0,10),
 status:r.status
 
@@ -179,15 +232,19 @@ status:r.status
 
 })
 
+
 setItems(result)
 
-},[])
+}
+
 
 useEffect(()=>{
 
 loadItems()
 
-},[loadItems])
+},[])
+
+
 
 const monthStart = startOfMonth(currentMonth)
 const monthEnd = endOfMonth(currentMonth)
@@ -198,6 +255,7 @@ start:monthStart,
 end:monthEnd
 
 })
+
 
 const itemsByDate = useMemo(()=>{
 
@@ -217,6 +275,8 @@ return map
 
 },[items])
 
+
+
 const selectedItems = useMemo(()=>{
 
 if(!selectedDay) return []
@@ -227,14 +287,19 @@ return itemsByDate.get(key) ?? []
 
 },[selectedDay,itemsByDate])
 
-if(isAdmin === null) return null
+
+
+if(isAdmin===null) return null
 if(!isAdmin) return <Navigate to="/" replace/>
+
 
 return(
 
 <div className="space-y-6 pb-24">
 
-{/* Header */}
+
+{/* HEADER */}
+
 
 <div className="flex justify-between items-center">
 
@@ -246,7 +311,8 @@ Planering
 
 </h1>
 
-<div className="flex gap-3">
+
+<div className="flex gap-2">
 
 <Button
 variant="ghost"
@@ -266,11 +332,38 @@ onClick={()=>setCurrentMonth(addMonths(currentMonth,1))}
 
 </Button>
 
-</div>
+
+<Button
+onClick={()=>{
+
+setCreating(true)
+
+setForm({
+
+name:"",
+address:"",
+date:"",
+project_number:"",
+worker:""
+
+})
+
+}}
+
+>
+
+Nytt uppdrag
+
+</Button>
 
 </div>
 
-{/* Calendar */}
+</div>
+
+
+
+{/* CALENDAR */}
+
 
 <Card>
 
@@ -281,6 +374,7 @@ onClick={()=>setCurrentMonth(addMonths(currentMonth,1))}
 {days.map(day=>{
 
 const key = format(day,"yyyy-MM-dd")
+
 const dayItems = itemsByDate.get(key) ?? []
 
 return(
@@ -288,7 +382,7 @@ return(
 <div
 key={key}
 onClick={()=>setSelectedDay(day)}
-className="min-h-[110px] border border-border/40 p-1 cursor-pointer"
+className="min-h-[120px] border border-border/40 p-1 cursor-pointer"
 >
 
 <div className="text-xs font-semibold mb-1">
@@ -296,6 +390,7 @@ className="min-h-[110px] border border-border/40 p-1 cursor-pointer"
 {day.getDate()}
 
 </div>
+
 
 <div className="space-y-[2px]">
 
@@ -326,7 +421,10 @@ className="text-[9px] px-1 py-[2px] rounded bg-emerald-600/30 truncate"
 
 </Card>
 
-{/* Day details */}
+
+
+{/* DAY DETAIL */}
+
 
 {selectedDay && (
 
@@ -348,11 +446,25 @@ className="text-[9px] px-1 py-[2px] rounded bg-emerald-600/30 truncate"
 
 <div
 key={item.id}
-onClick={()=>setEditingItem(item)}
+onClick={()=>{
+
+setEditing(item)
+
+setForm({
+
+name:item.title,
+address:item.address,
+date:item.date,
+project_number:item.project_number ?? "",
+worker:""
+
+})
+
+}}
 className="border rounded-lg p-3 cursor-pointer hover:bg-accent"
 >
 
-<p className="text-sm font-medium">
+<p className="font-medium">
 
 {item.title}
 
@@ -360,7 +472,7 @@ className="border rounded-lg p-3 cursor-pointer hover:bg-accent"
 
 <p className="text-xs text-muted-foreground">
 
-{item.type}
+{item.address}
 
 </p>
 
@@ -374,13 +486,16 @@ className="border rounded-lg p-3 cursor-pointer hover:bg-accent"
 
 )}
 
-{/* Edit dialog */}
 
-{editingItem && (
 
-<Dialog open onOpenChange={()=>setEditingItem(null)}>
+{/* EDIT PROJECT */}
 
-<DialogContent>
+
+{editing && (
+
+<Dialog open onOpenChange={()=>setEditing(null)}>
+
+<DialogContent className="space-y-3">
 
 <DialogHeader>
 
@@ -388,52 +503,98 @@ className="border rounded-lg p-3 cursor-pointer hover:bg-accent"
 
 </DialogHeader>
 
+
 <Input
-value={editingItem.title}
-onChange={(e)=>
-setEditingItem({
-...editingItem,
-title:e.target.value
-})
-}
+placeholder="Namn"
+value={form.name}
+onChange={(e)=>setForm({...form,name:e.target.value})}
 />
 
+
+<Input
+placeholder="Adress"
+value={form.address}
+onChange={(e)=>setForm({...form,address:e.target.value})}
+/>
+
+
+<Input
+placeholder="Projektnummer"
+value={form.project_number}
+onChange={(e)=>setForm({...form,project_number:e.target.value})}
+/>
+
+
+<Input
+type="date"
+value={form.date}
+onChange={(e)=>setForm({...form,date:e.target.value})}
+/>
+
+
+<select
+className="border rounded p-2"
+value={form.worker}
+onChange={(e)=>setForm({...form,worker:e.target.value})}
+>
+
+<option value="">Tilldela arbetare</option>
+
+{workers.map(w=>(
+
+<option key={w.id} value={w.id}>
+
+{w.full_name}
+
+</option>
+
+))}
+
+</select>
+
+
 <Button
-className="mt-3"
+
 onClick={async()=>{
 
-if(editingItem.type==="project"){
+if(!editing) return
+
+if(editing.type==="project"){
 
 await supabase
 .from("projects")
-.update({name:editingItem.title})
-.eq("id",editingItem.id)
+.update({
+
+name:form.name,
+address:form.address,
+project_number:form.project_number,
+datum_planerat:form.date
+
+})
+.eq("id",editing.id)
 
 }
 
-if(editingItem.type==="egna"){
+if(form.worker){
 
 await supabase
-.from("egna_entries")
-.update({address:editingItem.title})
-.eq("id",editingItem.id)
+.from("project_assignments")
+.insert({
+
+entry_id:editing.id,
+entry_type:editing.type,
+user_id:form.worker
+
+})
 
 }
 
-if(editingItem.type==="tidx"){
+await loadItems()
 
-await supabase
-.from("tidx_entries")
-.update({address:editingItem.title})
-.eq("id",editingItem.id)
-
-}
-
-loadItems()
-
-setEditingItem(null)
+setEditing(null)
 
 }}
+
 >
 
 Spara
@@ -445,6 +606,86 @@ Spara
 </Dialog>
 
 )}
+
+
+
+{/* CREATE PROJECT */}
+
+
+{creating && (
+
+<Dialog open onOpenChange={()=>setCreating(false)}>
+
+<DialogContent className="space-y-3">
+
+<DialogHeader>
+
+<DialogTitle>Nytt uppdrag</DialogTitle>
+
+</DialogHeader>
+
+
+<Input
+placeholder="Namn"
+value={form.name}
+onChange={(e)=>setForm({...form,name:e.target.value})}
+/>
+
+
+<Input
+placeholder="Adress"
+value={form.address}
+onChange={(e)=>setForm({...form,address:e.target.value})}
+/>
+
+
+<Input
+placeholder="Projektnummer"
+value={form.project_number}
+onChange={(e)=>setForm({...form,project_number:e.target.value})}
+/>
+
+
+<Input
+type="date"
+value={form.date}
+onChange={(e)=>setForm({...form,date:e.target.value})}
+/>
+
+
+<Button
+
+onClick={async()=>{
+
+await supabase
+.from("projects")
+.insert({
+
+name:form.name,
+address:form.address,
+project_number:form.project_number,
+datum_planerat:form.date
+
+})
+
+await loadItems()
+
+setCreating(false)
+
+}}
+
+>
+
+Skapa uppdrag
+
+</Button>
+
+</DialogContent>
+
+</Dialog>
+
+)}
+
 
 </div>
 
