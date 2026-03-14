@@ -181,7 +181,7 @@ export default function Dashboard() {
 
   return (
 
-    <div className="relative min-h-screen pb-28 px-[5px] mx-0 border-4 border-muted border-solid rounded-md shadow py-[10px] my-0">
+    <div className="relative min-h-screen pb-28 mx-0 border-4 border-muted border-solid rounded-md shadow my-0 px-0 py-0">
 
       {/* gradient */}
 
