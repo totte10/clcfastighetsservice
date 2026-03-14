@@ -1,184 +1,298 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AreaMap } from "@/components/AreaMap";
-import { Map, Search, Loader2 } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Loader2, Search } from "lucide-react";
 
-type Status = "pending" | "in-progress" | "done";
-
-interface Project {
-  id: string;
-  source: string;
-  name: string;
-  address: string;
-  status: Status;
-  lat: number | null;
-  lng: number | null;
+interface Entry {
+  id: string
+  address: string
+  name?: string
+  source: string
+  type?: string
+  planned_date?: string
+  status?: string
+  lat?: number
+  lng?: number
 }
 
 export default function ProjectsPage() {
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [entries,setEntries] = useState<Entry[]>([])
+  const [search,setSearch] = useState("")
+  const [loading,setLoading] = useState(true)
 
-  async function loadProjects() {
+  const [finishOpen,setFinishOpen] = useState(false)
+  const [selected,setSelected] = useState<Entry | null>(null)
 
-    const tables = [
-      { table: "tmm_entries", label: "TMM" },
-      { table: "optimal_entries", label: "OPTIMAL" },
-      { table: "egna_entries", label: "EGNA" },
-      { table: "tidx_entries", label: "TIDX" }
-    ];
+  const [startTime,setStartTime] = useState("")
+  const [endTime,setEndTime] = useState("")
+  const [loads,setLoads] = useState("")
+  const [comment,setComment] = useState("")
+  const [images,setImages] = useState<File[]>([])
+
+  async function loadEntries(){
+
+    const sources = [
+      {table:"tmm_entries",label:"TMM"},
+      {table:"optimal_entries",label:"Optimal"},
+      {table:"egna_entries",label:"Egna"},
+      {table:"tidx_entries",label:"Tidx"}
+    ]
 
     const results = await Promise.all(
 
-      tables.map(async (t) => {
+      sources.map(async s => {
 
-        const { data } = await supabase
-          .from(t.table)
-          .select("*");
+        const {data} = await supabase
+        .from(s.table)
+        .select("*")
 
-        return (data || []).map((row: any) => ({
+        return (data || []).map((row:any)=>({
 
-          id: row.id,
-          source: t.label,
-          name: row.name || "",
-          address: row.address || row.street || "",
-          status: row.status || "pending",
-          lat: row.lat || null,
-          lng: row.lng || null
+          id:row.id,
+          address:row.address || row.street || "",
+          name:row.name || "",
+          type:row.type || "",
+          planned_date:row.planned_date,
+          status:row.status || "Ej påbörjad",
+          lat:row.lat,
+          lng:row.lng,
+          source:s.label
 
-        }));
+        }))
 
       })
 
-    );
+    )
 
-    const merged = results.flat();
-
-    setProjects(merged);
-    setLoading(false);
+    setEntries(results.flat())
+    setLoading(false)
 
   }
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
+  useEffect(()=>{loadEntries()},[])
 
-  const filtered = useMemo(() => {
+  function startJob(entry:Entry){
 
-    if (!search.trim()) return projects;
+    const now = new Date()
+    const time = now.toTimeString().slice(0,5)
 
-    const q = search.toLowerCase();
+    setStartTime(time)
 
-    return projects.filter(p =>
-      `${p.address} ${p.name} ${p.source}`
-        .toLowerCase()
-        .includes(q)
-    );
+    supabase
+    .from("active_clocks")
+    .insert({
+      entry_id:entry.id,
+      start_time:now
+    })
 
-  }, [projects, search]);
+  }
 
-  const markers = useMemo(() => {
+  function openFinish(entry:Entry){
 
-    return filtered
-      .filter(p => p.lat && p.lng)
-      .map(p => ({
-        lat: p.lat!,
-        lng: p.lng!,
-        label: `[${p.source}] ${p.address}`,
-        color: "red"
-      }));
+    setSelected(entry)
+    setFinishOpen(true)
 
-  }, [filtered]);
+    const now = new Date()
+    setEndTime(now.toTimeString().slice(0,5))
 
-  return (
+  }
 
-    <div className="space-y-6">
+  async function finishJob(){
 
-      <div>
-        <h1 className="text-2xl font-bold">
-          Alla Projekt
-        </h1>
-      </div>
+    if(!selected) return
 
-      <Card>
+    await supabase
+    .from("time_entries")
+    .insert({
+      entry_id:selected.id,
+      start_time:startTime,
+      end_time:endTime,
+      loads:loads,
+      comment:comment
+    })
 
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Map className="h-5 w-5 text-primary" />
-            Karta
-          </CardTitle>
-        </CardHeader>
+    await supabase
+    .from("entries_status")
+    .update({status:"done"})
+    .eq("entry_id",selected.id)
 
-        <CardContent>
+    setFinishOpen(false)
 
-          {loading ? (
+  }
 
-            <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin" />
-            </div>
+  const filtered = useMemo(()=>{
 
-          ) : (
+    if(!search) return entries
 
-            <AreaMap
-              className="h-72 w-full rounded-lg overflow-hidden"
-              markers={markers}
-            />
+    const q = search.toLowerCase()
 
-          )}
+    return entries.filter(e=>
+      `${e.address} ${e.source}`
+      .toLowerCase()
+      .includes(q)
+    )
 
-        </CardContent>
+  },[entries,search])
 
-      </Card>
+  const markers = filtered
+  .filter(e=>e.lat && e.lng)
+  .map(e=>({
 
-      <div className="relative">
+    lat:e.lat!,
+    lng:e.lng!,
+    label:`${e.address}`
 
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+  }))
 
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Sök adress..."
-          className="pl-10"
-        />
+  return(
 
-      </div>
+  <div className="space-y-5">
 
-      <div className="space-y-3">
+  <Input
+  placeholder="Sök adress"
+  value={search}
+  onChange={(e)=>setSearch(e.target.value)}
+  />
 
-        {filtered.map((p) => (
+  <AreaMap
+  className="h-72 rounded-xl"
+  markers={markers}
+  />
 
-          <Card key={p.id}>
+  {loading && <Loader2 className="animate-spin"/>}
 
-            <CardContent className="pt-4 pb-4">
+  {filtered.map(entry=>(
 
-              <p className="text-xs text-primary font-semibold">
-                {p.source}
-              </p>
+  <Card key={entry.id}>
 
-              <p className="text-sm font-medium">
-                {p.address}
-              </p>
+  <CardContent className="space-y-3">
 
-              {p.name && (
-                <p className="text-xs text-muted-foreground">
-                  {p.name}
-                </p>
-              )}
+  <div className="flex justify-between">
 
-            </CardContent>
+  <div>
 
-          </Card>
+  <p className="font-semibold">{entry.address}</p>
 
-        ))}
+  <p className="text-xs text-muted-foreground">
+  {entry.type} · {entry.source}
+  </p>
 
-      </div>
+  {entry.planned_date &&
 
-    </div>
+  <p className="text-xs text-primary">
+  📅 {new Date(entry.planned_date).toLocaleDateString()}
+  </p>
 
-  );
+  }
+
+  </div>
+
+  <span className="text-xs bg-muted px-2 py-1 rounded">
+  {entry.status}
+  </span>
+
+  </div>
+
+  <div className="flex gap-2">
+
+  <Button
+  variant="outline"
+  onClick={()=>startJob(entry)}
+  >
+
+  ▶ Starta
+
+  </Button>
+
+  <Button
+  className="bg-green-600 hover:bg-green-700"
+  onClick={()=>openFinish(entry)}
+  >
+
+  ✓ Klar
+
+  </Button>
+
+  </div>
+
+  </CardContent>
+
+  </Card>
+
+  ))}
+
+  <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
+
+  <DialogContent className="space-y-4">
+
+  <h2 className="text-lg font-semibold">
+  Slutför uppdrag
+  </h2>
+
+  <div>
+
+  <label>Starttid</label>
+
+  <Input
+  value={startTime}
+  onChange={(e)=>setStartTime(e.target.value)}
+  />
+
+  </div>
+
+  <div>
+
+  <label>Sluttid</label>
+
+  <Input
+  value={endTime}
+  onChange={(e)=>setEndTime(e.target.value)}
+  />
+
+  </div>
+
+  <div>
+
+  <label>Antal lass flis</label>
+
+  <Input
+  value={loads}
+  onChange={(e)=>setLoads(e.target.value)}
+  />
+
+  </div>
+
+  <div>
+
+  <label>Kommentar</label>
+
+  <Input
+  value={comment}
+  onChange={(e)=>setComment(e.target.value)}
+  />
+
+  </div>
+
+  <Button
+  className="w-full bg-green-600"
+  onClick={finishJob}
+  >
+
+  Markera som klar
+
+  </Button>
+
+  </DialogContent>
+
+  </Dialog>
+
+  </div>
+
+  )
 
 }
