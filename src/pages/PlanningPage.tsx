@@ -30,7 +30,7 @@ type EntryType =
 | "tmm"
 
 
-interface PlanningItem{
+interface PlanningItem {
 
 id:string
 type:EntryType
@@ -48,24 +48,23 @@ function color(type:EntryType){
 switch(type){
 
 case "tidx":
-return "bg-blue-500/20 text-blue-300"
+return "bg-blue-500/20"
 
 case "egna":
-return "bg-emerald-500/20 text-emerald-300"
+return "bg-emerald-500/20"
 
 case "optimal":
-return "bg-purple-500/20 text-purple-300"
+return "bg-purple-500/20"
 
 case "tmm":
-return "bg-orange-500/20 text-orange-300"
+return "bg-orange-500/20"
 
 default:
-return "bg-cyan-500/20 text-cyan-300"
+return "bg-cyan-500/20"
 
 }
 
 }
-
 
 
 export default function PlanningPage(){
@@ -74,11 +73,12 @@ const { user } = useAuth()
 
 const [items,setItems] = useState<PlanningItem[]>([])
 const [workers,setWorkers] = useState<any[]>([])
-
 const [selectedDay,setSelectedDay] = useState<Date|null>(null)
+
 const [currentMonth,setCurrentMonth] = useState(new Date())
 
 const [editing,setEditing] = useState<PlanningItem|null>(null)
+const [creating,setCreating] = useState(false)
 
 const [form,setForm] = useState<any>({
 name:"",
@@ -131,7 +131,7 @@ setWorkers(data ?? [])
 
 
 
-/* LOAD ALL ENTRIES */
+/* LOAD PROJECTS */
 
 async function loadItems(){
 
@@ -325,46 +325,6 @@ if(!isAdmin) return <Navigate to="/" replace/>
 
 
 
-/* SAVE EDIT */
-
-async function saveEdit(){
-
-if(!editing) return
-
-if(editing.type==="project"){
-
-await supabase
-.from("projects")
-.update({
-name:form.name,
-address:form.address,
-project_number:form.project_number,
-datum_planerat:form.date
-})
-.eq("id",editing.id)
-
-}
-
-if(form.worker){
-
-await supabase
-.from("project_assignments")
-.insert({
-entry_id:editing.id,
-entry_type:editing.type,
-user_id:form.worker
-})
-
-}
-
-await loadItems()
-
-setEditing(null)
-
-}
-
-
-
 return(
 
 <div className="space-y-6 pb-24">
@@ -389,14 +349,40 @@ Planering
 variant="ghost"
 onClick={()=>setCurrentMonth(subMonths(currentMonth,1))}
 >
+
 ←
+
 </Button>
+
 
 <Button
 variant="ghost"
 onClick={()=>setCurrentMonth(addMonths(currentMonth,1))}
 >
+
 →
+
+</Button>
+
+
+<Button
+onClick={()=>{
+
+setCreating(true)
+
+setForm({
+name:"",
+address:"",
+date:"",
+project_number:"",
+worker:""
+})
+
+}}
+>
+
+Nytt uppdrag
+
 </Button>
 
 </div>
@@ -416,6 +402,7 @@ onClick={()=>setCurrentMonth(addMonths(currentMonth,1))}
 {days.map(day=>{
 
 const key = format(day,"yyyy-MM-dd")
+
 const dayItems = itemsByDate.get(key) ?? []
 
 return(
@@ -427,8 +414,11 @@ className="min-h-[120px] border border-border/40 p-2 cursor-pointer hover:bg-acc
 >
 
 <div className="text-xs font-semibold mb-2">
+
 {day.getDate()}
+
 </div>
+
 
 <div className="space-y-1">
 
@@ -518,79 +508,6 @@ className="border rounded-lg p-3 cursor-pointer hover:bg-accent"
 </CardContent>
 
 </Card>
-
-)}
-
-
-
-{/* EDIT DIALOG */}
-
-{editing && (
-
-<Dialog open onOpenChange={()=>setEditing(null)}>
-
-<DialogContent className="space-y-3">
-
-<DialogHeader>
-
-<DialogTitle>Redigera uppdrag</DialogTitle>
-
-</DialogHeader>
-
-<Input
-placeholder="Namn"
-value={form.name}
-onChange={(e)=>setForm({...form,name:e.target.value})}
-/>
-
-<Input
-placeholder="Adress"
-value={form.address}
-onChange={(e)=>setForm({...form,address:e.target.value})}
-/>
-
-<Input
-placeholder="Projektnummer"
-value={form.project_number}
-onChange={(e)=>setForm({...form,project_number:e.target.value})}
-/>
-
-<Input
-type="date"
-value={form.date}
-onChange={(e)=>setForm({...form,date:e.target.value})}
-/>
-
-<select
-className="border rounded p-2"
-value={form.worker}
-onChange={(e)=>setForm({...form,worker:e.target.value})}
->
-
-<option value="">Tilldela arbetare</option>
-
-{workers.map(w=>(
-
-<option key={w.id} value={w.id}>
-
-{w.full_name}
-
-</option>
-
-))}
-
-</select>
-
-
-<Button onClick={saveEdit}>
-
-Spara ändringar
-
-</Button>
-
-</DialogContent>
-
-</Dialog>
 
 )}
 
