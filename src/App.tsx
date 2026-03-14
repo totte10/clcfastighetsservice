@@ -22,6 +22,7 @@ import MissingCoordinatesPage from "@/pages/MissingCoordinatesPage";
 import PayrollPage from "@/pages/PayrollPage";
 import RoutePlanningPage from "@/pages/RoutePlanningPage";
 import VoicePage from "@/pages/VoicePage";
+import AdminPanelPage from "@/pages/AdminPanelPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
