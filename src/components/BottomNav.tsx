@@ -24,12 +24,14 @@ export default function BottomNav() {
 
       <button
         onClick={()=>navigate(path)}
-        className={`flex flex-col items-center text-xs ${
-          active ? "text-primary" : "text-muted-foreground"
+        className={`flex flex-col items-center gap-1 text-[11px] transition-all duration-200 ${
+          active
+            ? "text-primary"
+            : "text-muted-foreground"
         }`}
       >
 
-        <Icon className="h-5 w-5"/>
+        <Icon className={`h-5 w-5 ${active ? "scale-110" : ""}`} />
 
         <span>{label}</span>
 
@@ -41,15 +43,37 @@ export default function BottomNav() {
 
   return(
 
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border/40 flex items-center justify-around py-2 z-50">
+    <nav
+      className="
+      fixed
+      bottom-0
+      left-0
+      right-0
+      pb-[env(safe-area-inset-bottom)]
+      pt-2
+      bg-[rgba(2,6,23,0.75)]
+      backdrop-blur-3xl
+      border-t border-white/5
+      shadow-[0_-10px_30px_rgba(0,0,0,0.6)]
+      flex
+      items-center
+      justify-around
+      z-50
+      "
+    >
 
-      {/* Sidebar menu */}
+      {/* Sidebar */}
 
-      <div className="flex flex-col items-center text-xs text-muted-foreground">
-        <SidebarTrigger>
+      <div className="flex flex-col items-center text-[11px] text-muted-foreground">
+
+        <SidebarTrigger className="flex flex-col items-center gap-1">
+
           <Menu className="h-5 w-5"/>
+
+          <span>Meny</span>
+
         </SidebarTrigger>
-        <span>Meny</span>
+
       </div>
 
       {/* Chat */}
@@ -60,19 +84,33 @@ export default function BottomNav() {
 
       <button
         onClick={()=>navigate("/")}
-        className="flex flex-col items-center -mt-6"
+        className="flex flex-col items-center -mt-7"
       >
 
-        <div className="w-14 h-14 rounded-full bg-background border border-primary/50 flex items-center justify-center shadow-lg">
+        <div
+          className="
+          w-16 h-16
+          rounded-full
+          bg-gradient-to-b
+          from-[#0f172a]
+          to-[#020617]
+          border border-primary/40
+          shadow-[0_0_25px_rgba(34,197,94,0.35)]
+          flex items-center justify-center
+          transition-all duration-300
+          "
+        >
 
           <img
             src={clcLogo}
-            className="w-8 h-8 object-contain"
+            className="w-9 h-9 object-contain"
           />
 
         </div>
 
-        <span className="text-xs text-primary">Hem</span>
+        <span className="text-[11px] text-primary mt-1">
+          Hem
+        </span>
 
       </button>
 
