@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo } from "react"
-import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/hooks/useAuth"
-import { Navigate } from "react-router-dom"
+import { useState, useEffect, useMemo } from “react”
+import { supabase } from “@/integrations/supabase/client”
+import { useAuth } from “@/hooks/useAuth”
+import { Navigate } from “react-router-dom”
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Card, CardContent, CardHeader, CardTitle } from “@/components/ui/card”
+import { Button } from “@/components/ui/button”
+import { Input } from “@/components/ui/input”
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from “@/components/ui/dialog”
 
-import { CalendarDays } from "lucide-react"
+import { CalendarDays } from “lucide-react”
 
 import {
 format,
@@ -17,20 +17,18 @@ endOfMonth,
 eachDayOfInterval,
 addMonths,
 subMonths
-} from "date-fns"
+} from “date-fns”
 
-import { sv } from "date-fns/locale"
-
+import { sv } from “date-fns/locale”
 
 type EntryType =
-| "tidx"
-| "egna"
-| "project"
-| "optimal"
-| "tmm"
+| “tidx”
+| “egna”
+| “project”
+| “optimal”
+| “tmm”
 
-
-interface PlanningItem {
+interface PlanningItem{
 
 id:string
 type:EntryType
@@ -42,30 +40,28 @@ project_number?:string
 
 }
 
-
 function color(type:EntryType){
 
 switch(type){
 
-case "tidx":
-return "bg-blue-500/20"
+case “tidx”:
+return “bg-blue-500/20 text-blue-300”
 
-case "egna":
-return "bg-emerald-500/20"
+case “egna”:
+return “bg-emerald-500/20 text-emerald-300”
 
-case "optimal":
-return "bg-purple-500/20"
+case “optimal”:
+return “bg-purple-500/20 text-purple-300”
 
-case "tmm":
-return "bg-orange-500/20"
+case “tmm”:
+return “bg-orange-500/20 text-orange-300”
 
 default:
-return "bg-cyan-500/20"
+return “bg-cyan-500/20 text-cyan-300”
 
 }
 
 }
-
 
 export default function PlanningPage(){
 
@@ -73,24 +69,22 @@ const { user } = useAuth()
 
 const [items,setItems] = useState<PlanningItem[]>([])
 const [workers,setWorkers] = useState<any[]>([])
-const [selectedDay,setSelectedDay] = useState<Date|null>(null)
 
+const [selectedDay,setSelectedDay] = useState<Date|null>(null)
 const [currentMonth,setCurrentMonth] = useState(new Date())
 
 const [editing,setEditing] = useState<PlanningItem|null>(null)
 const [creating,setCreating] = useState(false)
 
-const [form,setForm] = useState<any>({
-name:"",
-address:"",
-date:"",
-project_number:"",
-worker:""
+const [form,setForm] = useState({
+name:””,
+address:””,
+date:””,
+project_number:””,
+worker:””
 })
 
 const [isAdmin,setIsAdmin] = useState<boolean|null>(null)
-
-
 
 /* ADMIN CHECK */
 
@@ -99,39 +93,31 @@ useEffect(()=>{
 if(!user) return
 
 supabase
-.from("user_roles")
-.select("role")
-.eq("user_id",user.id)
-.eq("role","admin")
+.from(“user_roles”)
+.select(“role”)
+.eq(“user_id”,user.id)
+.eq(“role”,“admin”)
 .maybeSingle()
 .then(({data})=>{
-
 setIsAdmin(!!data)
-
 })
 
 },[user])
-
-
 
 /* LOAD WORKERS */
 
 useEffect(()=>{
 
 supabase
-.from("profiles")
-.select("id,full_name")
+.from(“profiles”)
+.select(“id,full_name”)
 .then(({data})=>{
-
 setWorkers(data ?? [])
-
 })
 
 },[])
 
-
-
-/* LOAD PROJECTS */
+/* LOAD ALL JOBS */
 
 async function loadItems(){
 
@@ -146,30 +132,28 @@ tmmRes
 ] = await Promise.all([
 
 supabase
-.from("tidx_entries")
-.select("id,omrade,address,datum_planerat,status"),
+.from(“tidx_entries”)
+.select(“id,omrade,address,datum_planerat,status”),
 
 supabase
-.from("egna_entries")
-.select("id,address,datum_planerat"),
+.from(“egna_entries”)
+.select(“id,address,datum_planerat”),
 
 supabase
-.from("projects")
-.select("id,name,address,datum_planerat,status,project_number"),
+.from(“projects”)
+.select(“id,name,address,datum_planerat,status,project_number”),
 
 supabase
-.from("optimal_entries")
-.select("id,name,datum_start,status"),
+.from(“optimal_entries”)
+.select(“id,name,datum_start,status”),
 
 supabase
-.from("tmm_entries")
-.select("id,address,beskrivning,datum,status")
+.from(“tmm_entries”)
+.select(“id,address,beskrivning,datum,status”)
 
 ])
 
-
 const result:PlanningItem[] = []
-
 
 tidxRes.data?.forEach(r=>{
 
@@ -178,16 +162,15 @@ if(!r.datum_planerat) return
 result.push({
 
 id:r.id,
-type:"tidx",
+type:“tidx”,
 title:r.omrade,
-address:r.address ?? "",
+address:r.address ?? “”,
 date:r.datum_planerat.slice(0,10),
 status:r.status
 
 })
 
 })
-
 
 egnaRes.data?.forEach(r=>{
 
@@ -196,16 +179,15 @@ if(!r.datum_planerat) return
 result.push({
 
 id:r.id,
-type:"egna",
+type:“egna”,
 title:r.address,
 address:r.address,
 date:r.datum_planerat.slice(0,10),
-status:"pending"
+status:“pending”
 
 })
 
 })
-
 
 projRes.data?.forEach(r=>{
 
@@ -214,9 +196,9 @@ if(!r.datum_planerat) return
 result.push({
 
 id:r.id,
-type:"project",
+type:“project”,
 title:r.name,
-address:r.address ?? "",
+address:r.address ?? “”,
 date:r.datum_planerat.slice(0,10),
 status:r.status,
 project_number:r.project_number
@@ -225,7 +207,6 @@ project_number:r.project_number
 
 })
 
-
 optimalRes.data?.forEach(r=>{
 
 if(!r.datum_start) return
@@ -233,16 +214,15 @@ if(!r.datum_start) return
 result.push({
 
 id:r.id,
-type:"optimal",
+type:“optimal”,
 title:r.name,
-address:"",
+address:””,
 date:r.datum_start.slice(0,10),
 status:r.status
 
 })
 
 })
-
 
 tmmRes.data?.forEach(r=>{
 
@@ -251,9 +231,9 @@ if(!r.datum) return
 result.push({
 
 id:r.id,
-type:"tmm",
+type:“tmm”,
 title:r.beskrivning,
-address:r.address ?? "",
+address:r.address ?? “”,
 date:r.datum.slice(0,10),
 status:r.status
 
@@ -261,19 +241,15 @@ status:r.status
 
 })
 
-
 setItems(result)
 
 }
-
 
 useEffect(()=>{
 
 loadItems()
 
 },[])
-
-
 
 /* CALENDAR */
 
@@ -286,7 +262,6 @@ start:monthStart,
 end:monthEnd
 
 })
-
 
 const itemsByDate = useMemo(()=>{
 
@@ -306,213 +281,96 @@ return map
 
 },[items])
 
-
-
 const selectedItems = useMemo(()=>{
 
 if(!selectedDay) return []
 
-const key = format(selectedDay,"yyyy-MM-dd")
+const key = format(selectedDay,“yyyy-MM-dd”)
 
 return itemsByDate.get(key) ?? []
 
 },[selectedDay,itemsByDate])
 
-
-
 if(isAdmin===null) return null
-if(!isAdmin) return <Navigate to="/" replace/>
+if(!isAdmin) return 
 
+/* SAVE EDIT */
 
+async function saveEdit(){
 
-return(
+if(!editing) return
 
-<div className="space-y-6 pb-24">
+if(editing.type===“project”){
 
+await supabase
+.from(“projects”)
+.update({
+name:form.name,
+address:form.address,
+project_number:form.project_number,
+datum_planerat:form.date
+})
+.eq(“id”,editing.id)
 
-{/* HEADER */}
+}
 
-<div className="flex justify-between items-center">
+if(form.worker){
 
-<h1 className="text-2xl font-bold flex gap-2 items-center">
+await supabase
+.from(“project_assignments”)
+.delete()
+.eq(“entry_id”,editing.id)
+.eq(“entry_type”,editing.type)
 
-<CalendarDays className="w-6 h-6"/>
-
-Planering
-
-</h1>
-
-
-<div className="flex gap-2">
-
-<Button
-variant="ghost"
-onClick={()=>setCurrentMonth(subMonths(currentMonth,1))}
->
-
-←
-
-</Button>
-
-
-<Button
-variant="ghost"
-onClick={()=>setCurrentMonth(addMonths(currentMonth,1))}
->
-
-→
-
-</Button>
-
-
-<Button
-onClick={()=>{
-
-setCreating(true)
-
-setForm({
-name:"",
-address:"",
-date:"",
-project_number:"",
-worker:""
+await supabase
+.from(“project_assignments”)
+.insert({
+entry_id:editing.id,
+entry_type:editing.type,
+user_id:form.worker
 })
 
-}}
->
+}
 
-Nytt uppdrag
+await loadItems()
 
-</Button>
+setEditing(null)
 
-</div>
+}
 
-</div>
+/* CREATE JOB */
 
+async function createJob(){
 
+const { data,error } = await supabase
+.from(“projects”)
+.insert({
 
-{/* CALENDAR */}
+name:form.name,
+address:form.address,
+project_number:form.project_number,
+datum_planerat:form.date
 
-<Card>
+})
+.select()
+.single()
 
-<CardContent className="p-0">
+if(!error && form.worker){
 
-<div className="grid grid-cols-7">
+await supabase
+.from(“project_assignments”)
+.insert({
 
-{days.map(day=>{
+entry_id:data.id,
+entry_type:“project”,
+user_id:form.worker
 
-const key = format(day,"yyyy-MM-dd")
-
-const dayItems = itemsByDate.get(key) ?? []
-
-return(
-
-<div
-key={key}
-onClick={()=>setSelectedDay(day)}
-className="min-h-[120px] border border-border/40 p-2 cursor-pointer hover:bg-accent/20"
->
-
-<div className="text-xs font-semibold mb-2">
-
-{day.getDate()}
-
-</div>
-
-
-<div className="space-y-1">
-
-{dayItems.map(item=>(
-
-<div
-key={item.id}
-className={`text-xs px-2 py-1 rounded truncate ${color(item.type)}`}
->
-
-{item.title}
-
-</div>
-
-))}
-
-</div>
-
-</div>
-
-)
-
-})}
-
-</div>
-
-</CardContent>
-
-</Card>
-
-
-
-{/* DAY DETAILS */}
-
-{selectedDay && (
-
-<Card>
-
-<CardHeader>
-
-<CardTitle>
-
-{format(selectedDay,"EEEE d MMMM",{locale:sv})}
-
-</CardTitle>
-
-</CardHeader>
-
-<CardContent className="space-y-2">
-
-{selectedItems.map(item=>(
-
-<div
-key={item.id}
-onClick={()=>{
-
-setEditing(item)
-
-setForm({
-name:item.title,
-address:item.address,
-date:item.date,
-project_number:item.project_number ?? "",
-worker:""
 })
 
-}}
-className="border rounded-lg p-3 cursor-pointer hover:bg-accent"
->
+}
 
-<p className="font-medium">
+await loadItems()
 
-{item.title}
-
-</p>
-
-<p className="text-xs text-muted-foreground">
-
-{item.address}
-
-</p>
-
-</div>
-
-))}
-
-</CardContent>
-
-</Card>
-
-)}
-
-</div>
-
-)
+setCreating(false)
 
 }
