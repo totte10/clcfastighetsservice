@@ -52,25 +52,25 @@ export default function AdminPanelPage() {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-3 max-w-2xl mx-auto">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center neon-glow">
-          <Shield className="h-5 w-5 text-primary" />
+        <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center neon-glow">
+          <Shield className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground neon-text">Admin Panel</h1>
-          <p className="text-xs text-muted-foreground">Operations Control Center</p>
+          <h1 className="text-lg font-bold text-foreground neon-text leading-tight">Admin Panel</h1>
+          <p className="text-[11px] text-muted-foreground">Operations Control Center</p>
         </div>
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid gap-2.5">
         {sections.map((section) => {
           const SectionIcon = section.icon;
           return (
             <button
               key={section.title}
               onClick={() => navigate(section.route)}
-              className="glass-card-hover flex items-center gap-4 p-4 text-left group w-full"
+              className="glass-card-hover flex items-center gap-3 p-3.5 text-left group w-full"
             >
               <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:neon-glow transition-all">
                 <SectionIcon className="h-5 w-5 text-primary" />
