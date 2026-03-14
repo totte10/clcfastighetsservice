@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush, Route, AlertTriangle, DollarSign, ChevronDown, Paintbrush } from "lucide-react";
+import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush, Route, AlertTriangle, DollarSign, ChevronDown, Paintbrush, Volume2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import clcLogo from "@/assets/clc-logo.png";
@@ -51,6 +51,7 @@ const menuEntries: MenuEntry[] = [
   { title: "Övriga Projekt", url: "/projects", icon: FolderOpen, adminOnly: false },
   { title: "Ruttplanering", url: "/route", icon: Route, adminOnly: false },
   { title: "Chatt", url: "/chat", icon: MessageCircle, adminOnly: false },
+  { title: "Röstkanaler", url: "/voice", icon: Volume2, adminOnly: false },
   { title: "Tidrapport", url: "/time", icon: Clock, adminOnly: false },
   { title: "Planering", url: "/planning", icon: CalendarDays, adminOnly: true },
   { title: "Samlad Rapport", url: "/time/reports", icon: ClipboardList, adminOnly: true },
