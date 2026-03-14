@@ -59,6 +59,7 @@ function ProtectedRoutes() {
         <Route path="/missing-coords" element={<MissingCoordinatesPage />} />
         <Route path="/payroll" element={<PayrollPage />} />
         <Route path="/route" element={<RoutePlanningPage />} />
+        <Route path="/voice" element={<VoicePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
