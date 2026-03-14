@@ -22,6 +22,7 @@ import MissingCoordinatesPage from "@/pages/MissingCoordinatesPage";
 import PayrollPage from "@/pages/PayrollPage";
 import RoutePlanningPage from "@/pages/RoutePlanningPage";
 import VoicePage from "@/pages/VoicePage";
+import AdminPanelPage from "@/pages/AdminPanelPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -60,6 +61,7 @@ function ProtectedRoutes() {
         <Route path="/payroll" element={<PayrollPage />} />
         <Route path="/route" element={<RoutePlanningPage />} />
         <Route path="/voice" element={<VoicePage />} />
+        <Route path="/admin-panel" element={<AdminPanelPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
