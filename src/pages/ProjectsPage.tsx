@@ -1,10 +1,9 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AreaMap } from "@/components/AreaMap";
-import { Map, Loader2, Search } from "lucide-react";
+import { Map, Search, Loader2 } from "lucide-react";
 
 type Status = "pending" | "in-progress" | "done";
 
@@ -18,26 +17,15 @@ interface Project {
   lng: number | null;
 }
 
-function getMarkerColor(status: Status): "green" | "orange" | "red" {
-  if (status === "done") return "green";
-  if (status === "in-progress") return "orange";
-  return "red";
-}
-
 export default function ProjectsPage() {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  /**
-   * 🚀 Hämtar ALLA adresser från alla tabeller
-   */
-  const loadProjects = useCallback(async () => {
+  async function loadProjects() {
 
-    setLoading(true);
-
-    const sources = [
+    const tables = [
       { table: "tmm_entries", label: "TMM" },
       { table: "optimal_entries", label: "OPTIMAL" },
       { table: "egna_entries", label: "EGNA" },
@@ -45,24 +33,27 @@ export default function ProjectsPage() {
     ];
 
     const results = await Promise.all(
-      sources.map(async (s) => {
+
+      tables.map(async (t) => {
 
         const { data } = await supabase
-          .from(s.table)
-          .select("id,address,name,status,lat,lng")
-          .order("created_at", { ascending: false });
+          .from(t.table)
+          .select("*");
 
         return (data || []).map((row: any) => ({
+
           id: row.id,
-          source: s.label,
-          name: row.name || "Adress",
-          address: row.address || "",
+          source: t.label,
+          name: row.name || "",
+          address: row.address || row.street || "",
           status: row.status || "pending",
-          lat: row.lat,
-          lng: row.lng
+          lat: row.lat || null,
+          lng: row.lng || null
+
         }));
 
       })
+
     );
 
     const merged = results.flat();
@@ -70,92 +61,79 @@ export default function ProjectsPage() {
     setProjects(merged);
     setLoading(false);
 
-  }, []);
+  }
 
   useEffect(() => {
     loadProjects();
-  }, [loadProjects]);
+  }, []);
 
-  /**
-   * 🔎 Search filter
-   */
-  const filteredProjects = useMemo(() => {
+  const filtered = useMemo(() => {
 
     if (!search.trim()) return projects;
 
     const q = search.toLowerCase();
 
     return projects.filter(p =>
-      `${p.name} ${p.address} ${p.source}`
+      `${p.address} ${p.name} ${p.source}`
         .toLowerCase()
         .includes(q)
     );
 
   }, [projects, search]);
 
-  /**
-   * 🗺 Map markers
-   */
-  const mapMarkers = useMemo(() => {
+  const markers = useMemo(() => {
 
-    return filteredProjects
+    return filtered
       .filter(p => p.lat && p.lng)
       .map(p => ({
         lat: p.lat!,
         lng: p.lng!,
         label: `[${p.source}] ${p.address}`,
-        color: getMarkerColor(p.status)
+        color: "red"
       }));
 
-  }, [filteredProjects]);
-
-  const done = projects.filter(p => p.status === "done").length;
-  const inProgress = projects.filter(p => p.status === "in-progress").length;
+  }, [filtered]);
 
   return (
+
     <div className="space-y-6">
 
-      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Alla Projekt</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {done}/{projects.length} klara · {inProgress} pågår
-        </p>
+        <h1 className="text-2xl font-bold">
+          Alla Projekt
+        </h1>
       </div>
 
-      {/* Map */}
-      <Card className="glass-card">
+      <Card>
 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Map className="h-5 w-5 text-primary" />
-            Karta ({mapMarkers.length})
+            Karta
           </CardTitle>
         </CardHeader>
 
         <CardContent>
 
           {loading ? (
+
             <div className="flex justify-center py-10">
               <Loader2 className="animate-spin" />
             </div>
-          ) : mapMarkers.length > 0 ? (
-            <AreaMap
-              className="h-72 md:h-96 w-full rounded-lg overflow-hidden"
-              markers={mapMarkers}
-            />
+
           ) : (
-            <div className="h-48 flex items-center justify-center">
-              <p className="text-muted-foreground text-sm">
-                Inga kartpositioner
-              </p>
-            </div>
+
+            <AreaMap
+              className="h-72 w-full rounded-lg overflow-hidden"
+              markers={markers}
+            />
+
           )}
 
         </CardContent>
+
       </Card>
 
-      {/* Search */}
       <div className="relative">
 
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -163,12 +141,44 @@ export default function ProjectsPage() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Sök adress eller kund..."
+          placeholder="Sök adress..."
           className="pl-10"
         />
 
       </div>
 
+      <div className="space-y-3">
+
+        {filtered.map((p) => (
+
+          <Card key={p.id}>
+
+            <CardContent className="pt-4 pb-4">
+
+              <p className="text-xs text-primary font-semibold">
+                {p.source}
+              </p>
+
+              <p className="text-sm font-medium">
+                {p.address}
+              </p>
+
+              {p.name && (
+                <p className="text-xs text-muted-foreground">
+                  {p.name}
+                </p>
+              )}
+
+            </CardContent>
+
+          </Card>
+
+        ))}
+
+      </div>
+
     </div>
+
   );
+
 }
