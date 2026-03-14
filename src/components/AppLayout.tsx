@@ -49,7 +49,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
 
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
 
-                <span className="text-xs font-medium text-muted-foreground tracking-wide">
+                <span className="font-medium text-muted-foreground tracking-wide font-mono text-xs">
                   CLC Fastighetsservice
                 </span>
 
