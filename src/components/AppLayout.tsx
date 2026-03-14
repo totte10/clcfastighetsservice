@@ -22,7 +22,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Premium Header */}
 
           <header
-            className="h-[64px] flex items-center justify-between md:px-6 border-b border-white/5 backdrop-blur-2xl sticky top-0 z-40 px-[10px] gap-0 my-[10px] py-[5px] border-4 bg-background border-none rounded-none pt-[10px] pb-[10px]">
+            className="h-[64px] flex items-center justify-between md:px-6 border-b border-white/5 backdrop-blur-2xl sticky top-0 z-40 px-[10px] gap-0 my-[10px] py-[5px] border-4 bg-background border-none rounded-none pb-[10px] pt-[30px]">
 
 
 
