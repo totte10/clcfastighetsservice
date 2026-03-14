@@ -8,7 +8,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  function Item({
+  const Item = ({
     icon: Icon,
     label,
     path
@@ -16,7 +16,7 @@ export default function BottomNav() {
     icon: any
     label: string
     path: string
-  }) {
+  }) => {
 
     const active = location.pathname === path;
 
@@ -27,7 +27,7 @@ export default function BottomNav() {
         className={`
         flex flex-col items-center justify-center
         text-[10px]
-        gap-[2px]
+        gap-[3px]
         transition-all duration-200
         ${active ? "text-primary" : "text-muted-foreground"}
         `}
@@ -36,7 +36,7 @@ export default function BottomNav() {
         <Icon
           className={`
           w-[20px] h-[20px]
-          transition-all
+          transition-transform
           ${active ? "scale-110 text-primary" : ""}
           `}
         />
@@ -45,9 +45,9 @@ export default function BottomNav() {
 
       </button>
 
-    )
+    );
 
-  }
+  };
 
   return (
 
@@ -55,21 +55,21 @@ export default function BottomNav() {
       className="
       fixed bottom-0 left-0 right-0
       pb-[env(safe-area-inset-bottom)]
-      pt-2
-      bg-[rgba(2,6,23,0.55)]
+      pt-1.5
+      bg-[rgba(2,6,23,0.6)]
       backdrop-blur-[30px]
       border-t border-white/5
-      shadow-[0_-10px_30px_rgba(0,0,0,0.7)]
+      shadow-[0_-8px_25px_rgba(0,0,0,0.7)]
       flex items-center justify-around
       z-50
       "
     >
 
-      {/* Menu */}
+      {/* Sidebar */}
 
       <div className="flex flex-col items-center text-[10px] text-muted-foreground">
 
-        <SidebarTrigger className="flex flex-col items-center gap-[2px]">
+        <SidebarTrigger className="flex flex-col items-center gap-[3px]">
 
           <Menu className="w-[20px] h-[20px]" />
 
@@ -87,7 +87,7 @@ export default function BottomNav() {
         path="/chat"
       />
 
-      {/* Home (round logo) */}
+      {/* Home button */}
 
       <button
         onClick={() => navigate("/")}
@@ -101,9 +101,10 @@ export default function BottomNav() {
           rounded-full
           bg-gradient-to-b from-[#0f172a] to-[#020617]
           border border-primary/40
+          shadow-[0_0_22px_rgba(34,197,94,0.35)]
           flex items-center justify-center
-          shadow-[0_0_20px_rgba(34,197,94,0.35)]
-          transition-all duration-200
+          overflow-hidden
+          transition-transform
           active:scale-95
           "
         >
@@ -111,16 +112,16 @@ export default function BottomNav() {
           <img
             src={clcLogo}
             className="
-            w-[28px]
-            h-[28px]
-            rounded-full
+            w-[32px]
+            h-[32px]
             object-cover
+            rounded-full
             "
           />
 
         </div>
 
-        <span className="text-[10px] text-primary mt-[2px]">
+        <span className="text-[10px] text-primary mt-[3px]">
           Hem
         </span>
 
@@ -144,6 +145,6 @@ export default function BottomNav() {
 
     </nav>
 
-  )
+  );
 
 }
