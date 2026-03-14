@@ -12,11 +12,11 @@ export default function BottomNav() {
     icon: Icon,
     label,
     path
-  }: {
-    icon: any
-    label: string
-    path: string
-  }) => {
+
+
+
+
+  }: {icon: any;label: string;path: string;}) => {
 
     const active = location.pathname === path;
 
@@ -30,22 +30,22 @@ export default function BottomNav() {
         gap-[3px]
         transition-all duration-200
         ${active ? "text-primary" : "text-muted-foreground"}
-        `}
-      >
+        `}>
+        
 
         <Icon
           className={`
           w-[20px] h-[20px]
           transition-transform
           ${active ? "scale-110 text-primary" : ""}
-          `}
-        />
+          `} />
+        
 
         <span>{label}</span>
 
-      </button>
+      </button>);
 
-    );
+
 
   };
 
@@ -62,8 +62,8 @@ export default function BottomNav() {
       shadow-[0_-8px_25px_rgba(0,0,0,0.7)]
       flex items-center justify-around
       z-50
-      "
-    >
+      ">
+      
 
       {/* Sidebar */}
 
@@ -84,40 +84,40 @@ export default function BottomNav() {
       <Item
         icon={MessageCircle}
         label="Chatt"
-        path="/chat"
-      />
+        path="/chat" />
+      
 
       {/* Home button */}
 
       <button
         onClick={() => navigate("/")}
-        className="flex flex-col items-center -mt-6"
-      >
+        className="flex flex-col items-center -mt-6">
+        
 
         <div
-          className="
-          w-[52px]
-          h-[52px]
-          rounded-full
-          bg-gradient-to-b from-[#0f172a] to-[#020617]
-          border border-primary/40
-          shadow-[0_0_22px_rgba(34,197,94,0.35)]
-          flex items-center justify-center
-          overflow-hidden
-          transition-transform
-          active:scale-95
-          "
-        >
+          className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] border border-primary/40 shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 flex items-center justify-center rounded-sm">
+
+
+
+
+
+
+
+
+
+
+          
+          
 
           <img
-            src={clcLogo}
+
             className="
             w-[32px]
             h-[32px]
             object-cover
             rounded-full
-            "
-          />
+            " src="/lovable-uploads/beb39a0a-fb53-420d-9459-6ef8b369da4e.png" />
+          
 
         </div>
 
@@ -132,19 +132,19 @@ export default function BottomNav() {
       <Item
         icon={Calendar}
         label="Planering"
-        path="/planning"
-      />
+        path="/planning" />
+      
 
       {/* Admin */}
 
       <Item
         icon={Settings}
         label="Admin"
-        path="/admin"
-      />
+        path="/admin" />
+      
 
-    </nav>
+    </nav>);
 
-  );
+
 
 }
