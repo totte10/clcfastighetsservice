@@ -9,7 +9,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
     <SidebarProvider>
 
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-[100dvh] flex w-full bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.06),transparent_40%),#020617]">
 
         {/* Desktop Sidebar */}
 
@@ -19,21 +19,35 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="flex-1 flex flex-col min-w-0">
 
-          {/* Header */}
+          {/* Premium Header */}
 
-          <header className="h-14 flex items-center justify-between border-b border-border/30 bg-background/80 backdrop-blur-xl px-4 md:px-6 shrink-0 sticky top-0 z-10">
+          <header
+            className="
+            pt-[env(safe-area-inset-top)]
+            h-[64px]
+            flex
+            items-center
+            justify-between
+            px-4 md:px-6
+            border-b border-white/5
+            bg-[rgba(2,6,23,0.65)]
+            backdrop-blur-2xl
+            sticky
+            top-0
+            z-40
+          ">
 
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
 
-              {/* Sidebar button (desktop) */}
+              {/* Sidebar button */}
 
-              <div className="hidden md:block">
-                <SidebarTrigger className="mr-4 text-muted-foreground hover:text-foreground transition-colors" />
+              <div className="md:hidden">
+                <SidebarTrigger className="text-muted-foreground hover:text-foreground transition-colors" />
               </div>
 
               <div className="flex items-center gap-2">
 
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-slow" />
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/>
 
                 <span className="text-xs font-medium text-muted-foreground tracking-wide">
                   CLC Fastighetsservice
@@ -47,15 +61,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           </header>
 
-          {/* Scrollable content */}
+          {/* Content */}
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 pt-safe">
+          <main
+            className="
+            flex-1
+            overflow-y-auto
+            px-4
+            pt-4
+            pb-[120px]
+            md:px-8
+          "
+          >
 
             {children}
 
           </main>
 
-          {/* Bottom navigation (mobile) */}
+          {/* Bottom Navigation */}
 
           <div className="md:hidden">
 
