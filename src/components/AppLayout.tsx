@@ -1,34 +1,27 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationBell } from "@/components/NotificationBell";
-import { BottomNav } from "@/components/BottomNav";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <div className="fixed inset-0 flex w-full" style={{ minHeight: '100dvh' }}>
+      <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header
-            className="flex items-end justify-between border-b border-border/30 bg-[hsl(220,35%,6%)]/80 backdrop-blur-xl px-3 md:px-6 shrink-0 sticky top-0 z-10"
-            style={{ paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(2.75rem + env(safe-area-inset-top, 0px))' }}
-          >
-            <div className="flex items-center h-11 md:h-14">
-              <SidebarTrigger className="mr-4 text-muted-foreground hover:text-foreground transition-colors hidden md:flex" />
+          <header className="h-14 flex items-center justify-between border-b border-border/30 bg-background/80 backdrop-blur-xl px-4 md:px-6 shrink-0 sticky top-0 z-10">
+            <div className="flex items-center">
+              <SidebarTrigger className="mr-4 text-muted-foreground hover:text-foreground transition-colors" />
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-slow neon-glow" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-slow" />
                 <span className="text-xs font-medium text-muted-foreground tracking-wide">
                   CLC Fastighetsservice
                 </span>
               </div>
             </div>
-            <div className="h-11 md:h-14 flex items-center">
-              <NotificationBell />
-            </div>
+            <NotificationBell />
           </header>
-          <main className="flex-1 p-3 pt-2 md:p-8 overflow-auto pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-8">{children}</main>
+          <main className="flex-1 p-4 md:p-8 overflow-auto">{children}</main>
         </div>
-        <BottomNav />
       </div>
     </SidebarProvider>
   );

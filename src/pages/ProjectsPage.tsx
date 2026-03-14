@@ -1,293 +1,336 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Loader2, Search } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { AreaMap } from "@/components/AreaMap";
+import { EntryImageUpload } from "@/components/EntryImageUpload";
+import { geocodeAddress } from "@/lib/geocode";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { FolderOpen, Plus, Search, Map, Loader2, Trash2, Hash } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { WorkerAssignment } from "@/components/WorkerAssignment";
 
-interface Entry {
-  id: string
-  address: string
-  name?: string
-  source: string
-  type?: string
-  planned_date?: string
-  status?: string
-  lat?: number
-  lng?: number
+type Status = "pending" | "in-progress" | "done";
+
+interface Project {
+  id: string;
+  project_number: string;
+  name: string;
+  address: string;
+  description: string;
+  status: Status;
+  lat: number | null;
+  lng: number | null;
+  images: string[];
 }
 
-export default function ProjectsPage(){
-
-const [entries,setEntries] = useState<Entry[]>([])
-const [search,setSearch] = useState("")
-const [loading,setLoading] = useState(true)
-
-const [selected,setSelected] = useState<Entry | null>(null)
-const [finishOpen,setFinishOpen] = useState(false)
-
-const [startTime,setStartTime] = useState("")
-const [endTime,setEndTime] = useState("")
-const [comment,setComment] = useState("")
-const [loads,setLoads] = useState("")
-
-async function load(){
-
-const tables = [
-{table:"tmm_entries",label:"TMM"},
-{table:"optimal_entries",label:"Optimal"},
-{table:"egna_entries",label:"Egna"},
-{table:"tidx_entries",label:"Tidx"}
-]
-
-const results = await Promise.all(
-
-tables.map(async t=>{
-
-const {data} = await supabase
-.from(t.table)
-.select("*")
-
-return (data||[]).map((r:any)=>({
-
-id:r.id,
-address:r.address || r.street || "",
-name:r.name || "",
-type:r.type || "",
-planned_date:r.planned_date,
-status:r.status || "Ej påbörjad",
-lat:r.lat,
-lng:r.lng,
-source:t.label
-
-}))
-
-})
-
-)
-
-setEntries(results.flat())
-setLoading(false)
-
+function getMarkerColor(status: Status): "green" | "orange" | "red" {
+  if (status === "done") return "green";
+  if (status === "in-progress") return "orange";
+  return "red";
 }
 
-useEffect(()=>{load()},[])
-
-function startJob(entry:Entry){
-
-const now = new Date()
-const time = now.toTimeString().slice(0,5)
-
-setStartTime(time)
-
-supabase
-.from("active_clocks")
-.insert({
-entry_id:entry.id,
-start_time:now
-})
-
-}
-
-function openFinish(entry:Entry){
-
-setSelected(entry)
-setFinishOpen(true)
-
-const now = new Date()
-setEndTime(now.toTimeString().slice(0,5))
-
-}
-
-async function finishJob(){
-
-if(!selected) return
-
-await supabase
-.from("time_entries")
-.insert({
-entry_id:selected.id,
-start_time:startTime,
-end_time:endTime,
-loads:loads,
-comment:comment
-})
-
-await supabase
-.from("entries_status")
-.update({status:"done"})
-.eq("entry_id",selected.id)
-
-setFinishOpen(false)
-
-}
-
-const filtered = useMemo(()=>{
-
-if(!search) return entries
-
-const q = search.toLowerCase()
-
-return entries.filter(e=>
-`${e.address} ${e.source} ${e.type}`
-.toLowerCase()
-.includes(q)
-)
-
-},[entries,search])
-
-return(
-
-<div className="space-y-4">
-
-<Input
-placeholder="Sök adress"
-value={search}
-onChange={(e)=>setSearch(e.target.value)}
-/>
-
-{loading && <Loader2 className="animate-spin"/>}
-
-{filtered.map(entry=>(
-
-<Card key={entry.id} className="glass-card">
-
-<CardContent className="space-y-4 pt-4 pb-4">
-
-<div className="flex justify-between">
-
-<div>
-
-<p className="font-semibold text-sm">
-
-{entry.address}
-
-</p>
-
-<p className="text-xs text-muted-foreground">
-
-{entry.type} · {entry.source}
-
-</p>
-
-{entry.planned_date &&
-
-<p className="text-xs text-primary">
-
-📅 {new Date(entry.planned_date).toLocaleDateString()}
-
-</p>
-
-}
-
-</div>
-
-<span className="text-xs bg-muted px-2 py-1 rounded">
-
-{entry.status}
-
-</span>
-
-</div>
-
-<div className="flex gap-2">
-
-<Button
-variant="outline"
-onClick={()=>startJob(entry)}
->
-
-▶ Starta
-
-</Button>
-
-<Button
-className="bg-green-600 hover:bg-green-700"
-onClick={()=>openFinish(entry)}
->
-
-✓ Klar
-
-</Button>
-
-</div>
-
-</CardContent>
-
-</Card>
-
-))}
-
-<Dialog open={finishOpen} onOpenChange={setFinishOpen}>
-
-<DialogContent className="space-y-4">
-
-<h2 className="font-semibold text-lg">
-
-Slutför uppdrag
-
-</h2>
-
-<div>
-
-<label>Starttid</label>
-
-<Input
-value={startTime}
-onChange={(e)=>setStartTime(e.target.value)}
-/>
-
-</div>
-
-<div>
-
-<label>Sluttid</label>
-
-<Input
-value={endTime}
-onChange={(e)=>setEndTime(e.target.value)}
-/>
-
-</div>
-
-<div>
-
-<label>Antal lass flis</label>
-
-<Input
-value={loads}
-onChange={(e)=>setLoads(e.target.value)}
-/>
-
-</div>
-
-<div>
-
-<label>Kommentar</label>
-
-<Input
-value={comment}
-onChange={(e)=>setComment(e.target.value)}
-/>
-
-</div>
-
-<Button
-className="w-full bg-green-600"
-onClick={finishJob}
->
-
-Markera som klar
-
-</Button>
-
-</DialogContent>
-
-</Dialog>
-
-</div>
-
-)
-
+export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [search, setSearch] = useState("");
+  const [showDialog, setShowDialog] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeProgress, setGeocodeProgress] = useState("");
+  const [form, setForm] = useState({ name: "", address: "", description: "", project_number: "" });
+  const { toast } = useToast();
+
+  const loadProjects = useCallback(async () => {
+    const { data, error } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
+    if (error) { console.error(error); return; }
+    setProjects(
+      (data ?? []).map((r) => ({
+        id: r.id,
+        project_number: r.project_number,
+        name: r.name,
+        address: r.address,
+        description: r.description,
+        status: r.status as Status,
+        lat: r.lat,
+        lng: r.lng,
+        images: r.images ?? [],
+      }))
+    );
+  }, []);
+
+  useEffect(() => { loadProjects(); }, [loadProjects]);
+
+  // Realtime
+  useEffect(() => {
+    const channel = supabase
+      .channel("projects_realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, () => loadProjects())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadProjects]);
+
+  const handleAdd = async () => {
+    if (!form.name.trim() || !form.address.trim()) {
+      toast({ title: "Fyll i namn och adress", variant: "destructive" });
+      return;
+    }
+    const coords = await geocodeAddress(form.address);
+    const { error } = await supabase.from("projects").insert({
+      name: form.name,
+      address: form.address,
+      description: form.description,
+      project_number: form.project_number || undefined,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
+    });
+    if (error) { toast({ title: "Kunde inte skapa projekt", variant: "destructive" }); return; }
+    toast({ title: "Projekt skapat!" });
+    setShowDialog(false);
+    setForm({ name: "", address: "", description: "", project_number: "" });
+    loadProjects();
+  };
+
+  const handleUpdate = async (id: string, updates: Partial<Project>) => {
+    const mapped: Record<string, unknown> = {};
+    if (updates.status !== undefined) mapped.status = updates.status;
+    if (updates.description !== undefined) mapped.description = updates.description;
+    if (updates.images !== undefined) mapped.images = updates.images;
+    if (updates.project_number !== undefined) mapped.project_number = updates.project_number;
+    await supabase.from("projects").update(mapped).eq("id", id);
+    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from("projects").delete().eq("id", id);
+    toast({ title: "Projekt borttaget!" });
+    loadProjects();
+  };
+
+  const handleGeocodeAll = useCallback(async () => {
+    const toGeocode = projects.filter((p) => p.lat == null || p.lng == null);
+    if (toGeocode.length === 0) return;
+    setGeocoding(true);
+    for (let i = 0; i < toGeocode.length; i++) {
+      const p = toGeocode[i];
+      setGeocodeProgress(`${i + 1}/${toGeocode.length}: ${p.address}`);
+      const coords = await geocodeAddress(p.address);
+      if (coords) {
+        await supabase.from("projects").update({ lat: coords.lat, lng: coords.lng }).eq("id", p.id);
+      }
+      if (i < toGeocode.length - 1) await new Promise((r) => setTimeout(r, 1100));
+    }
+    setGeocoding(false);
+    setGeocodeProgress("");
+    loadProjects();
+  }, [projects, loadProjects]);
+
+  const filteredProjects = useMemo(() => {
+    if (!search.trim()) return projects;
+    const q = search.toLowerCase();
+    return projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.address.toLowerCase().includes(q) ||
+        p.project_number.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+    );
+  }, [projects, search]);
+
+  const mapMarkers = useMemo(
+    () => projects.filter((p) => p.lat != null && p.lng != null).map((p) => ({
+      lat: p.lat!, lng: p.lng!, label: `${p.project_number} - ${p.name}`, color: getMarkerColor(p.status),
+    })),
+    [projects]
+  );
+
+  const done = projects.filter((p) => p.status === "done").length;
+  const inProgress = projects.filter((p) => p.status === "in-progress").length;
+  const geocodedCount = projects.filter((p) => p.lat != null).length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Övriga Projekt</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {done}/{projects.length} klara · {inProgress} pågår
+          </p>
+        </div>
+        <Button onClick={() => setShowDialog(true)} className="gap-2">
+          <Plus className="h-4 w-4" /> Nytt projekt
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="glass-card">
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-semibold text-primary">{done}</p>
+            <p className="text-xs text-muted-foreground">Klara</p>
+          </CardContent>
+        </Card>
+        <Card className="glass-card">
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-semibold text-warning">{inProgress}</p>
+            <p className="text-xs text-muted-foreground">Pågår</p>
+          </CardContent>
+        </Card>
+        <Card className="glass-card">
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-semibold text-destructive">{projects.length - done - inProgress}</p>
+            <p className="text-xs text-muted-foreground">Ej påbörjad</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Map */}
+      <Card className="glass-card">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Map className="h-5 w-5 text-primary" /> Karta ({geocodedCount}/{projects.length})
+            </CardTitle>
+            {geocodedCount < projects.length && (
+              <Button size="sm" variant="outline" onClick={handleGeocodeAll} disabled={geocoding} className="gap-2">
+                {geocoding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Map className="h-3 w-3" />}
+                {geocoding ? "Söker..." : "Hämta positioner"}
+              </Button>
+            )}
+          </div>
+          {geocoding && geocodeProgress && <p className="text-xs text-muted-foreground">{geocodeProgress}</p>}
+        </CardHeader>
+        <CardContent>
+          {mapMarkers.length > 0 ? (
+            <AreaMap className="h-72 md:h-96 w-full rounded-lg overflow-hidden" markers={mapMarkers} />
+          ) : (
+            <div className="h-48 bg-muted rounded-lg flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">Inga kartpositioner ännu</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Sök namn, adress, projektnummer..." className="pl-10" />
+      </div>
+
+      {/* Project list */}
+      <div className="space-y-3">
+        {filteredProjects.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {search ? `Inga resultat för "${search}"` : "Inga projekt ännu. Klicka 'Nytt projekt' för att skapa."}
+          </p>
+        )}
+        {filteredProjects.map((project) => (
+          <Card key={project.id} className="glass-card">
+            <CardContent className="pt-4 pb-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] tracking-wider uppercase text-primary font-semibold flex items-center gap-1">
+                      <Hash className="h-3 w-3" />{project.project_number}
+                    </span>
+                    <StatusBadge status={project.status} />
+                    {project.lat != null && <span className="text-[10px] text-success">📍</span>}
+                  </div>
+                  <p className="text-sm font-medium">{project.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{project.address}</p>
+                  {project.description && <p className="text-xs text-muted-foreground/70 italic mt-1">{project.description}</p>}
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-destructive shrink-0"><Trash2 className="h-4 w-4" /></Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Ta bort projekt?</AlertDialogTitle>
+                      <AlertDialogDescription>Denna åtgärd kan inte ångras.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(project.id)}>Ta bort</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={project.status} onValueChange={(v) => handleUpdate(project.id, { status: v as Status })}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Ej påbörjad</SelectItem>
+                    <SelectItem value="in-progress">Pågår</SelectItem>
+                    <SelectItem value="done">Klart</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={project.project_number}
+                  onChange={(e) => handleUpdate(project.id, { project_number: e.target.value })}
+                  placeholder="Projektnr"
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              <Input
+                value={project.description}
+                onChange={(e) => handleUpdate(project.id, { description: e.target.value })}
+                placeholder="Beskrivning"
+                className="h-8 text-xs"
+              />
+
+              <WorkerAssignment entryType="project" entryId={project.id} compact />
+              <EntryImageUpload
+                images={project.images}
+                onImagesChange={(imgs) => handleUpdate(project.id, { images: imgs })}
+              />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* New project dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nytt projekt</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label>Projektnamn *</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="T.ex. Vinterunderhåll Kungsholmen" />
+            </div>
+            <div className="space-y-2">
+              <Label>Adress *</Label>
+              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Gatuadress, stad" />
+            </div>
+            <div className="space-y-2">
+              <Label>Projektnummer (lämna tomt för auto)</Label>
+              <Input value={form.project_number} onChange={(e) => setForm({ ...form, project_number: e.target.value })} placeholder="T.ex. P-2026-0001" />
+            </div>
+            <div className="space-y-2">
+              <Label>Beskrivning</Label>
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Avbryt</Button>
+            <Button onClick={handleAdd}>Skapa projekt</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
