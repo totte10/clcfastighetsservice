@@ -15,8 +15,7 @@ import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
 import {
   DashboardTaskCard,
   type DailyTask,
-  type Status,
-  type CompletionData
+  type Status
 } from "@/components/dashboard/DashboardTaskCard";
 import { Link } from "react-router-dom";
 import { format, getISOWeek } from "date-fns";
@@ -29,46 +28,46 @@ interface LeaderboardEntry {
 }
 
 export default function Dashboard() {
+
   const { user } = useAuth();
 
-  const [tasks, setTasks] = useState<DailyTask[]>([]);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [weeklyHours, setWeeklyHours] = useState(0);
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [tasks,setTasks] = useState<DailyTask[]>([]);
+  const [leaderboard,setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [weeklyHours,setWeeklyHours] = useState(0);
 
-  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const todayStr = format(new Date(),"yyyy-MM-dd");
 
-  const loadTasks = useCallback(async () => {
+  const loadTasks = useCallback(async()=>{
 
-    const { data: projects } = await supabase
+    const { data } = await supabase
       .from("projects")
       .select("*");
 
-    const mapped: DailyTask[] = (projects ?? []).map((p: any) => ({
-      id: `project-${p.id}`,
-      realId: p.id,
-      address: p.address,
-      projectName: p.name,
-      serviceLabel: p.description || "Projekt",
-      status: p.status as Status,
-      scheduledDate: p.datum_planerat,
-      source: "project",
-      sourceField: "status",
-      lat: p.lat,
-      lng: p.lng
+    const mapped:DailyTask[] = (data ?? []).map((p:any)=>({
+
+      id:`project-${p.id}`,
+      realId:p.id,
+      address:p.address,
+      projectName:p.name,
+      serviceLabel:p.description || "Projekt",
+      status:p.status as Status,
+      scheduledDate:p.datum_planerat,
+      source:"project",
+      sourceField:"status",
+      lat:p.lat,
+      lng:p.lng
+
     }));
 
     setTasks(mapped);
 
-  }, []);
+  },[]);
 
-  useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+  useEffect(()=>{ loadTasks() },[loadTasks]);
 
-  useEffect(() => {
+  useEffect(()=>{
 
-    async function loadHours() {
+    async function loadHours(){
 
       const { data } = await supabase
         .from("user_time_entries")
@@ -76,266 +75,274 @@ export default function Dashboard() {
 
       const total =
         (data ?? []).reduce(
-          (s, r) => s + (Number(r.hours) || 0),
+          (s,r)=> s + (Number(r.hours)||0),
           0
         );
 
       setWeeklyHours(total);
+
     }
 
     loadHours();
 
-  }, []);
+  },[]);
 
-  useEffect(() => {
+  useEffect(()=>{
 
-    async function loadLeaderboard() {
+    async function loadLeaderboard(){
 
       const { data } = await supabase
         .from("user_time_entries")
         .select("user_id,hours");
 
-      if (!data) return;
+      if(!data) return;
 
-      const map = new Map<string, number>();
+      const map = new Map<string,number>();
 
-      data.forEach((r: any) => {
+      data.forEach((r:any)=>{
         map.set(
           r.user_id,
-          (map.get(r.user_id) ?? 0) + (Number(r.hours) || 0)
-        );
+          (map.get(r.user_id) ?? 0) + (Number(r.hours)||0)
+        )
       });
 
       const ids = Array.from(map.keys());
 
-      const { data: profiles } = await supabase
+      const { data:profiles } = await supabase
         .from("profiles")
         .select("id,full_name")
-        .in("id", ids);
+        .in("id",ids);
 
-      const nameMap = new Map<string, string>();
+      const nameMap = new Map<string,string>();
 
-      profiles?.forEach((p: any) =>
-        nameMap.set(p.id, p.full_name)
-      );
+      profiles?.forEach((p:any)=>{
+        nameMap.set(p.id,p.full_name)
+      });
 
       setLeaderboard(
+
         ids
-          .map((id) => ({
-            userId: id,
-            name: nameMap.get(id) || "Okänd",
-            totalHours: map.get(id) ?? 0
-          }))
-          .sort((a, b) => b.totalHours - a.totalHours)
-      );
+        .map(id=>({
+          userId:id,
+          name:nameMap.get(id) || "Okänd",
+          totalHours:map.get(id) ?? 0
+        }))
+        .sort((a,b)=>b.totalHours-a.totalHours)
+
+      )
+
     }
 
     loadLeaderboard();
 
-  }, []);
+  },[]);
 
   const todayTasks = tasks.filter(
-    (t) => (t.scheduledDate || "").slice(0, 10) === todayStr
+    t => (t.scheduledDate || "").slice(0,10) === todayStr
   );
 
-  const done = todayTasks.filter(
-    (t) => t.status === "done"
-  ).length;
+  const done = todayTasks.filter(t=>t.status==="done").length;
+  const started = todayTasks.filter(t=>t.status==="in-progress").length;
 
-  const started = todayTasks.filter(
-    (t) => t.status === "in-progress"
-  ).length;
+  const mapJobs = useMemo(()=>{
 
-  const mapJobs = useMemo(
-    () =>
-      todayTasks
-        .filter((t) => t.lat && t.lng)
-        .map((t) => ({
-          id: t.realId,
-          name: t.projectName,
-          address: t.address,
-          lat: t.lat!,
-          lng: t.lng!,
-          status: t.status,
-          type: t.source
-        })),
-    [todayTasks]
-  );
+    return todayTasks
+      .filter(t=>t.lat && t.lng)
+      .map(t=>({
+
+        id:t.realId,
+        name:t.projectName,
+        address:t.address,
+        lat:t.lat!,
+        lng:t.lng!,
+        status:t.status,
+        type:t.source
+
+      }))
+
+  },[todayTasks]);
 
   return (
-    <div className="space-y-4 pb-24">
 
-      {/* Header */}
+    <div className="relative min-h-screen pb-28">
 
-      <div className="flex items-end justify-between">
+      {/* animated gradient */}
 
-        <div>
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22] opacity-90" />
 
-          <h1 className="text-xl font-bold">
-            Arbete idag
-          </h1>
+      {/* content */}
 
-          <p className="text-xs text-muted-foreground">
-            {format(new Date(), "EEEE d MMMM yyyy", {
-              locale: sv
-            })}
-          </p>
+      <div className="space-y-6">
 
-        </div>
+        {/* header */}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-end justify-between">
 
-          <AdminTimeReminder />
+          <div>
 
-          <Link
-            to="/projects"
-            className="text-xs text-primary flex items-center gap-1"
-          >
-            Alla projekt
-            <ArrowUpRight className="h-3 w-3" />
-          </Link>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Arbete idag
+            </h1>
 
-        </div>
-
-      </div>
-
-      {/* Stats */}
-
-      <div className="grid grid-cols-2 gap-3">
-
-        <Stat
-          label="Totalt"
-          value={todayTasks.length}
-          icon={<CalendarDays size={16} />}
-        />
-
-        <Stat
-          label="Påbörjade"
-          value={started}
-          icon={<Play size={16} />}
-        />
-
-        <Stat
-          label="Klara"
-          value={done}
-          icon={<Check size={16} />}
-        />
-
-        <Stat
-          label={`Vecka ${getISOWeek(new Date())}`}
-          value={`${weeklyHours.toFixed(1)}h`}
-          icon={<Timer size={16} />}
-        />
-
-      </div>
-
-      {/* Map */}
-
-      {mapJobs.length > 0 && (
-
-        <div>
-
-          <h2 className="text-xs font-semibold mb-2">
-            Dagens jobb
-          </h2>
-
-          <DashboardWorkerMap jobs={mapJobs} />
-
-        </div>
-
-      )}
-
-      {/* Leaderboard */}
-
-      {leaderboard.length > 0 && (
-
-        <div className="rounded-xl border border-border/40 bg-card/80 p-3">
-
-          <div className="flex items-center gap-2 mb-2">
-
-            <Trophy className="h-4 w-4 text-primary" />
-
-            <p className="text-xs font-semibold">
-              Topplista – Timmar
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(),"EEEE d MMMM yyyy",{locale:sv})}
             </p>
 
           </div>
 
-          {leaderboard.slice(0, 5).map((u, i) => (
+          <div className="flex items-center gap-2">
 
-            <div
-              key={u.userId}
-              className="flex items-center justify-between py-1 text-xs"
+            <AdminTimeReminder/>
+
+            <Link
+              to="/projects"
+              className="text-xs text-primary flex items-center gap-1"
             >
+              Alla projekt
+              <ArrowUpRight className="h-3 w-3"/>
+            </Link>
 
-              <div className="flex items-center gap-2">
-
-                {i < 3 ? (
-                  <Medal className="h-3 w-3 text-yellow-400" />
-                ) : (
-                  <span className="text-muted-foreground">
-                    {i + 1}
-                  </span>
-                )}
-
-                {u.name}
-
-              </div>
-
-              <span className="font-semibold">
-                {u.totalHours.toFixed(1)}h
-              </span>
-
-            </div>
-
-          ))}
+          </div>
 
         </div>
 
-      )}
+        {/* stats */}
 
-      {/* Tasks */}
+        <div className="grid grid-cols-2 gap-4">
 
-      <div className="space-y-2">
+          <Stat
+            label="Totalt"
+            value={todayTasks.length}
+            icon={<CalendarDays size={18}/>}
+          />
 
-        {todayTasks.length === 0 && (
+          <Stat
+            label="Påbörjade"
+            value={started}
+            icon={<Play size={18}/>}
+          />
 
-          <div className="text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl p-6">
-            Inga uppdrag planerade idag
+          <Stat
+            label="Klara"
+            value={done}
+            icon={<Check size={18}/>}
+          />
+
+          <Stat
+            label={`Vecka ${getISOWeek(new Date())}`}
+            value={`${weeklyHours.toFixed(1)}h`}
+            icon={<Timer size={18}/>}
+          />
+
+        </div>
+
+        {/* map */}
+
+        {mapJobs.length>0 && (
+
+          <div className="space-y-2">
+
+            <h2 className="text-xs font-semibold">
+              Dagens jobb
+            </h2>
+
+            <DashboardWorkerMap jobs={mapJobs}/>
+
           </div>
 
         )}
 
-        {todayTasks.map((task) => (
+        {/* leaderboard */}
 
-          <DashboardTaskCard
-            key={task.id}
-            task={task}
-            updating={updating}
-            onStart={() => {}}
-            onComplete={() => {}}
-          />
+        {leaderboard.length>0 && (
 
-        ))}
+          <div className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xl p-4 shadow-xl">
+
+            <div className="flex items-center gap-2 mb-3">
+
+              <Trophy className="h-4 w-4 text-primary"/>
+
+              <p className="text-sm font-semibold">
+                Topplista – Timmar
+              </p>
+
+            </div>
+
+            {leaderboard.slice(0,5).map((u,i)=>(
+
+              <div
+                key={u.userId}
+                className="flex items-center justify-between py-1.5 text-xs"
+              >
+
+                <div className="flex items-center gap-2">
+
+                  {i<3
+                    ? <Medal className="h-4 w-4 text-yellow-400"/>
+                    : <span className="text-muted-foreground">{i+1}</span>
+                  }
+
+                  {u.name}
+
+                </div>
+
+                <span className="font-semibold">
+                  {u.totalHours.toFixed(1)}h
+                </span>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        )}
+
+        {/* tasks */}
+
+        <div className="space-y-3">
+
+          {todayTasks.length===0 && (
+
+            <div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-6">
+              Inga uppdrag planerade idag
+            </div>
+
+          )}
+
+          {todayTasks.map(task=>(
+            <DashboardTaskCard
+              key={task.id}
+              task={task}
+              updating={null}
+              onStart={()=>{}}
+              onComplete={()=>{}}
+            />
+          ))}
+
+        </div>
 
       </div>
 
     </div>
+
   );
+
 }
 
 function Stat({
   label,
   value,
   icon
-}: {
-  label: string;
-  value: string | number;
-  icon: React.ReactNode;
-}) {
-  return (
+}:{
+  label:string
+  value:string|number
+  icon:React.ReactNode
+}){
 
-    <div className="rounded-xl border border-border/40 bg-card/80 p-3 flex justify-between items-center">
+  return(
+
+    <div className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xl p-4 flex justify-between items-center shadow-lg">
 
       <div>
 
@@ -343,17 +350,18 @@ function Stat({
           {label}
         </p>
 
-        <p className="text-xl font-bold">
+        <p className="text-2xl font-bold mt-1">
           {value}
         </p>
 
       </div>
 
-      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
         {icon}
       </div>
 
     </div>
 
-  );
+  )
+
 }
