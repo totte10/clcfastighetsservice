@@ -17,7 +17,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           <AppSidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 bg-sidebar-accent bg-[sidebar-accent-foreground]">
+        <div className="flex-1 flex flex-col min-w-0 bg-[sidebar-accent-foreground] bg-background">
 
           {/* Premium Header */}
 
