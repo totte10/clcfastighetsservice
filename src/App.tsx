@@ -21,6 +21,7 @@ import LoginPage from "@/pages/LoginPage";
 import MissingCoordinatesPage from "@/pages/MissingCoordinatesPage";
 import PayrollPage from "@/pages/PayrollPage";
 import RoutePlanningPage from "@/pages/RoutePlanningPage";
+import VoicePage from "@/pages/VoicePage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
