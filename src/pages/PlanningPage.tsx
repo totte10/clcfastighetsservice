@@ -1,3 +1,4 @@
+xed_001"}
 import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
@@ -12,424 +13,451 @@ import { format } from "date-fns"
 
 
 
-export default function PlanningPage(){
-
-const { user } = useAuth()
-
-const [items,setItems] = useState([])
-const [workers,setWorkers] = useState([])
-
-const [editing,setEditing] = useState(null)
-const [creating,setCreating] = useState(false)
-
-const [form,setForm] = useState({
-name:"",
-address:"",
-date:"",
-project_number:"",
-workers:[]
-})
-
-const [isAdmin,setIsAdmin] = useState(null)
-
-
-
-/* ADMIN CHECK /
-
-useEffect(()=>{
-
-if(!user) return
-
-supabase
-.from("user_roles")
-.select("role")
-.eq("user_id",user.id)
-.eq("role","admin")
-.maybeSingle()
-.then(({data})=>{
-setIsAdmin(!!data)
-})
-
-},[user])
-
-
-
-/ LOAD WORKERS /
-
-useEffect(()=>{
-
-supabase
-.from("profiles")
-.select("id,full_name")
-.then(({data})=>{
-setWorkers(data ?? [])
-})
-
-},[])
-
-
-
-/ LOAD PROJECTS /
-
-async function loadItems(){
-
-const { data } = await supabase
-.from("projects")
-.select("")
-.order("datum_planerat")
-
-setItems(data ?? [])
-
+interface Worker {
+  id: string
+  full_name: string
 }
 
-useEffect(()=>{
-
-loadItems()
-
-},[])
-
-
-
-/* SAVE EDIT /
-
-async function saveEdit(){
-
-await supabase
-.from("projects")
-.update({
-name:form.name,
-address:form.address,
-project_number:form.project_number,
-datum_planerat:form.date
-})
-.eq("id",editing.id)
-
-
-await supabase
-.from("project_assignments")
-.delete()
-.eq("entry_id",editing.id)
-.eq("entry_type","project")
-
-
-const assignments = form.workers.map(uid=>({
-entry_id:editing.id,
-entry_type:"project",
-user_id:uid
-}))
-
-if(assignments.length){
-
-await supabase
-.from("project_assignments")
-.insert(assignments)
-
-}
-
-await loadItems()
-
-setEditing(null)
-
+interface Project {
+  id: string
+  name: string
+  address: string
+  project_number?: string
+  datum_planerat: string
 }
 
 
 
-/ CREATE JOB /
+export default function PlanningPage() {
 
-async function createJob(){
+  const { user } = useAuth()
 
-const { data } = await supabase
-.from("projects")
-.insert({
-name:form.name,
-address:form.address,
-project_number:form.project_number,
-datum_planerat:form.date
-})
-.select()
-.single()
+  const [items, setItems] = useState<Project[]>([])
+  const [workers, setWorkers] = useState<Worker[]>([])
 
+  const [editing, setEditing] = useState<Project | null>(null)
+  const [creating, setCreating] = useState(false)
 
-if(data){
+  const [form, setForm] = useState({
+    name: "",
+    address: "",
+    date: "",
+    project_number: "",
+    workers: [] as string[]
+  })
 
-const assignments = form.workers.map(uid=>({
-entry_id:data.id,
-entry_type:"project",
-user_id:uid
-}))
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
 
-if(assignments.length){
 
-await supabase
-.from("project_assignments")
-.insert(assignments)
 
-}
+  /* ADMIN CHECK /
 
-}
+  useEffect(() => {
 
-await loadItems()
+    if (!user) return
 
-setCreating(false)
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle()
+      .then(({ data }) => {
+        setIsAdmin(!!data)
+      })
 
-}
+  }, [user])
 
 
 
-if(isAdmin===null) return null
-if(!isAdmin) return <Navigate to="/" replace />
+  / LOAD WORKERS /
 
+  useEffect(() => {
 
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .then(({ data }) => {
+        setWorkers(data ?? [])
+      })
 
-return(
+  }, [])
 
-<div className="space-y-6 pb-24">
 
-<h1 className="text-2xl font-bold">
-Planering
-</h1>
 
+  / LOAD PROJECTS /
 
-<Button
-onClick={()=>{
+  async function loadItems() {
 
-setCreating(true)
+    const { data } = await supabase
+      .from("projects")
+      .select("")
+      .order("datum_planerat")
 
-setForm({
-name:"",
-address:"",
-date:format(new Date(),"yyyy-MM-dd"),
-project_number:"",
-workers:[]
-})
+    setItems(data ?? [])
 
-}}
->
+  }
 
-Nytt uppdrag
+  useEffect(() => {
+    loadItems()
+  }, [])
 
-</Button>
 
 
+  /* SAVE EDIT /
 
-<Card>
+  async function saveEdit() {
 
-<CardContent className="space-y-3 p-4">
+    if (!editing) return
 
-{items.map(item=>(
+    await supabase
+      .from("projects")
+      .update({
+        name: form.name,
+        address: form.address,
+        project_number: form.project_number,
+        datum_planerat: form.date
+      })
+      .eq("id", editing.id)
 
-<div
-key={item.id}
-className="border rounded-lg p-3 flex justify-between items-center"
->
 
-<div>
 
-<p className="font-medium">
-{item.name}
-</p>
+    await supabase
+      .from("project_assignments")
+      .delete()
+      .eq("entry_id", editing.id)
+      .eq("entry_type", "project")
 
-<p className="text-xs text-muted-foreground">
-{item.address}
-</p>
 
-</div>
 
-<Button
-size="sm"
-onClick={()=>{
+    const assignments = form.workers.map(uid => ({
+      entry_id: editing.id,
+      entry_type: "project",
+      user_id: uid
+    }))
 
-setEditing(item)
+    if (assignments.length) {
+      await supabase
+        .from("project_assignments")
+        .insert(assignments)
+    }
 
-setForm({
-name:item.name,
-address:item.address,
-date:item.datum_planerat,
-project_number:item.project_number ?? "",
-workers:[]
-})
+    await loadItems()
 
-}}
->
+    setEditing(null)
 
-Ändra
+  }
 
-</Button>
 
-</div>
 
-))}
+  / CREATE PROJECT /
 
-</CardContent>
+  async function createJob() {
 
-</Card>
+    const { data } = await supabase
+      .from("projects")
+      .insert({
+        name: form.name,
+        address: form.address,
+        project_number: form.project_number,
+        datum_planerat: form.date
+      })
+      .select()
+      .single()
 
 
 
-{/ EDIT /}
+    if (data) {
 
-{editing && (
+      const assignments = form.workers.map(uid => ({
+        entry_id: data.id,
+        entry_type: "project",
+        user_id: uid
+      }))
 
-<Dialog open onOpenChange={()=>setEditing(null)}>
+      if (assignments.length) {
+        await supabase
+          .from("project_assignments")
+          .insert(assignments)
+      }
 
-<DialogContent className="space-y-4">
+    }
 
-<DialogHeader>
-<DialogTitle>Redigera uppdrag</DialogTitle>
-</DialogHeader>
+    await loadItems()
 
-<Input
-placeholder="Namn"
-value={form.name}
-onChange={e=>setForm({...form,name:e.target.value})}
-/>
+    setCreating(false)
 
-<Input
-placeholder="Adress"
-value={form.address}
-onChange={e=>setForm({...form,address:e.target.value})}
-/>
+  }
 
-<Input
-placeholder="Projektnummer"
-value={form.project_number}
-onChange={e=>setForm({...form,project_number:e.target.value})}
-/>
 
-<Input
-type="date"
-value={form.date}
-onChange={e=>setForm({...form,date:e.target.value})}
-/>
 
+  if (isAdmin === null) return null
+  if (!isAdmin) return <Navigate to="/" replace />
 
-<div className="grid grid-cols-2 gap-2">
 
-{workers.map(w=>(
 
-<label key={w.id} className="flex items-center gap-2 text-xs">
+  return (
 
-<input
-type="checkbox"
-checked={form.workers.includes(w.id)}
-onChange={(e)=>{
+    <div className="space-y-6 pb-24">
 
-if(e.target.checked){
+      <h1 className="text-2xl font-bold">
+        Planering
+      </h1>
 
-setForm({...form,workers:[...form.workers,w.id]})
 
-}else{
 
-setForm({...form,workers:form.workers.filter(id=>id!==w.id)})
+      <Button
+        onClick={() => {
 
-}
+          setCreating(true)
 
-}}
-/>
+          setForm({
+            name: "",
+            address: "",
+            date: format(new Date(), "yyyy-MM-dd"),
+            project_number: "",
+            workers: []
+          })
 
-{w.full_name}
+        }}
+      >
 
-</label>
+        Nytt uppdrag
 
-))}
+      </Button>
 
-</div>
 
 
-<Button onClick={saveEdit}>
-Spara
-</Button>
+      <Card>
 
-</DialogContent>
+        <CardContent className="space-y-3 p-4">
 
-</Dialog>
+          {items.map(item => (
 
-)}
+            <div
+              key={item.id}
+              className="border rounded-lg p-3 flex justify-between items-center"
+            >
 
+              <div>
 
+                <p className="font-medium">
+                  {item.name}
+                </p>
 
-{/ CREATE */}
+                <p className="text-xs text-muted-foreground">
+                  {item.address}
+                </p>
 
-{creating && (
+              </div>
 
-<Dialog open onOpenChange={()=>setCreating(false)}>
+              <Button
+                size="sm"
+                onClick={() => {
 
-<DialogContent className="space-y-4">
+                  setEditing(item)
 
-<DialogHeader>
-<DialogTitle>Nytt uppdrag</DialogTitle>
-</DialogHeader>
+                  setForm({
+                    name: item.name,
+                    address: item.address,
+                    date: item.datum_planerat,
+                    project_number: item.project_number ?? "",
+                    workers: []
+                  })
 
-<Input
-placeholder="Namn"
-value={form.name}
-onChange={e=>setForm({...form,name:e.target.value})}
-/>
+                }}
+              >
 
-<Input
-placeholder="Adress"
-value={form.address}
-onChange={e=>setForm({...form,address:e.target.value})}
-/>
+                Ändra
 
-<Input
-placeholder="Projektnummer"
-value={form.project_number}
-onChange={e=>setForm({...form,project_number:e.target.value})}
-/>
+              </Button>
 
-<Input
-type="date"
-value={form.date}
-onChange={e=>setForm({...form,date:e.target.value})}
-/>
+            </div>
 
+          ))}
 
-<div className="grid grid-cols-2 gap-2">
+        </CardContent>
 
-{workers.map(w=>(
+      </Card>
 
-<label key={w.id} className="flex items-center gap-2 text-xs">
 
-<input
-type="checkbox"
-checked={form.workers.includes(w.id)}
-onChange={(e)=>{
 
-if(e.target.checked){
+      {/ EDIT /}
 
-setForm({...form,workers:[...form.workers,w.id]})
+      {editing && (
 
-}else{
+        <Dialog open onOpenChange={() => setEditing(null)}>
 
-setForm({...form,workers:form.workers.filter(id=>id!==w.id)})
+          <DialogContent className="space-y-4">
 
-}
+            <DialogHeader>
+              <DialogTitle>Redigera uppdrag</DialogTitle>
+            </DialogHeader>
 
-}}
-/>
+            <Input
+              placeholder="Namn"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+            />
 
-{w.full_name}
+            <Input
+              placeholder="Adress"
+              value={form.address}
+              onChange={e => setForm({ ...form, address: e.target.value })}
+            />
 
-</label>
+            <Input
+              placeholder="Projektnummer"
+              value={form.project_number}
+              onChange={e => setForm({ ...form, project_number: e.target.value })}
+            />
 
-))}
+            <Input
+              type="date"
+              value={form.date}
+              onChange={e => setForm({ ...form, date: e.target.value })}
+            />
 
-</div>
 
 
-<Button onClick={createJob}>
-Skapa uppdrag
-</Button>
+            <div className="grid grid-cols-2 gap-2">
 
-</DialogContent>
+              {workers.map(w => (
 
-</Dialog>
+                <label key={w.id} className="flex items-center gap-2 text-xs">
 
-)}
+                  <input
+                    type="checkbox"
+                    checked={form.workers.includes(w.id)}
+                    onChange={(e) => {
 
-</div>
+                      if (e.target.checked) {
 
-)
+                        setForm({
+                          ...form,
+                          workers: [...form.workers, w.id]
+                        })
 
-}
+                      } else {
+
+                        setForm({
+                          ...form,
+                          workers: form.workers.filter(id => id !== w.id)
+                        })
+
+                      }
+
+                    }}
+                  />
+
+                  {w.full_name}
+
+                </label>
+
+              ))}
+
+            </div>
+
+
+
+            <Button onClick={saveEdit}>
+              Spara
+            </Button>
+
+          </DialogContent>
+
+        </Dialog>
+
+      )}
+
+
+
+      {/ CREATE */}
+
+      {creating && (
+
+        <Dialog open onOpenChange={() => setCreating(false)}>
+
+          <DialogContent className="space-y-4">
+
+            <DialogHeader>
+              <DialogTitle>Nytt uppdrag</DialogTitle>
+            </DialogHeader>
+
+            <Input
+              placeholder="Namn"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+            />
+
+            <Input
+              placeholder="Adress"
+              value={form.address}
+              onChange={e => setForm({ ...form, address: e.target.value })}
+            />
+
+            <Input
+              placeholder="Projektnummer"
+              value={form.project_number}
+              onChange={e => setForm({ ...form, project_number: e.target.value })}
+            />
+
+            <Input
+              type="date"
+              value={form.date}
+              onChange={e => setForm({ ...form, date: e.target.value })}
+            />
+
+
+
+            <div className="grid grid-cols-2 gap-2">
+
+              {workers.map(w => (
+
+                <label key={w.id} className="flex items-center gap-2 text-xs">
+
+                  <input
+                    type="checkbox"
+                    checked={form.workers.includes(w.id)}
+                    onChange={(e) => {
+
+                      if (e.target.checked) {
+
+                        setForm({
+                          ...form,
+                          workers: [...form.workers, w.id]
+                        })
+
+                      } else {
+
+                        setForm({
+                          ...form,
+                          workers: form.workers.filter(id => id !== w.id)
+                        })
+
+                      }
+
+                    }}
+                  />
+
+                  {w.full_name}
+
+                </label>
+
+              ))}
+
+            </div>
+
+
+
+            <Button onClick={createJob}>
+              Skapa uppdrag
+            </Button>
+
+          </DialogContent>
+
+        </Dialog>
+
+      )}
+
+    </div
