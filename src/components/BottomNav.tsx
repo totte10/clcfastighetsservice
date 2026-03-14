@@ -111,12 +111,12 @@ export default function BottomNav() {
 
           <img
 
-            className="
-            w-[32px]
-            h-[32px]
-            object-cover
-            rounded-full
-            " src="/lovable-uploads/beb39a0a-fb53-420d-9459-6ef8b369da4e.png" />
+            className="w-[32px] h-[32px] object-fill border-0 border-none rounded-sm"
+
+
+
+
+            src="/lovable-uploads/beb39a0a-fb53-420d-9459-6ef8b369da4e.png" />
           
 
         </div>
