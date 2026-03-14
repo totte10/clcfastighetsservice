@@ -61,6 +61,7 @@ function ProtectedRoutes() {
         <Route path="/payroll" element={<PayrollPage />} />
         <Route path="/route" element={<RoutePlanningPage />} />
         <Route path="/voice" element={<VoicePage />} />
+        <Route path="/admin-panel" element={<AdminPanelPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
