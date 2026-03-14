@@ -18,7 +18,7 @@ import {
   type Status
 } from "@/components/dashboard/DashboardTaskCard";
 import { Link } from "react-router-dom";
-import { format, getISOWeek } from "date-fns";
+import { format, getISOWeek, addDays } from "date-fns";
 import { sv } from "date-fns/locale";
 
 interface LeaderboardEntry {
@@ -162,17 +162,32 @@ export default function Dashboard() {
 
   },[todayTasks]);
 
+  const weekDays = Array.from({length:7}).map((_,i)=>{
+
+    const date = addDays(new Date(), i - 3);
+
+    const dateStr = format(date,"yyyy-MM-dd");
+
+    const dayTasks = tasks.filter(
+      t => (t.scheduledDate || "").slice(0,10) === dateStr
+    );
+
+    return {
+      date,
+      count:dayTasks.length
+    }
+
+  });
+
   return (
 
-    <div className="relative min-h-screen pb-28">
+    <div className="relative min-h-screen pb-28 px-1">
 
-      {/* animated gradient */}
+      {/* gradient */}
 
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22] opacity-90" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22]" />
 
-      {/* content */}
-
-      <div className="space-y-6">
+      <div className="space-y-4">
 
         {/* header */}
 
@@ -180,12 +195,12 @@ export default function Dashboard() {
 
           <div>
 
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-xl font-semibold">
               Arbete idag
             </h1>
 
-            <p className="text-xs text-muted-foreground">
-              {format(new Date(),"EEEE d MMMM yyyy",{locale:sv})}
+            <p className="text-[11px] text-muted-foreground">
+              {format(new Date(),"EEEE d MMMM",{locale:sv})}
             </p>
 
           </div>
@@ -208,31 +223,49 @@ export default function Dashboard() {
 
         {/* stats */}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
 
-          <Stat
-            label="Totalt"
-            value={todayTasks.length}
-            icon={<CalendarDays size={18}/>}
-          />
+          <Stat label="Totalt" value={todayTasks.length} icon={<CalendarDays size={16}/>}/>
+          <Stat label="Påbörjade" value={started} icon={<Play size={16}/>}/>
+          <Stat label="Klara" value={done} icon={<Check size={16}/>}/>
+          <Stat label={`v.${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer size={16}/>}/>
 
-          <Stat
-            label="Påbörjade"
-            value={started}
-            icon={<Play size={18}/>}
-          />
+        </div>
 
-          <Stat
-            label="Klara"
-            value={done}
-            icon={<Check size={18}/>}
-          />
+        {/* week planner */}
 
-          <Stat
-            label={`Vecka ${getISOWeek(new Date())}`}
-            value={`${weeklyHours.toFixed(1)}h`}
-            icon={<Timer size={18}/>}
-          />
+        <div className="flex gap-2 overflow-x-auto pb-1">
+
+          {weekDays.map((d,i)=>(
+
+            <div
+              key={i}
+              className="
+              min-w-[60px]
+              rounded-xl
+              border border-white/5
+              bg-white/[0.04]
+              px-2
+              py-2
+              text-center
+              "
+            >
+
+              <p className="text-[9px] text-muted-foreground">
+                {format(d.date,"EEE",{locale:sv})}
+              </p>
+
+              <p className="text-sm font-semibold">
+                {format(d.date,"d")}
+              </p>
+
+              <p className="text-[10px] text-primary">
+                {d.count}
+              </p>
+
+            </div>
+
+          ))}
 
         </div>
 
@@ -240,15 +273,7 @@ export default function Dashboard() {
 
         {mapJobs.length>0 && (
 
-          <div className="space-y-2">
-
-            <h2 className="text-xs font-semibold">
-              Dagens jobb
-            </h2>
-
-            <DashboardWorkerMap jobs={mapJobs}/>
-
-          </div>
+          <DashboardWorkerMap jobs={mapJobs}/>
 
         )}
 
@@ -256,13 +281,13 @@ export default function Dashboard() {
 
         {leaderboard.length>0 && (
 
-          <div className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xl p-4 shadow-xl">
+          <div className="rounded-xl border border-white/5 bg-white/[0.04] backdrop-blur-xl p-3">
 
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2">
 
               <Trophy className="h-4 w-4 text-primary"/>
 
-              <p className="text-sm font-semibold">
+              <p className="text-xs font-semibold">
                 Topplista – Timmar
               </p>
 
@@ -272,13 +297,13 @@ export default function Dashboard() {
 
               <div
                 key={u.userId}
-                className="flex items-center justify-between py-1.5 text-xs"
+                className="flex items-center justify-between text-xs py-1"
               >
 
                 <div className="flex items-center gap-2">
 
                   {i<3
-                    ? <Medal className="h-4 w-4 text-yellow-400"/>
+                    ? <Medal className="h-3 w-3 text-yellow-400"/>
                     : <span className="text-muted-foreground">{i+1}</span>
                   }
 
@@ -300,11 +325,11 @@ export default function Dashboard() {
 
         {/* tasks */}
 
-        <div className="space-y-3">
+        <div className="space-y-2">
 
           {todayTasks.length===0 && (
 
-            <div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-6">
+            <div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-5">
               Inga uppdrag planerade idag
             </div>
 
@@ -342,21 +367,31 @@ function Stat({
 
   return(
 
-    <div className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xl p-4 flex justify-between items-center shadow-lg">
+    <div className="
+    rounded-xl
+    border border-white/5
+    bg-white/[0.04]
+    backdrop-blur-xl
+    px-3
+    py-2.5
+    flex
+    items-center
+    justify-between
+    ">
 
       <div>
 
-        <p className="text-[10px] uppercase text-muted-foreground">
+        <p className="text-[9px] uppercase text-muted-foreground">
           {label}
         </p>
 
-        <p className="text-2xl font-bold mt-1">
+        <p className="text-lg font-semibold leading-none mt-1">
           {value}
         </p>
 
       </div>
 
-      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
         {icon}
       </div>
 
