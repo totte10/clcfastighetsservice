@@ -9,35 +9,34 @@ export default function BottomNav() {
   const location = useLocation();
 
   function Item({
-    icon:Icon,
+    icon: Icon,
     label,
     path
-  }:{
-    icon:any
-    label:string
-    path:string
-  }){
+  }: {
+    icon: any
+    label: string
+    path: string
+  }) {
 
     const active = location.pathname === path;
 
-    return(
+    return (
 
       <button
-        onClick={()=>navigate(path)}
+        onClick={() => navigate(path)}
         className={`
         flex flex-col items-center justify-center
-        gap-[2px]
         text-[10px]
-        transition-all
-        duration-200
+        gap-[2px]
+        transition-all duration-200
         ${active ? "text-primary" : "text-muted-foreground"}
         `}
       >
 
         <Icon
           className={`
-          h-[20px] w-[20px]
-          transition-transform
+          w-[20px] h-[20px]
+          transition-all
           ${active ? "scale-110 text-primary" : ""}
           `}
         />
@@ -50,23 +49,18 @@ export default function BottomNav() {
 
   }
 
-  return(
+  return (
 
     <nav
       className="
-      fixed
-      bottom-0
-      left-0
-      right-0
+      fixed bottom-0 left-0 right-0
       pb-[env(safe-area-inset-bottom)]
-      pt-1.5
-      bg-[rgba(2,6,23,0.65)]
-      backdrop-blur-3xl
+      pt-2
+      bg-[rgba(2,6,23,0.55)]
+      backdrop-blur-[30px]
       border-t border-white/5
-      shadow-[0_-8px_25px_rgba(0,0,0,0.6)]
-      flex
-      items-center
-      justify-around
+      shadow-[0_-10px_30px_rgba(0,0,0,0.7)]
+      flex items-center justify-around
       z-50
       "
     >
@@ -77,7 +71,7 @@ export default function BottomNav() {
 
         <SidebarTrigger className="flex flex-col items-center gap-[2px]">
 
-          <Menu className="h-[20px] w-[20px]" />
+          <Menu className="w-[20px] h-[20px]" />
 
           <span>Meny</span>
 
@@ -93,30 +87,34 @@ export default function BottomNav() {
         path="/chat"
       />
 
-      {/* Home */}
+      {/* Home (round logo) */}
 
       <button
-        onClick={()=>navigate("/")}
-        className="flex flex-col items-center -mt-5"
+        onClick={() => navigate("/")}
+        className="flex flex-col items-center -mt-6"
       >
 
         <div
           className="
-          w-[54px]
-          h-[54px]
-          flex
-          items-center
-          justify-center
+          w-[52px]
+          h-[52px]
+          rounded-full
+          bg-gradient-to-b from-[#0f172a] to-[#020617]
+          border border-primary/40
+          flex items-center justify-center
+          shadow-[0_0_20px_rgba(34,197,94,0.35)]
+          transition-all duration-200
+          active:scale-95
           "
         >
 
           <img
             src={clcLogo}
             className="
-            w-[34px]
-            h-[34px]
-            object-contain
-            drop-shadow-[0_0_12px_rgba(34,197,94,0.5)]
+            w-[28px]
+            h-[28px]
+            rounded-full
+            object-cover
             "
           />
 
