@@ -22,14 +22,12 @@ isToday
 
 import { sv } from "date-fns/locale"
 
-
 type EntryType =
 | "tidx"
 | "egna"
 | "project"
 | "optimal"
 | "tmm"
-
 
 interface PlanningItem {
 id:string
@@ -40,7 +38,6 @@ date:string
 status:string
 project_number?:string
 }
-
 
 function color(type:EntryType){
 
@@ -65,6 +62,28 @@ return "bg-cyan-500/20 text-cyan-300"
 
 }
 
+function tableFromType(type:EntryType){
+
+switch(type){
+
+case "tidx":
+return "tidx_entries"
+
+case "egna":
+return "egna_entries"
+
+case "project":
+return "projects"
+
+case "optimal":
+return "optimal_entries"
+
+case "tmm":
+return "tmm_entries"
+
+}
+
+}
 
 export default function PlanningPage(){
 
@@ -89,8 +108,6 @@ worker:""
 
 const [isAdmin,setIsAdmin] = useState<boolean | null>(null)
 
-
-
 useEffect(()=>{
 
 if(!user) return
@@ -107,8 +124,6 @@ setIsAdmin(!!data)
 
 },[user])
 
-
-
 useEffect(()=>{
 
 supabase
@@ -119,8 +134,6 @@ setWorkers(data ?? [])
 })
 
 },[])
-
-
 
 async function loadItems(){
 
@@ -170,7 +183,6 @@ status:r.status
 })
 })
 
-
 egnaRes.data?.forEach(r=>{
 if(!r.datum_planerat) return
 result.push({
@@ -182,7 +194,6 @@ date:r.datum_planerat.slice(0,10),
 status:"pending"
 })
 })
-
 
 projRes.data?.forEach(r=>{
 if(!r.datum_planerat) return
@@ -197,7 +208,6 @@ project_number:r.project_number
 })
 })
 
-
 optimalRes.data?.forEach(r=>{
 if(!r.datum_start) return
 result.push({
@@ -209,7 +219,6 @@ date:r.datum_start.slice(0,10),
 status:r.status
 })
 })
-
 
 tmmRes.data?.forEach(r=>{
 if(!r.datum) return
@@ -227,12 +236,9 @@ setItems(result)
 
 }
 
-
 useEffect(()=>{
 loadItems()
 },[])
-
-
 
 const monthStart = startOfMonth(currentMonth)
 const monthEnd = endOfMonth(currentMonth)
@@ -241,7 +247,6 @@ const days = eachDayOfInterval({
 start:monthStart,
 end:monthEnd
 })
-
 
 const itemsByDate = useMemo(()=>{
 
@@ -257,7 +262,6 @@ return map
 
 },[items])
 
-
 const selectedItems = useMemo(()=>{
 
 if(!selectedDay) return []
@@ -268,17 +272,15 @@ return itemsByDate.get(key) ?? []
 
 },[selectedDay,itemsByDate])
 
-
 if(isAdmin===null) return null
 if(!isAdmin) return <Navigate to="/" replace />
-
 
 async function saveEdit(){
 
 if(!editing) return
 
 await supabase
-.from("projects")
+.from(tableFromType(editing.type))
 .update({
 name:form.name,
 address:form.address,
@@ -291,7 +293,6 @@ await loadItems()
 setEditing(null)
 
 }
-
 
 async function createJob(){
 
@@ -309,11 +310,9 @@ setCreating(false)
 
 }
 
-
 return(
 
 <div className="space-y-6 pb-24">
-
 
 <div className="flex justify-between items-center">
 
@@ -325,7 +324,6 @@ Planering
 
 </h1>
 
-
 <div className="flex gap-2">
 
 <Button
@@ -334,6 +332,10 @@ onClick={()=>setCurrentMonth(subMonths(currentMonth,1))}
 >
 ←
 </Button>
+
+<h2 className="font-semibold text-lg">
+{format(currentMonth,"MMMM yyyy",{locale:sv})}
+</h2>
 
 <Button
 variant="ghost"
@@ -358,20 +360,24 @@ worker:""
 
 }}
 >
-
 Nytt uppdrag
-
 </Button>
 
 </div>
 
 </div>
 
-
-
 <Card className="bg-[#071226] border-white/5">
 
 <CardContent className="p-4">
+
+<div className="grid grid-cols-7 gap-2 mb-2 text-xs text-white/40 text-center">
+
+{["Mån","Tis","Ons","Tor","Fre","Lör","Sön"].map(d=>(
+<div key={d}>{d}</div>
+))}
+
+</div>
 
 <div className="grid grid-cols-7 gap-2">
 
@@ -431,8 +437,6 @@ className={`text-[10px] px-2 py-[3px] rounded-full truncate ${color(item.type)}`
 
 </Card>
 
-
-
 {selectedDay && (
 
 <Card className="bg-[#071226] border-white/5">
@@ -481,8 +485,6 @@ className="p-3 rounded-xl border border-white/5 hover:bg-white/5 cursor-pointer"
 
 )}
 
-
-
 {editing && (
 
 <Dialog open onOpenChange={()=>setEditing(null)}>
@@ -529,8 +531,6 @@ Spara ändringar
 </Dialog>
 
 )}
-
-
 
 {creating && (
 
