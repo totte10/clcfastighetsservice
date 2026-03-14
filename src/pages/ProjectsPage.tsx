@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AreaMap } from "@/components/AreaMap";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, Search } from "lucide-react";
 
@@ -19,280 +18,276 @@ interface Entry {
   lng?: number
 }
 
-export default function ProjectsPage() {
+export default function ProjectsPage(){
 
-  const [entries,setEntries] = useState<Entry[]>([])
-  const [search,setSearch] = useState("")
-  const [loading,setLoading] = useState(true)
+const [entries,setEntries] = useState<Entry[]>([])
+const [search,setSearch] = useState("")
+const [loading,setLoading] = useState(true)
 
-  const [finishOpen,setFinishOpen] = useState(false)
-  const [selected,setSelected] = useState<Entry | null>(null)
+const [selected,setSelected] = useState<Entry | null>(null)
+const [finishOpen,setFinishOpen] = useState(false)
 
-  const [startTime,setStartTime] = useState("")
-  const [endTime,setEndTime] = useState("")
-  const [loads,setLoads] = useState("")
-  const [comment,setComment] = useState("")
-  const [images,setImages] = useState<File[]>([])
+const [startTime,setStartTime] = useState("")
+const [endTime,setEndTime] = useState("")
+const [comment,setComment] = useState("")
+const [loads,setLoads] = useState("")
 
-  async function loadEntries(){
+async function load(){
 
-    const sources = [
-      {table:"tmm_entries",label:"TMM"},
-      {table:"optimal_entries",label:"Optimal"},
-      {table:"egna_entries",label:"Egna"},
-      {table:"tidx_entries",label:"Tidx"}
-    ]
+const tables = [
+{table:"tmm_entries",label:"TMM"},
+{table:"optimal_entries",label:"Optimal"},
+{table:"egna_entries",label:"Egna"},
+{table:"tidx_entries",label:"Tidx"}
+]
 
-    const results = await Promise.all(
+const results = await Promise.all(
 
-      sources.map(async s => {
+tables.map(async t=>{
 
-        const {data} = await supabase
-        .from(s.table)
-        .select("*")
+const {data} = await supabase
+.from(t.table)
+.select("*")
 
-        return (data || []).map((row:any)=>({
+return (data||[]).map((r:any)=>({
 
-          id:row.id,
-          address:row.address || row.street || "",
-          name:row.name || "",
-          type:row.type || "",
-          planned_date:row.planned_date,
-          status:row.status || "Ej påbörjad",
-          lat:row.lat,
-          lng:row.lng,
-          source:s.label
+id:r.id,
+address:r.address || r.street || "",
+name:r.name || "",
+type:r.type || "",
+planned_date:r.planned_date,
+status:r.status || "Ej påbörjad",
+lat:r.lat,
+lng:r.lng,
+source:t.label
 
-        }))
+}))
 
-      })
+})
 
-    )
+)
 
-    setEntries(results.flat())
-    setLoading(false)
+setEntries(results.flat())
+setLoading(false)
 
-  }
+}
 
-  useEffect(()=>{loadEntries()},[])
+useEffect(()=>{load()},[])
 
-  function startJob(entry:Entry){
+function startJob(entry:Entry){
 
-    const now = new Date()
-    const time = now.toTimeString().slice(0,5)
+const now = new Date()
+const time = now.toTimeString().slice(0,5)
 
-    setStartTime(time)
+setStartTime(time)
 
-    supabase
-    .from("active_clocks")
-    .insert({
-      entry_id:entry.id,
-      start_time:now
-    })
+supabase
+.from("active_clocks")
+.insert({
+entry_id:entry.id,
+start_time:now
+})
 
-  }
+}
 
-  function openFinish(entry:Entry){
+function openFinish(entry:Entry){
 
-    setSelected(entry)
-    setFinishOpen(true)
+setSelected(entry)
+setFinishOpen(true)
 
-    const now = new Date()
-    setEndTime(now.toTimeString().slice(0,5))
+const now = new Date()
+setEndTime(now.toTimeString().slice(0,5))
 
-  }
+}
 
-  async function finishJob(){
+async function finishJob(){
 
-    if(!selected) return
+if(!selected) return
 
-    await supabase
-    .from("time_entries")
-    .insert({
-      entry_id:selected.id,
-      start_time:startTime,
-      end_time:endTime,
-      loads:loads,
-      comment:comment
-    })
+await supabase
+.from("time_entries")
+.insert({
+entry_id:selected.id,
+start_time:startTime,
+end_time:endTime,
+loads:loads,
+comment:comment
+})
 
-    await supabase
-    .from("entries_status")
-    .update({status:"done"})
-    .eq("entry_id",selected.id)
+await supabase
+.from("entries_status")
+.update({status:"done"})
+.eq("entry_id",selected.id)
 
-    setFinishOpen(false)
+setFinishOpen(false)
 
-  }
+}
 
-  const filtered = useMemo(()=>{
+const filtered = useMemo(()=>{
 
-    if(!search) return entries
+if(!search) return entries
 
-    const q = search.toLowerCase()
+const q = search.toLowerCase()
 
-    return entries.filter(e=>
-      `${e.address} ${e.source}`
-      .toLowerCase()
-      .includes(q)
-    )
+return entries.filter(e=>
+`${e.address} ${e.source} ${e.type}`
+.toLowerCase()
+.includes(q)
+)
 
-  },[entries,search])
+},[entries,search])
 
-  const markers = filtered
-  .filter(e=>e.lat && e.lng)
-  .map(e=>({
+return(
 
-    lat:e.lat!,
-    lng:e.lng!,
-    label:`${e.address}`
+<div className="space-y-4">
 
-  }))
+<Input
+placeholder="Sök adress"
+value={search}
+onChange={(e)=>setSearch(e.target.value)}
+/>
 
-  return(
+{loading && <Loader2 className="animate-spin"/>}
 
-  <div className="space-y-5">
+{filtered.map(entry=>(
 
-  <Input
-  placeholder="Sök adress"
-  value={search}
-  onChange={(e)=>setSearch(e.target.value)}
-  />
+<Card key={entry.id} className="glass-card">
 
-  <AreaMap
-  className="h-72 rounded-xl"
-  markers={markers}
-  />
+<CardContent className="space-y-4 pt-4 pb-4">
 
-  {loading && <Loader2 className="animate-spin"/>}
+<div className="flex justify-between">
 
-  {filtered.map(entry=>(
+<div>
 
-  <Card key={entry.id}>
+<p className="font-semibold text-sm">
 
-  <CardContent className="space-y-3">
+{entry.address}
 
-  <div className="flex justify-between">
+</p>
 
-  <div>
+<p className="text-xs text-muted-foreground">
 
-  <p className="font-semibold">{entry.address}</p>
+{entry.type} · {entry.source}
 
-  <p className="text-xs text-muted-foreground">
-  {entry.type} · {entry.source}
-  </p>
+</p>
 
-  {entry.planned_date &&
+{entry.planned_date &&
 
-  <p className="text-xs text-primary">
-  📅 {new Date(entry.planned_date).toLocaleDateString()}
-  </p>
+<p className="text-xs text-primary">
 
-  }
+📅 {new Date(entry.planned_date).toLocaleDateString()}
 
-  </div>
+</p>
 
-  <span className="text-xs bg-muted px-2 py-1 rounded">
-  {entry.status}
-  </span>
+}
 
-  </div>
+</div>
 
-  <div className="flex gap-2">
+<span className="text-xs bg-muted px-2 py-1 rounded">
 
-  <Button
-  variant="outline"
-  onClick={()=>startJob(entry)}
-  >
+{entry.status}
 
-  ▶ Starta
+</span>
 
-  </Button>
+</div>
 
-  <Button
-  className="bg-green-600 hover:bg-green-700"
-  onClick={()=>openFinish(entry)}
-  >
+<div className="flex gap-2">
 
-  ✓ Klar
+<Button
+variant="outline"
+onClick={()=>startJob(entry)}
+>
 
-  </Button>
+▶ Starta
 
-  </div>
+</Button>
 
-  </CardContent>
+<Button
+className="bg-green-600 hover:bg-green-700"
+onClick={()=>openFinish(entry)}
+>
 
-  </Card>
+✓ Klar
 
-  ))}
+</Button>
 
-  <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
+</div>
 
-  <DialogContent className="space-y-4">
+</CardContent>
 
-  <h2 className="text-lg font-semibold">
-  Slutför uppdrag
-  </h2>
+</Card>
 
-  <div>
+))}
 
-  <label>Starttid</label>
+<Dialog open={finishOpen} onOpenChange={setFinishOpen}>
 
-  <Input
-  value={startTime}
-  onChange={(e)=>setStartTime(e.target.value)}
-  />
+<DialogContent className="space-y-4">
 
-  </div>
+<h2 className="font-semibold text-lg">
 
-  <div>
+Slutför uppdrag
 
-  <label>Sluttid</label>
+</h2>
 
-  <Input
-  value={endTime}
-  onChange={(e)=>setEndTime(e.target.value)}
-  />
+<div>
 
-  </div>
+<label>Starttid</label>
 
-  <div>
+<Input
+value={startTime}
+onChange={(e)=>setStartTime(e.target.value)}
+/>
 
-  <label>Antal lass flis</label>
+</div>
 
-  <Input
-  value={loads}
-  onChange={(e)=>setLoads(e.target.value)}
-  />
+<div>
 
-  </div>
+<label>Sluttid</label>
 
-  <div>
+<Input
+value={endTime}
+onChange={(e)=>setEndTime(e.target.value)}
+/>
 
-  <label>Kommentar</label>
+</div>
 
-  <Input
-  value={comment}
-  onChange={(e)=>setComment(e.target.value)}
-  />
+<div>
 
-  </div>
+<label>Antal lass flis</label>
 
-  <Button
-  className="w-full bg-green-600"
-  onClick={finishJob}
-  >
+<Input
+value={loads}
+onChange={(e)=>setLoads(e.target.value)}
+/>
 
-  Markera som klar
+</div>
 
-  </Button>
+<div>
 
-  </DialogContent>
+<label>Kommentar</label>
 
-  </Dialog>
+<Input
+value={comment}
+onChange={(e)=>setComment(e.target.value)}
+/>
 
-  </div>
+</div>
 
-  )
+<Button
+className="w-full bg-green-600"
+onClick={finishJob}
+>
+
+Markera som klar
+
+</Button>
+
+</DialogContent>
+
+</Dialog>
+
+</div>
+
+)
 
 }
