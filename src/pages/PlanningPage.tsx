@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { Navigate } from "react-router-dom"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 import { CalendarDays } from "lucide-react"
@@ -44,19 +45,19 @@ function color(type:EntryType){
 switch(type){
 
 case "tidx":
-return "bg-blue-500/20 text-blue-300"
+return "bg-blue-500"
 
 case "egna":
-return "bg-emerald-500/20 text-emerald-300"
+return "bg-emerald-500"
 
 case "optimal":
-return "bg-purple-500/20 text-purple-300"
+return "bg-purple-500"
 
 case "tmm":
-return "bg-orange-500/20 text-orange-300"
+return "bg-orange-500"
 
 default:
-return "bg-cyan-500/20 text-cyan-300"
+return "bg-cyan-500"
 
 }
 
@@ -90,8 +91,6 @@ export default function PlanningPage(){
 const { user } = useAuth()
 
 const [items,setItems] = useState<PlanningItem[]>([])
-const [workers,setWorkers] = useState<any[]>([])
-
 const [selectedDay,setSelectedDay] = useState<Date | null>(null)
 const [currentMonth,setCurrentMonth] = useState(new Date())
 
@@ -102,8 +101,7 @@ const [form,setForm] = useState({
 name:"",
 address:"",
 date:"",
-project_number:"",
-worker:""
+project_number:""
 })
 
 const [isAdmin,setIsAdmin] = useState<boolean | null>(null)
@@ -123,17 +121,6 @@ setIsAdmin(!!data)
 })
 
 },[user])
-
-useEffect(()=>{
-
-supabase
-.from("profiles")
-.select("id,full_name")
-.then(({data})=>{
-setWorkers(data ?? [])
-})
-
-},[])
 
 async function loadItems(){
 
@@ -312,19 +299,21 @@ setCreating(false)
 
 return(
 
-<div className="space-y-6 pb-24">
+<div className="space-y-6 pb-32">
 
 <div className="flex justify-between items-center">
 
-<h1 className="text-2xl font-bold flex gap-2 items-center">
+<div className="flex items-center gap-3">
 
-<CalendarDays className="w-6 h-6 text-emerald-400"/>
+<CalendarDays className="w-7 h-7 text-emerald-400"/>
 
+<h1 className="text-3xl font-semibold">
 Planering
-
 </h1>
 
-<div className="flex gap-2">
+</div>
+
+<div className="flex items-center gap-3">
 
 <Button
 variant="ghost"
@@ -333,7 +322,7 @@ onClick={()=>setCurrentMonth(subMonths(currentMonth,1))}
 ←
 </Button>
 
-<h2 className="font-semibold text-lg">
+<h2 className="text-lg font-medium">
 {format(currentMonth,"MMMM yyyy",{locale:sv})}
 </h2>
 
@@ -354,24 +343,21 @@ setForm({
 name:"",
 address:"",
 date:format(new Date(),"yyyy-MM-dd"),
-project_number:"",
-worker:""
+project_number:""
 })
 
 }}
 >
+
 Nytt uppdrag
+
 </Button>
 
 </div>
 
 </div>
 
-<Card className="bg-[#071226] border-white/5">
-
-<CardContent className="p-4">
-
-<div className="grid grid-cols-7 gap-2 mb-2 text-xs text-white/40 text-center">
+<div className="grid grid-cols-7 gap-3 text-center text-sm text-white/40">
 
 {["Mån","Tis","Ons","Tor","Fre","Lör","Sön"].map(d=>(
 <div key={d}>{d}</div>
@@ -379,7 +365,7 @@ Nytt uppdrag
 
 </div>
 
-<div className="grid grid-cols-7 gap-2">
+<div className="grid grid-cols-7 gap-3">
 
 {days.map(day=>{
 
@@ -388,44 +374,47 @@ const dayItems = itemsByDate.get(key) ?? []
 
 return(
 
-<div
+<Card
 key={key}
 onClick={()=>setSelectedDay(day)}
-className="h-24 rounded-xl border border-white/5 p-2 hover:bg-white/5 cursor-pointer flex flex-col"
+className={`p-3 h-28 cursor-pointer border border-white/5 hover:border-emerald-500/40 transition
+${isToday(day) ? "bg-emerald-500/10 border-emerald-500/40" : "bg-[#071226]"}`}
 >
 
-<div
-className={`w-7 h-7 flex items-center justify-center rounded-full text-xs mb-1
-${isToday(day) ? "bg-emerald-500 text-black" : "text-white/70"}
-`}
->
+<div className="text-sm mb-2 font-medium">
 {day.getDate()}
 </div>
 
-<div className="space-y-[2px]">
+<div className="space-y-1">
 
-{dayItems.slice(0,2).map(item=>(
+{dayItems.slice(0,3).map(item=>(
 
 <div
 key={item.id}
-className={`text-[10px] px-2 py-[3px] rounded-full truncate ${color(item.type)}`}
+className="flex items-center gap-2 text-xs truncate"
 >
 
-{item.title}
+<div className={`w-2 h-2 rounded-full ${color(item.type)}`} />
+
+<span className="truncate">{item.title}</span>
 
 </div>
 
 ))}
 
-{dayItems.length > 2 && (
-<div className="text-[10px] text-white/40">
-+{dayItems.length-2}
+{dayItems.length > 3 && (
+
+<div className="text-xs text-white/40">
+
++{dayItems.length-3} fler
+
 </div>
+
 )}
 
 </div>
 
-</div>
+</Card>
 
 )
 
@@ -433,19 +422,17 @@ className={`text-[10px] px-2 py-[3px] rounded-full truncate ${color(item.type)}`
 
 </div>
 
-</CardContent>
-
-</Card>
-
 {selectedDay && (
 
-<Card className="bg-[#071226] border-white/5">
+<Card className="bg-[#071226] border border-white/5 p-5">
 
-<CardContent className="space-y-3 p-4">
+<h2 className="text-lg font-semibold mb-4">
 
-<h2 className="font-semibold text-lg">
 {format(selectedDay,"EEEE d MMMM yyyy",{locale:sv})}
+
 </h2>
+
+<div className="space-y-3">
 
 {selectedItems.map(item=>(
 
@@ -459,12 +446,11 @@ setForm({
 name:item.title,
 address:item.address,
 date:item.date,
-project_number:item.project_number ?? "",
-worker:""
+project_number:item.project_number ?? ""
 })
 
 }}
-className="p-3 rounded-xl border border-white/5 hover:bg-white/5 cursor-pointer"
+className="p-4 rounded-xl border border-white/5 hover:border-emerald-500/40 cursor-pointer"
 >
 
 <p className="font-medium">
@@ -479,7 +465,7 @@ className="p-3 rounded-xl border border-white/5 hover:bg-white/5 cursor-pointer"
 
 ))}
 
-</CardContent>
+</div>
 
 </Card>
 
@@ -492,7 +478,11 @@ className="p-3 rounded-xl border border-white/5 hover:bg-white/5 cursor-pointer"
 <DialogContent className="space-y-4">
 
 <DialogHeader>
-<DialogTitle>Redigera uppdrag</DialogTitle>
+
+<DialogTitle>
+Redigera uppdrag
+</DialogTitle>
+
 </DialogHeader>
 
 <Input
@@ -523,7 +513,9 @@ onChange={e=>setForm({...form,date:e.target.value})}
 className="bg-emerald-500 hover:bg-emerald-600"
 onClick={saveEdit}
 >
+
 Spara ändringar
+
 </Button>
 
 </DialogContent>
@@ -539,7 +531,11 @@ Spara ändringar
 <DialogContent className="space-y-4">
 
 <DialogHeader>
-<DialogTitle>Nytt uppdrag</DialogTitle>
+
+<DialogTitle>
+Nytt uppdrag
+</DialogTitle>
+
 </DialogHeader>
 
 <Input
@@ -570,7 +566,9 @@ onChange={e=>setForm({...form,date:e.target.value})}
 className="bg-emerald-500 hover:bg-emerald-600"
 onClick={createJob}
 >
+
 Skapa uppdrag
+
 </Button>
 
 </DialogContent>
