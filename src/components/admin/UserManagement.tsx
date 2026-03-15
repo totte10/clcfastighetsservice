@@ -24,11 +24,14 @@ interface ManagedUser {
 
 async function callAdmin(action: string, method = "GET", body?: any) {
   const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    return { error: "Ingen aktiv session. Logga in igen." };
+  }
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=${action}`;
   const r = await fetch(url, {
     method,
     headers: {
-      Authorization: `Bearer ${session?.access_token}`,
+      Authorization: `Bearer ${session.access_token}`,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       ...(method !== "GET" ? { "Content-Type": "application/json" } : {}),
     },
