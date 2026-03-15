@@ -51,8 +51,9 @@ export default function Dashboard() {
       projectName: p.name,
       serviceLabel: p.description || "Projekt",
       status: p.status as Status,
+      assignedUsers: [],
       scheduledDate: p.datum_planerat,
-      source: "project",
+      source: "project" as const,
       sourceField: "status",
       lat: p.lat,
       lng: p.lng
