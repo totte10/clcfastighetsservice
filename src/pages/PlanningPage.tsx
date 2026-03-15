@@ -306,16 +306,16 @@ export default function PlanningPage() {
     }));
   }
 
-  if (!isAdmin) return <Navigate to="/" replace />;
-
-  const dialogOpen = !!editJob || creating;
-
   // Count jobs per day for date strip dots
   const jobCountByDate = useMemo(() => {
     const map: Record<string, number> = {};
     jobs.forEach(j => { map[j.datum] = (map[j.datum] || 0) + 1; });
     return map;
   }, [jobs]);
+
+  const dialogOpen = !!editJob || creating;
+
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324]">
