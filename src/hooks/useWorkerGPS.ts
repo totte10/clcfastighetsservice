@@ -1,32 +1,42 @@
 import { useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/hooks/useAuth"
 
 export function useWorkerGPS(){
 
-const { user } = useAuth()
-
 useEffect(()=>{
 
-if(!user) return
+if(!navigator.geolocation) return
 
-const id = navigator.geolocation.watchPosition(async pos=>{
+const watch = navigator.geolocation.watchPosition(
+
+async(pos)=>{
+
+const { latitude, longitude, speed, heading } = pos.coords
 
 await supabase
 .from("worker_locations")
 .upsert({
-user_id:user.id,
-lat:pos.coords.latitude,
-lng:pos.coords.longitude,
-updated_at:new Date()
+lat: latitude,
+lng: longitude,
+speed: speed,
+heading: heading,
+updated_at: new Date()
 })
 
-},{
-enableHighAccuracy:true
-})
+},
 
-return ()=>navigator.geolocation.clearWatch(id)
+(err)=>console.log(err),
 
-},[user])
+{
+enableHighAccuracy:true,
+maximumAge:5000,
+timeout:10000
+}
+
+)
+
+return ()=>navigator.geolocation.clearWatch(watch)
+
+},[])
 
 }
