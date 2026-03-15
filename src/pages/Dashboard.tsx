@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { DispatchMap } from "@/components/maps/DispatchMap"
+import { FleetMap } from "@/components/maps/FleetMap"
 import { useWorkerGPS } from "@/hooks/useWorkerGPS"
 
 import {
@@ -168,7 +168,8 @@ const routeJobs = useMemo(()=>{
 const jobsWithCoords =
 todayJobs.filter(j=>j.lat && j.lng)
 
-if(jobsWithCoords.length<=1) return jobsWithCoords
+if(jobsWithCoords.length <= 1)
+return jobsWithCoords
 
 const remaining=[...jobsWithCoords]
 const route=[remaining.shift()!]
@@ -182,8 +183,8 @@ let shortest=Infinity
 
 remaining.forEach((j,i)=>{
 
-const dx=last.lat!-j.lat!
-const dy=last.lng!-j.lng!
+const dx=(last.lat ?? 0)-(j.lat ?? 0)
+const dy=(last.lng ?? 0)-(j.lng ?? 0)
 
 const dist=Math.sqrt(dx*dx+dy*dy)
 
@@ -213,7 +214,7 @@ return(
 <div>
 
 <h1 className="text-xl font-semibold text-white">
-Dispatch Dashboard
+Fleet Dispatch
 </h1>
 
 <p className="text-xs text-zinc-400">
@@ -248,11 +249,11 @@ icon={<Timer size={16}/>}
 
 {/* DISPATCH MAP */}
 
-{routeJobs.length>0 && (
+{routeJobs.length>0 &&(
 
 <div className="rounded-xl overflow-hidden border border-white/10">
 
-<DispatchMap jobs={routeJobs}/>
+<FleetMap jobs={routeJobs}/>
 
 </div>
 
