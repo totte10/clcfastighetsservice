@@ -87,9 +87,9 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="bg-sidebar border-r border-sidebar-border/50">
-        <div className="p-4 flex items-center gap-3 pb-0 my-[4px] py-[60px] pt-[60px]">
+        <div className="p-4 flex items-center gap-3 pb-0 my-[4px] py-[60px] pt-[60px] bg-zinc-800">
           <div className="w-9 h-9 overflow-hidden shrink-0 ring-1 ring-sidebar-border/50 rounded-none">
-            <img alt="CLC" className="w-full h-full object-cover" src="/lovable-uploads/545d0f92-1143-4fd7-b68a-2e443f1c43ab.png" />
+            <img alt="CLC" className="w-full h-full object-cover" src="/lovable-uploads/9d2e95cf-3e49-443a-a987-d2763582e735.png" />
           </div>
           {!collapsed &&
           <div className="flex flex-col">
@@ -105,7 +105,7 @@ export function AppSidebar() {
 
         {!collapsed &&
         <div className="mx-4 mb-2">
-            <div className="h-px bg-gradient-to-r from-sidebar-border/60 via-sidebar-border/20 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-sidebar-border/60 via-sidebar-border/20 to-transparent bg-zinc-50" />
           </div>
         }
 
@@ -181,7 +181,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="bg-sidebar border-t border-sidebar-border/30">
-        <div className="p-2">
+        <div className="p-2 bg-zinc-800">
           {!collapsed && displayName &&
           <p className="text-[10px] text-sidebar-foreground/35 truncate px-3 mb-1.5 font-medium">
               {displayName}

@@ -307,7 +307,7 @@ const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div
 SidebarHeader.displayName = "SidebarHeader";
 
 const SidebarFooter = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => {
-  return <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-2", className)} {...props} />;
+  return <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-2 bg-zinc-800 border-2 border-zinc-800", className)} {...props} />;
 });
 SidebarFooter.displayName = "SidebarFooter";
 
@@ -402,7 +402,7 @@ const SidebarGroupContent = React.forwardRef<HTMLDivElement, React.ComponentProp
 SidebarGroupContent.displayName = "SidebarGroupContent";
 
 const SidebarMenu = React.forwardRef<HTMLUListElement, React.ComponentProps<"ul">>(({ className, ...props }, ref) =>
-<ul ref={ref} data-sidebar="menu" className={cn("flex w-full min-w-0 flex-col gap-1", className)} {...props} />
+<ul ref={ref} data-sidebar="menu" className={cn("flex w-full min-w-0 flex-col gap-1 bg-zinc-800", className)} {...props} />
 );
 SidebarMenu.displayName = "SidebarMenu";
 
