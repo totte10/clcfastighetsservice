@@ -5,22 +5,55 @@ const containerStyle = {
   height: "420px"
 }
 
-const center = {
+const defaultCenter = {
   lat: 57.7089,
   lng: 11.9746
 }
 
 export function FleetMap({ jobs = [] }: any) {
 
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
+
+  if (!apiKey) {
+    return (
+      <div style={{padding:20,color:"#f87171"}}>
+        Google Maps API key saknas
+      </div>
+    )
+  }
+
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
+    googleMapsApiKey: apiKey
   })
 
-  if (loadError) return <div>Kunde inte ladda Google Maps</div>
+  if (loadError) {
+    return (
+      <div style={{padding:20,color:"#f87171"}}>
+        Kunde inte ladda Google Maps
+      </div>
+    )
+  }
 
-  if (!isLoaded) return <div>Laddar karta...</div>
+  if (!isLoaded) {
+    return (
+      <div style={{padding:20,color:"#9ca3af"}}>
+        Laddar karta...
+      </div>
+    )
+  }
 
-  const validJobs = jobs.filter((job:any)=> job.lat && job.lng)
+  const validJobs =
+    Array.isArray(jobs)
+      ? jobs.filter((job:any)=> job?.lat && job?.lng)
+      : []
+
+  const center =
+    validJobs.length > 0
+      ? {
+          lat: Number(validJobs[0].lat),
+          lng: Number(validJobs[0].lng)
+        }
+      : defaultCenter
 
   return (
     <GoogleMap
