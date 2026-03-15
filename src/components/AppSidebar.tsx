@@ -5,10 +5,10 @@ SidebarHeader,
 SidebarMenu,
 SidebarMenuItem,
 SidebarMenuButton
-} from "@/components/ui/sidebar";
+} from "@/components/ui/sidebar"
 
-import { NavLink } from "react-router-dom";
-import { useState } from "react";
+import { NavLink } from "react-router-dom"
+import { useState } from "react"
 
 import {
 LayoutDashboard,
@@ -17,12 +17,14 @@ Home,
 Truck,
 Folder,
 Route,
+Map,
 ChevronDown,
 ChevronRight,
 MessageCircle,
 Mic,
-Clock
-} from "lucide-react";
+Clock,
+Calendar
+} from "lucide-react"
 
 export function AppSidebar(){
 
@@ -36,7 +38,7 @@ return(
 
 <SidebarHeader className="border-b border-zinc-200 px-4 py-4">
 
-<div className="flex items-center gap-3 ml-[5px]">
+<div className="flex items-center gap-3 ml-1">
 
 <img
 src="/lovable-uploads/f50fb16e-0a0e-4157-a6a4-ac098b2d14fb.png"
@@ -66,7 +68,17 @@ FASTIGHETSSERVICE
 
 <SidebarMenu>
 
+{/* DASHBOARD */}
+
 <MenuItem icon={LayoutDashboard} to="/" label="Dashboard"/>
+
+{/* DISPATCH */}
+
+<MenuItem icon={Map} to="/dispatch" label="Dispatch Center"/>
+
+{/* PLANNING */}
+
+<MenuItem icon={Calendar} to="/planning" label="Planering"/>
 
 {/* MASKINSOPNING GROUP */}
 
@@ -77,7 +89,8 @@ onClick={()=>setOpen(!open)}
 className="
 flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm
 text-zinc-700 hover:bg-zinc-100 transition
-">
+"
+>
 
 <Wind size={18}/>
 
@@ -109,13 +122,21 @@ Maskinsopning
 
 )}
 
-<MenuItem icon={Route} to="/routes" label="Ruttplanering"/>
+{/* ROUTE PLANNING */}
+
+<MenuItem icon={Route} to="/route" label="Ruttplanering"/>
+
+{/* CHAT */}
 
 <MenuItem icon={MessageCircle} to="/chat" label="Chatt"/>
 
+{/* VOICE */}
+
 <MenuItem icon={Mic} to="/voice" label="Röstkanaler"/>
 
-<MenuItem icon={Clock} to="/tidsrapport" label="Tidsrapport"/>
+{/* TIME */}
+
+<MenuItem icon={Clock} to="/time" label="Tidsrapport"/>
 
 </SidebarMenu>
 
