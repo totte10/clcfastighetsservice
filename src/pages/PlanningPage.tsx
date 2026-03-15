@@ -411,7 +411,7 @@ export default function PlanningPage() {
             return (
               <div
                 key={`${job.source}-${job.id}`}
-                className="rounded-2xl bg-[#111827] border border-white/5 p-4 shadow-xl">
+                className="rounded-2xl border border-white/5 p-4 shadow-xl bg-zinc-900">
                 
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0 space-y-2">
