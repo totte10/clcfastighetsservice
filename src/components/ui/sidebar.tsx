@@ -164,7 +164,7 @@ const Sidebar = React.forwardRef<
             }
             side={side}>
             
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className="flex h-full w-full flex-col bg-zinc-700">{children}</div>
         </SheetContent>
       </Sheet>);
 
@@ -302,7 +302,7 @@ const SidebarInput = React.forwardRef<React.ElementRef<typeof Input>, React.Comp
 SidebarInput.displayName = "SidebarInput";
 
 const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => {
-  return <div ref={ref} data-sidebar="header" className={cn("flex flex-col gap-2 p-2 bg-zinc-800 text-primary-foreground mt-0 border-0 rounded-none pt-[60px] pb-[10px]", className)} {...props} />;
+  return <div ref={ref} data-sidebar="header" className={cn("flex flex-col gap-2 p-2 text-primary-foreground border-0 rounded-none pt-[60px] pb-[10px] mt-[60px] bg-zinc-700", className)} {...props} />;
 });
 SidebarHeader.displayName = "SidebarHeader";
 
