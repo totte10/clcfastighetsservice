@@ -1,404 +1,535 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect, useMemo, useCallback } from "react"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
 import {
-  Check,
-  Play,
-  CalendarDays,
-  Timer,
-  Trophy,
-  Medal,
-  ArrowUpRight } from
-"lucide-react";
-import { AdminTimeReminder } from "@/components/AdminTimeReminder";
-import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
-import {
-  DashboardTaskCard,
-  type DailyTask,
-  type Status,
-  type CompletionData } from
-"@/components/dashboard/DashboardTaskCard";
-import { Link } from "react-router-dom";
-import { format, getISOWeek, addDays } from "date-fns";
-import { sv } from "date-fns/locale";
+CalendarDays,
+Play,
+Check,
+Timer,
+Trophy,
+Medal
+} from "lucide-react"
 
-interface LeaderboardEntry {
-  userId: string;
-  name: string;
-  totalHours: number;
+import { DashboardWorkerMap } from "@/components/DashboardWorkerMap"
+
+import { format, addDays, getISOWeek } from "date-fns"
+import { sv } from "date-fns/locale"
+
+
+
+interface Job {
+id:string
+name:string
+address:string
+status:string
+date:string
+lat?:number
+lng?:number
 }
 
-export default function Dashboard() {
 
-  const { user } = useAuth();
 
-  const [tasks, setTasks] = useState<DailyTask[]>([]);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [weeklyHours, setWeeklyHours] = useState(0);
+interface LeaderboardEntry{
+userId:string
+name:string
+hours:number
+}
 
-  const todayStr = format(new Date(), "yyyy-MM-dd");
 
-  const loadTasks = useCallback(async () => {
 
-    const { data } = await supabase.
-    from("projects").
-    select("*");
+export default function Dashboard(){
 
-    const mapped: DailyTask[] = (data ?? []).map((p: any) => ({
+const { user } = useAuth()
 
-      id: `project-${p.id}`,
-      realId: p.id,
-      address: p.address,
-      projectName: p.name,
-      serviceLabel: p.description || "Projekt",
-      status: p.status as Status,
-      assignedUsers: [],
-      scheduledDate: p.datum_planerat,
-      source: "project" as const,
-      sourceField: "status",
-      lat: p.lat,
-      lng: p.lng
+const [jobs,setJobs] = useState<Job[]>([])
+const [leaderboard,setLeaderboard] = useState<LeaderboardEntry[]>([])
+const [weeklyHours,setWeeklyHours] = useState(0)
 
-    }));
+const today = format(new Date(),"yyyy-MM-dd")
 
-    setTasks(mapped);
 
-  }, []);
 
-  useEffect(() => {loadTasks();}, [loadTasks]);
+/* LOAD JOBS (SYNC WITH PLANNING) */
 
-  useEffect(() => {
+const loadJobs = useCallback(async()=>{
 
-    async function loadHours() {
+const [
+projects,
+tidx,
+egna,
+tmm,
+optimal
+] = await Promise.all([
 
-      const { data } = await supabase.
-      from("user_time_entries").
-      select("hours");
+supabase.from("projects").select("id,name,address,datum_planerat,status,lat,lng"),
 
-      const total =
-      (data ?? []).reduce(
-        (s, r) => s + (Number(r.hours) || 0),
-        0
-      );
+supabase.from("tidx_entries").select("id,omrade,address,datum_planerat,status,lat,lng"),
 
-      setWeeklyHours(total);
+supabase.from("egna_entries").select("id,address,datum_planerat,lat,lng"),
 
-    }
+supabase.from("tmm_entries").select("id,beskrivning,address,datum,status,lat,lng"),
 
-    loadHours();
+supabase.from("optimal_entries").select("id,name,address,datum_start,status,lat,lng")
 
-  }, []);
+])
 
-  useEffect(() => {
+const result:Job[] = []
 
-    async function loadLeaderboard() {
+projects.data?.forEach(p=>{
 
-      const { data } = await supabase.
-      from("user_time_entries").
-      select("user_id,hours");
+result.push({
+id:p.id,
+name:p.name,
+address:p.address,
+status:p.status,
+date:(p.datum_planerat||"").slice(0,10),
+lat:p.lat,
+lng:p.lng
+})
 
-      if (!data) return;
+})
 
-      const map = new Map<string, number>();
+tidx.data?.forEach(t=>{
 
-      data.forEach((r: any) => {
-        map.set(
-          r.user_id,
-          (map.get(r.user_id) ?? 0) + (Number(r.hours) || 0)
-        );
-      });
+result.push({
+id:t.id,
+name:t.omrade || t.address,
+address:t.address,
+status:t.status,
+date:(t.datum_planerat||"").slice(0,10),
+lat:t.lat,
+lng:t.lng
+})
 
-      const ids = Array.from(map.keys());
+})
 
-      const { data: profiles } = await supabase.
-      from("profiles").
-      select("id,full_name").
-      in("id", ids);
+egna.data?.forEach(e=>{
 
-      const nameMap = new Map<string, string>();
+result.push({
+id:e.id,
+name:e.address,
+address:e.address,
+status:"pending",
+date:(e.datum_planerat||"").slice(0,10),
+lat:e.lat,
+lng:e.lng
+})
 
-      profiles?.forEach((p: any) => {
-        nameMap.set(p.id, p.full_name);
-      });
+})
 
-      setLeaderboard(
+tmm.data?.forEach(t=>{
 
-        ids.
-        map((id) => ({
-          userId: id,
-          name: nameMap.get(id) || "Okänd",
-          totalHours: map.get(id) ?? 0
-        })).
-        sort((a, b) => b.totalHours - a.totalHours)
+result.push({
+id:t.id,
+name:t.beskrivning,
+address:t.address,
+status:t.status,
+date:(t.datum||"").slice(0,10),
+lat:t.lat,
+lng:t.lng
+})
 
-      );
+})
 
-    }
+optimal.data?.forEach(o=>{
 
-    loadLeaderboard();
+result.push({
+id:o.id,
+name:o.name,
+address:o.address,
+status:o.status,
+date:(o.datum_start||"").slice(0,10),
+lat:o.lat,
+lng:o.lng
+})
 
-  }, []);
+})
 
-  const todayTasks = tasks.filter(
-    (t) => (t.scheduledDate || "").slice(0, 10) === todayStr
-  );
+setJobs(result)
 
-  const done = todayTasks.filter((t) => t.status === "done").length;
-  const started = todayTasks.filter((t) => t.status === "in-progress").length;
+},[])
 
-  const mapJobs = useMemo(() => {
 
-    return todayTasks.
-    filter((t) => t.lat && t.lng).
-    map((t) => ({
 
-      id: t.realId,
-      name: t.projectName,
-      address: t.address,
-      lat: t.lat!,
-      lng: t.lng!,
-      status: t.status,
-      type: t.source
+useEffect(()=>{
+loadJobs()
+},[loadJobs])
 
-    }));
 
-  }, [todayTasks]);
 
-  const weekDays = Array.from({ length: 7 }).map((_, i) => {
+/* HOURS */
 
-    const date = addDays(new Date(), i - 3);
+useEffect(()=>{
 
-    const dateStr = format(date, "yyyy-MM-dd");
+async function loadHours(){
 
-    const dayTasks = tasks.filter(
-      (t) => (t.scheduledDate || "").slice(0, 10) === dateStr
-    );
+const { data } = await supabase
+.from("user_time_entries")
+.select("hours")
 
-    return {
-      date,
-      count: dayTasks.length
-    };
+const total =
+(data ?? []).reduce((s,r)=>s+(Number(r.hours)||0),0)
 
-  });
-
-  return (
-
-    <div className="relative min-h-screen pb-28 mx-0 border-4 border-solid rounded-md shadow my-0 px-0 py-0 border-background">
-
-      {/* gradient */}
-
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22]" />
-
-      <div className="space-y-4">
-
-        {/* header */}
-
-        <div className="flex items-end justify-between">
-
-          <div>
-
-            <h1 className="text-xl font-semibold">
-              Arbete idag
-            </h1>
-
-            <p className="text-[11px] text-muted-foreground">
-              {format(new Date(), "EEEE d MMMM", { locale: sv })}
-            </p>
-
-          </div>
-
-          <div className="flex items-center gap-2">
-
-            <AdminTimeReminder />
-
-            <Link
-              to="/projects"
-              className="text-xs text-primary flex items-center gap-1">
-              
-              Alla projekt
-              <ArrowUpRight className="h-3 w-3" />
-            </Link>
-
-          </div>
-
-        </div>
-
-        {/* stats */}
-
-        <div className="grid grid-cols-2 gap-3">
-
-          <Stat label="Totalt" value={todayTasks.length} icon={<CalendarDays size={16} />} />
-          <Stat label="Påbörjade" value={started} icon={<Play size={16} />} />
-          <Stat label="Klara" value={done} icon={<Check size={16} />} />
-          <Stat label={`v.${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer size={16} />} />
-
-        </div>
-
-        {/* week planner */}
-
-        <div className="flex gap-2 overflow-x-auto pb-1">
-
-          {weekDays.map((d, i) =>
-
-          <div
-            key={i}
-            className="
-              min-w-[60px]
-              rounded-xl
-              border border-white/5
-              bg-white/[0.04]
-              px-2
-              py-2
-              text-center
-              ">
-            
-
-              <p className="text-[9px] text-muted-foreground">
-                {format(d.date, "EEE", { locale: sv })}
-              </p>
-
-              <p className="text-sm font-semibold">
-                {format(d.date, "d")}
-              </p>
-
-              <p className="text-[10px] text-primary">
-                {d.count}
-              </p>
-
-            </div>
-
-          )}
-
-        </div>
-
-        {/* map */}
-
-        {mapJobs.length > 0 &&
-
-        <DashboardWorkerMap jobs={mapJobs} />
-
-        }
-
-        {/* leaderboard */}
-
-        {leaderboard.length > 0 &&
-
-        <div className="rounded-xl border border-white/5 bg-white/[0.04] backdrop-blur-xl p-3">
-
-            <div className="flex items-center gap-2 mb-2">
-
-              <Trophy className="h-4 w-4 text-primary" />
-
-              <p className="text-xs font-semibold">
-                Topplista – Timmar
-              </p>
-
-            </div>
-
-            {leaderboard.slice(0, 5).map((u, i) =>
-
-          <div
-            key={u.userId}
-            className="flex items-center justify-between text-xs py-1">
-            
-
-                <div className="flex items-center gap-2">
-
-                  {i < 3 ?
-              <Medal className="h-3 w-3 text-yellow-400" /> :
-              <span className="text-muted-foreground">{i + 1}</span>
-              }
-
-                  {u.name}
-
-                </div>
-
-                <span className="font-semibold">
-                  {u.totalHours.toFixed(1)}h
-                </span>
-
-              </div>
-
-          )}
-
-          </div>
-
-        }
-
-        {/* tasks */}
-
-        <div className="space-y-2">
-
-          {todayTasks.length === 0 &&
-
-          <div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-5">
-              Inga uppdrag planerade idag
-            </div>
-
-          }
-
-          {todayTasks.map((task) =>
-          <DashboardTaskCard
-            key={task.id}
-            task={task}
-            updating={null}
-            onStart={() => {}}
-            onComplete={async (_task: DailyTask, _data: CompletionData) => {}} />
-
-          )}
-
-        </div>
-
-      </div>
-
-    </div>);
-
-
+setWeeklyHours(total)
 
 }
+
+loadHours()
+
+},[])
+
+
+
+/* LEADERBOARD */
+
+useEffect(()=>{
+
+async function loadLeaderboard(){
+
+const { data } = await supabase
+.from("user_time_entries")
+.select("user_id,hours")
+
+if(!data) return
+
+const map = new Map<string,number>()
+
+data.forEach((r:any)=>{
+
+map.set(
+r.user_id,
+(map.get(r.user_id) ?? 0) + (Number(r.hours)||0)
+)
+
+})
+
+const ids = Array.from(map.keys())
+
+const { data:profiles } = await supabase
+.from("profiles")
+.select("id,full_name")
+.in("id",ids)
+
+const nameMap = new Map<string,string>()
+
+profiles?.forEach((p:any)=>{
+nameMap.set(p.id,p.full_name)
+})
+
+setLeaderboard(
+
+ids.map(id=>({
+
+userId:id,
+name:nameMap.get(id)||"Okänd",
+hours:map.get(id)??0
+
+}))
+.sort((a,b)=>b.hours-a.hours)
+
+)
+
+}
+
+loadLeaderboard()
+
+},[])
+
+
+
+/* TODAY JOBS */
+
+const todayJobs = jobs.filter(j=>j.date===today)
+
+const done = todayJobs.filter(j=>j.status==="done").length
+const started = todayJobs.filter(j=>j.status==="in-progress").length
+
+
+
+/* MAP */
+
+const mapJobs = useMemo(()=>{
+
+return todayJobs
+.filter(j=>j.lat && j.lng)
+.map(j=>({
+
+id:j.id,
+name:j.name,
+address:j.address,
+lat:j.lat!,
+lng:j.lng!,
+status:j.status
+
+}))
+
+},[todayJobs])
+
+
+
+/* WEEK STRIP */
+
+const weekDays = Array.from({length:7}).map((_,i)=>{
+
+const d = addDays(new Date(),i-3)
+
+const str = format(d,"yyyy-MM-dd")
+
+const count = jobs.filter(j=>j.date===str).length
+
+return {date:d,count}
+
+})
+
+
+
+return(
+
+<div className="relative min-h-screen pb-28">
+
+<div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22]" />
+
+<div className="space-y-4">
+
+{/* HEADER */}
+
+<div>
+
+<h1 className="text-xl font-semibold">
+
+Arbete idag
+
+</h1>
+
+<p className="text-xs text-muted-foreground">
+
+{format(new Date(),"EEEE d MMMM",{locale:sv})}
+
+</p>
+
+</div>
+
+
+
+{/* STATS */}
+
+<div className="grid grid-cols-2 gap-3">
+
+<Stat label="Totalt" value={todayJobs.length} icon={<CalendarDays size={16}/>}/>
+
+<Stat label="Påbörjade" value={started} icon={<Play size={16}/>}/>
+
+<Stat label="Klara" value={done} icon={<Check size={16}/>}/>
+
+<Stat label={`v.${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer size={16}/>}/>
+
+</div>
+
+
+
+{/* WEEK STRIP */}
+
+<div className="flex gap-2 overflow-x-auto">
+
+{weekDays.map((d,i)=>(
+
+<div
+key={i}
+className="
+min-w-[60px]
+rounded-xl
+border border-white/5
+bg-white/[0.04]
+px-2
+py-2
+text-center
+">
+
+<p className="text-[9px] text-muted-foreground">
+
+{format(d.date,"EEE",{locale:sv})}
+
+</p>
+
+<p className="text-sm font-semibold">
+
+{format(d.date,"d")}
+
+</p>
+
+<p className="text-[10px] text-primary">
+
+{d.count}
+
+</p>
+
+</div>
+
+))}
+
+</div>
+
+
+
+{/* MAP */}
+
+{mapJobs.length>0 &&
+
+<DashboardWorkerMap jobs={mapJobs}/>
+
+}
+
+
+
+{/* LEADERBOARD */}
+
+{leaderboard.length>0 &&
+
+<div className="rounded-xl border border-white/5 bg-white/[0.04] p-3">
+
+<div className="flex items-center gap-2 mb-2">
+
+<Trophy className="h-4 w-4 text-primary"/>
+
+<p className="text-xs font-semibold">
+
+Topplista – Timmar
+
+</p>
+
+</div>
+
+{leaderboard.slice(0,5).map((u,i)=>(
+
+<div
+key={u.userId}
+className="flex items-center justify-between text-xs py-1"
+>
+
+<div className="flex items-center gap-2">
+
+{i<3 ?
+<Medal className="h-3 w-3 text-yellow-400"/> :
+<span className="text-muted-foreground">{i+1}</span>
+}
+
+{u.name}
+
+</div>
+
+<span className="font-semibold">
+
+{u.hours.toFixed(1)}h
+
+</span>
+
+</div>
+
+))}
+
+</div>
+
+}
+
+
+
+{/* JOB LIST */}
+
+<div className="space-y-2">
+
+{todayJobs.length===0 &&
+
+<div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-5">
+
+Inga uppdrag planerade idag
+
+</div>
+
+}
+
+{todayJobs.map(job=>(
+
+<div
+key={job.id}
+className="
+rounded-xl
+border border-white/5
+bg-white/[0.04]
+p-3
+text-sm
+">
+
+<p className="font-medium">
+
+{job.name}
+
+</p>
+
+<p className="text-xs text-muted-foreground">
+
+{job.address}
+
+</p>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+</div>
+
+)
+
+}
+
+
 
 function Stat({
-  label,
-  value,
-  icon
+label,
+value,
+icon
+}:{label:string,value:string|number,icon:React.ReactNode}){
 
+return(
 
+<div className="
+rounded-xl
+border border-white/5
+bg-white/[0.04]
+px-3
+py-2.5
+flex
+items-center
+justify-between
+">
 
+<div>
 
-}: {label: string;value: string | number;icon: React.ReactNode;}) {
+<p className="text-[9px] uppercase text-muted-foreground">
 
-  return (
+{label}
 
-    <div className="
-    rounded-xl
-    border border-white/5
-    bg-white/[0.04]
-    backdrop-blur-xl
-    px-3
-    py-2.5
-    flex
-    items-center
-    justify-between
-    ">
+</p>
 
-      <div>
+<p className="text-lg font-semibold">
 
-        <p className="text-[9px] uppercase text-muted-foreground">
-          {label}
-        </p>
+{value}
 
-        <p className="text-lg font-semibold leading-none mt-1">
-          {value}
-        </p>
+</p>
 
-      </div>
+</div>
 
-      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-        {icon}
-      </div>
+<div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
 
-    </div>);
+{icon}
 
+</div>
 
+</div>
+
+)
 
 }
