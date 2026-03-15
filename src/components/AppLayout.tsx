@@ -54,7 +54,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
 
                 <img
 
-                  className="h-9 w-9 object-fill rounded-none shadow-none" src="/lovable-uploads/7963cbbf-367d-4ad5-b9da-7c4df26ef52e.png" />
+                  className="h-9 w-9 rounded-none shadow-none object-contain" src="/lovable-uploads/7963cbbf-367d-4ad5-b9da-7c4df26ef52e.png" />
                 
 
                 <span className="hidden md:block font-semibold tracking-tight text-zinc-800">
