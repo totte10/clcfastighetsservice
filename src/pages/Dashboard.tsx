@@ -8,8 +8,8 @@ import {
   Play,
   Check,
   Timer,
-  MapPin } from
-"lucide-react";
+  MapPin
+} from "lucide-react";
 
 import { format, addDays, getISOWeek } from "date-fns";
 import { sv } from "date-fns/locale";
@@ -39,24 +39,20 @@ export default function Dashboard() {
   const loadJobs = useCallback(async () => {
 
     const [
-    projects,
-    tidx,
-    egna,
-    tmm,
-    optimal] =
-    await Promise.all([
-
-    supabase.from("projects").select("*"),
-    supabase.from("tidx_entries").select("*"),
-    supabase.from("egna_entries").select("*"),
-    supabase.from("tmm_entries").select("*"),
-    supabase.from("optimal_entries").select("*")]
-
-    );
+      projects,
+      tidx,
+      egna,
+      tmm,
+      optimal
+    ] = await Promise.all([
+      supabase.from("projects").select("*"),
+      supabase.from("tidx_entries").select("*"),
+      supabase.from("egna_entries").select("*"),
+      supabase.from("tmm_entries").select("*"),
+      supabase.from("optimal_entries").select("*")
+    ]);
 
     const result: Job[] = [];
-
-    /* PROJECTS */
 
     projects.data?.forEach((p: any) => {
       if (!p.datum_planerat) return;
@@ -72,8 +68,6 @@ export default function Dashboard() {
       });
     });
 
-    /* TIDX */
-
     tidx.data?.forEach((t: any) => {
       if (!t.datum_planerat) return;
       result.push({
@@ -87,8 +81,6 @@ export default function Dashboard() {
         source: "tidx"
       });
     });
-
-    /* EGNA */
 
     egna.data?.forEach((e: any) => {
       if (!e.datum_planerat) return;
@@ -104,8 +96,6 @@ export default function Dashboard() {
       });
     });
 
-    /* TMM */
-
     tmm.data?.forEach((t: any) => {
       if (!t.datum) return;
       result.push({
@@ -119,8 +109,6 @@ export default function Dashboard() {
         source: "tmm"
       });
     });
-
-    /* OPTIMAL */
 
     optimal.data?.forEach((o: any) => {
       if (!o.datum_start) return;
@@ -150,12 +138,12 @@ export default function Dashboard() {
 
     async function loadHours() {
 
-      const { data } = await supabase.
-      from("user_time_entries").
-      select("hours");
+      const { data } = await supabase
+        .from("user_time_entries")
+        .select("hours");
 
       const total =
-      (data ?? []).reduce((s: any, r: any) => s + (Number(r.hours) || 0), 0);
+        (data ?? []).reduce((s: any, r: any) => s + (Number(r.hours) || 0), 0);
 
       setWeeklyHours(total);
 
@@ -173,16 +161,15 @@ export default function Dashboard() {
   const started = todayJobs.filter((j) => j.status === "in-progress").length;
 
   const progress =
-  todayJobs.length > 0 ?
-  Math.round(done / todayJobs.length * 100) :
-  0;
+    todayJobs.length > 0
+      ? Math.round(done / todayJobs.length * 100)
+      : 0;
 
-  /* ---------------- AI ROUTE (sort by distance) ---------------- */
+  /* ---------------- ROUTE ---------------- */
 
   const mapJobs = useMemo(() => {
 
-    const jobsWithCoords = todayJobs.
-    filter((j) => j.lat && j.lng);
+    const jobsWithCoords = todayJobs.filter((j) => j.lat && j.lng);
 
     if (jobsWithCoords.length <= 1) return jobsWithCoords;
 
@@ -230,7 +217,6 @@ export default function Dashboard() {
   const weekDays = Array.from({ length: 7 }).map((_, i) => {
 
     const d = addDays(new Date(), i - 3);
-
     const str = format(d, "yyyy-MM-dd");
 
     const count = jobs.filter((j) => j.date === str).length;
@@ -241,173 +227,164 @@ export default function Dashboard() {
 
   return (
 
-    <div className="relative min-h-screen pb-28">
+    <div className="relative min-h-screen pb-32 px-4">
 
-<div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22]" />
+      {/* background */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22]" />
 
-<div className="space-y-4 bg-zinc-800 py-[20px] px-[20px] rounded-xl">
+      {/* header */}
+      <div className="mb-4">
 
-{/* HEADER */}
+        <h1 className="text-2xl font-semibold text-white">
+          Arbete idag
+        </h1>
 
-<div>
+        <p className="text-xs text-zinc-400">
+          {format(new Date(), "EEEE d MMMM", { locale: sv })}
+        </p>
 
-<h1 className="text-xl font-semibold text-primary-foreground">
-Arbete idag
-</h1>
+      </div>
 
-<p className="text-xs text-muted-foreground">
-{format(new Date(), "EEEE d MMMM", { locale: sv })}
-</p>
+      {/* progress card */}
+      <div className="rounded-2xl border border-white/5 bg-white/[0.04] backdrop-blur p-4 mb-4">
 
-</div>
+        <p className="text-xs text-zinc-400 mb-2">
+          Dagens framsteg
+        </p>
 
-{/* PROGRESS */}
+        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
 
-<div className="rounded-xl border border-white/5 bg-white/[0.04] p-3">
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${progress}%` }}
+          />
 
-<p className="text-xs mb-1 text-primary-foreground">
-Dagens framsteg
-</p>
+        </div>
 
-<div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+        <p className="text-[10px] mt-2 text-right text-zinc-400">
+          {progress}%
+        </p>
 
-<div
-              className="h-full bg-primary transition-all"
-              style={{ width: `${progress}%` }} />
-            
+      </div>
 
-</div>
+      {/* stats */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
 
-<p className="text-[10px] mt-1 text-right text-primary-foreground">
-{progress}%
-</p>
+        <Stat label="Totalt" value={todayJobs.length} icon={<CalendarDays size={16} />} />
+        <Stat label="Påbörjade" value={started} icon={<Play size={16} />} />
+        <Stat label="Klara" value={done} icon={<Check size={16} />} />
+        <Stat label={`v.${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer size={16} />} />
 
-</div>
+      </div>
 
-{/* STATS */}
+      {/* week strip */}
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-4">
 
-<div className="grid grid-cols-2 gap-3">
-
-<Stat label="Totalt" value={todayJobs.length} icon={<CalendarDays size={16} />} />
-<Stat label="Påbörjade" value={started} icon={<Play size={16} />} />
-<Stat label="Klara" value={done} icon={<Check size={16} />} />
-<Stat label={`v.${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer size={16} />} />
-
-</div>
-
-{/* WEEK STRIP */}
-
-<div className="flex gap-2 overflow-x-auto pb-1">
-
-{weekDays.map((d, i) =>
+        {weekDays.map((d, i) => (
 
           <div
             key={i}
-            className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-2 py-2 text-center">
-            
+            className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2 text-center">
 
-<p className="text-[9px] text-muted-foreground">
-{format(d.date, "EEE", { locale: sv })}
-</p>
+            <p className="text-[9px] text-zinc-400">
+              {format(d.date, "EEE", { locale: sv })}
+            </p>
 
-<p className="text-sm font-semibold">
-{format(d.date, "d")}
-</p>
+            <p className="text-sm font-semibold text-white">
+              {format(d.date, "d")}
+            </p>
 
-<p className="text-[10px] text-primary-foreground">
-{d.count}
-</p>
+            <p className="text-[10px] text-zinc-400">
+              {d.count}
+            </p>
 
-</div>
+          </div>
 
-          )}
+        ))}
 
-</div>
+      </div>
 
-{/* MAP */}
+      {/* map */}
+      {mapJobs.length > 0 &&
+        <div className="mb-4 rounded-2xl overflow-hidden border border-white/5">
+          <DashboardWorkerMap jobs={mapJobs} />
+        </div>
+      }
 
-{mapJobs.length > 0 &&
-        <DashboardWorkerMap jobs={mapJobs} />
+      {/* job list */}
+      <div className="space-y-3">
+
+        {todayJobs.length === 0 &&
+
+          <div className="text-center text-xs text-zinc-400 border border-white/10 rounded-xl p-6">
+            Inga uppdrag planerade idag
+          </div>
+
         }
 
-{/* JOB LIST */}
-
-<div className="space-y-2">
-
-{todayJobs.length === 0 &&
-
-          <div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-5">
-Inga uppdrag planerade idag
-</div>
-
-          }
-
-{mapJobs.map((job) =>
+        {mapJobs.map((job) => (
 
           <div
             key={job.id}
-            className="rounded-xl border border-white/5 bg-white/[0.04] p-3 flex justify-between items-center">
-            
+            className="rounded-2xl border border-white/5 bg-white/[0.04] p-4 flex justify-between items-center">
 
-<div>
+            <div>
 
-<p className="font-medium">
-{job.name}
-</p>
+              <p className="font-medium text-white">
+                {job.name}
+              </p>
 
-<p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs text-zinc-400 flex items-center gap-1">
 
-<MapPin size={12} />
-{job.address}
+                <MapPin size={12} />
+                {job.address}
 
-</p>
+              </p>
 
-</div>
+            </div>
 
-<span className="text-[10px] px-2 py-1 rounded bg-primary/10">
-{job.status}
-</span>
+            <span className="text-[10px] px-2 py-1 rounded bg-primary/10 text-primary">
+              {job.status}
+            </span>
 
-</div>
+          </div>
 
-          )}
+        ))}
 
-</div>
+      </div>
 
-</div>
+    </div>
 
-</div>);
-
-
+  );
 
 }
 
-/* ---------------- STAT COMPONENT ---------------- */
+/* ---------------- STAT ---------------- */
 
-function Stat({ label, value, icon }: {label: string;value: any;icon: any;}) {
+function Stat({ label, value, icon }: { label: string; value: any; icon: any }) {
 
   return (
 
-    <div className="rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2.5 flex items-center justify-between">
+    <div className="rounded-2xl border border-white/5 bg-white/[0.04] p-3 flex items-center justify-between">
 
-<div>
+      <div>
 
-<p className="text-[9px] uppercase text-primary-foreground">
-{label}
-</p>
+        <p className="text-[9px] uppercase text-zinc-400">
+          {label}
+        </p>
 
-<p className="text-lg font-semibold bg-zinc-100/0 text-zinc-400">
-{value}
-</p>
+        <p className="text-lg font-semibold text-white">
+          {value}
+        </p>
 
-</div>
+      </div>
 
-<div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-{icon}
-</div>
+      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+        {icon}
+      </div>
 
-</div>);
+    </div>
 
-
+  );
 
 }
