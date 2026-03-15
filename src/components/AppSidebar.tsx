@@ -1,201 +1,116 @@
-import { useState } from "react";
-import { LayoutDashboard, Clock, Settings, Wind, Home, MessageCircle, LogOut, ClipboardList, FolderOpen, CalendarDays, Truck, Brush, Route, AlertTriangle, DollarSign, ChevronDown, Paintbrush, Volume2 } from "lucide-react";
-import { NavLink } from "@/components/NavLink";
-import { useAuth } from "@/hooks/useAuth";
-import clcLogo from "@/assets/clc-logo.png";
+import { NavLink } from "react-router-dom"
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
-  useSidebar } from
-"@/components/ui/sidebar";
-
-interface MenuItem {
-  title: string;
-  url: string;
-  icon: React.ComponentType<{className?: string;}>;
-  adminOnly: boolean;
-}
-
-interface MenuGroup {
-  title: string;
-  icon: React.ComponentType<{className?: string;}>;
-  adminOnly: boolean;
-  children: MenuItem[];
-}
-
-type MenuEntry = MenuItem | MenuGroup;
-
-function isGroup(entry: MenuEntry): entry is MenuGroup {
-  return "children" in entry;
-}
-
-const menuEntries: MenuEntry[] = [
-{ title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: false },
-{
-  title: "Maskinsopning",
-  icon: Paintbrush,
-  adminOnly: false,
-  children: [
-  { title: "Tidx Sopningar", url: "/tidx", icon: Wind, adminOnly: false },
-  { title: "Egna Områden", url: "/egna", icon: Home, adminOnly: false },
-  { title: "Optimal Områden", url: "/optimal", icon: Truck, adminOnly: false },
-  { title: "Sopningar TMM", url: "/tmm", icon: Brush, adminOnly: false }]
-
-},
-{ title: "Övriga Projekt", url: "/projects", icon: FolderOpen, adminOnly: false },
-{ title: "Ruttplanering", url: "/route", icon: Route, adminOnly: false },
-{ title: "Chatt", url: "/chat", icon: MessageCircle, adminOnly: false },
-{ title: "Röstkanaler", url: "/voice", icon: Volume2, adminOnly: false },
-{ title: "Tidrapport", url: "/time", icon: Clock, adminOnly: false },
-{ title: "Planering", url: "/planning", icon: CalendarDays, adminOnly: true },
-{ title: "Samlad Rapport", url: "/time/reports", icon: ClipboardList, adminOnly: true },
-{ title: "Lönerapport", url: "/payroll", icon: DollarSign, adminOnly: true },
-{ title: "Saknade koordinater", url: "/missing-coords", icon: AlertTriangle, adminOnly: true },
-{ title: "Admin", url: "/admin", icon: Settings, adminOnly: true }];
-
+LayoutDashboard,
+Wind,
+Home,
+Truck,
+Folder,
+Route,
+MessageCircle,
+Mic,
+Clock
+} from "lucide-react"
 
 export function AppSidebar() {
-  const { state, setOpenMobile, isMobile } = useSidebar();
-  const collapsed = state === "collapsed";
-  const { user, signOut, profile, isAdmin } = useAuth();
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(["Maskinsopning"]));
 
-  const toggleGroup = (title: string) => {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(title)) next.delete(title);else
-      next.add(title);
-      return next;
-    });
-  };
+return (
 
-  const displayName = profile?.fullName || profile?.username || user?.email || "";
+<div className="w-[260px] h-screen bg-white border-r border-zinc-200 flex flex-col">
 
-  const visibleEntries = menuEntries.filter((entry) => {
-    if (isGroup(entry)) {
-      return !entry.adminOnly || isAdmin;
-    }
-    return !entry.adminOnly || isAdmin;
-  });
+{/* HEADER */}
 
-  return (
-    <Sidebar collapsible="icon">
-      <SidebarContent className="bg-sidebar border-r border-sidebar-border/50">
-        <div className="p-4 flex items-center py-[60px] pt-[60px] bg-zinc-800 border-zinc-800 gap-[10px] my-0 pb-[5px] border-0">
-          <div className="w-9 h-9 overflow-hidden shrink-0 ring-1 ring-sidebar-border/50 rounded-none">
-            <img alt="CLC" className="w-full h-full border-0 border-zinc-800 object-fill" src="/lovable-uploads/9d2e95cf-3e49-443a-a987-d2763582e735.png" />
-          </div>
-          {!collapsed &&
-          <div className="flex flex-col">
-              <span className="text-sm font-semibold text-sidebar-accent-foreground tracking-tight leading-tight">
-                CLC
-              </span>
-              <span className="text-[10px] text-sidebar-foreground/40 tracking-[0.2em] uppercase">
-                Fastighetsservice
-              </span>
-            </div>
-          }
-        </div>
+<div className="flex items-center gap-3 px-5 py-5 border-b border-zinc-200">
 
-        {!collapsed &&
-        <div className="mx-4 mb-2">
-            <div className="h-px bg-gradient-to-r from-sidebar-border/60 via-sidebar-border/20 to-transparent bg-zinc-50" />
-          </div>
-        }
+<img
+src="/apple-touch-icon.png"
+className="h-9 w-9 rounded-lg"
+/>
 
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-0.5 px-2">
-              {visibleEntries.map((entry) => {
-                if (isGroup(entry)) {
-                  const isOpen = openGroups.has(entry.title);
-                  const visibleChildren = entry.children.filter((c) => !c.adminOnly || isAdmin);
-                  if (visibleChildren.length === 0) return null;
-                  const GroupIcon = entry.icon;
+<div>
 
-                  return (
-                    <div key={entry.title}>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          onClick={() => toggleGroup(entry.title)}
-                          className="h-9 w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60">
-                          
-                          <GroupIcon className="h-4 w-4 shrink-0 transition-colors duration-200" />
-                          {!collapsed &&
-                          <>
-                              <span className="flex-1 text-left">{entry.title}</span>
-                              <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-0" : "-rotate-90"}`} />
-                            </>
-                          }
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                      {isOpen && !collapsed &&
-                      <div className="ml-3 border-l border-sidebar-border/30 pl-2 space-y-0.5 mt-0.5">
-                          {visibleChildren.map((child) =>
-                        <SidebarMenuItem key={child.title}>
-                              <SidebarMenuButton asChild className="h-8">
-                                <NavLink
-                              to={child.url}
-                              onClick={() => isMobile && setOpenMobile(false)}
-                              className="group relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/60 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
-                              activeClassName="text-sidebar-primary bg-sidebar-accent text-sidebar-primary-foreground shadow-[0_0_12px_-4px_hsl(152_50%_42%/0.3),inset_0_1px_0_hsl(152_50%_42%/0.1)]">
-                              
-                                  <child.icon className="h-3.5 w-3.5 shrink-0 transition-colors duration-200" />
-                                  <span>{child.title}</span>
-                                </NavLink>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        )}
-                        </div>
-                      }
-                    </div>);
+<p className="text-sm font-semibold text-zinc-900">
+CLC
+</p>
 
-                }
+<p className="text-[11px] text-zinc-500">
+FASTIGHETSSERVICE
+</p>
 
-                return (
-                  <SidebarMenuItem key={entry.title}>
-                    <SidebarMenuButton asChild className="h-9">
-                      <NavLink
-                        to={entry.url}
-                        end={entry.url === "/"}
-                        onClick={() => isMobile && setOpenMobile(false)}
-                        className="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
-                        activeClassName="text-sidebar-primary bg-sidebar-accent text-sidebar-primary-foreground shadow-[0_0_12px_-4px_hsl(152_50%_42%/0.3),inset_0_1px_0_hsl(152_50%_42%/0.1)]">
-                        
-                        <entry.icon className="h-4 w-4 shrink-0 transition-colors duration-200" />
-                        {!collapsed && <span>{entry.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>);
+</div>
 
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+</div>
 
-      <SidebarFooter className="bg-sidebar border-t border-sidebar-border/30">
-        <div className="p-2 bg-zinc-800 px-[8px] border-0 border-zinc-800/0">
-          {!collapsed && displayName &&
-          <p className="text-[10px] text-sidebar-foreground/35 truncate px-3 mb-1.5 font-medium">
-              {displayName}
-            </p>
-          }
-          <SidebarMenuButton
-            onClick={signOut}
-            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/50 transition-all duration-200 hover:text-destructive hover:bg-destructive/10">
-            
-            <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Logga ut</span>}
-          </SidebarMenuButton>
-        </div>
-      </SidebarFooter>
-    </Sidebar>);
+
+{/* MENU */}
+
+<div className="flex-1 px-3 py-4 space-y-1">
+
+<SidebarItem icon={LayoutDashboard} to="/" label="Dashboard" />
+
+<SidebarItem icon={Wind} to="/maskinsopning" label="Maskinsopning" />
+
+<SidebarItem icon={Route} to="/tidx" label="Tidx Sopningar" />
+
+<SidebarItem icon={Home} to="/egna" label="Egna Områden" />
+
+<SidebarItem icon={Truck} to="/optimal" label="Optimal Områden" />
+
+<SidebarItem icon={Folder} to="/tmm" label="Sopningar TMM" />
+
+<SidebarItem icon={Folder} to="/projects" label="Övriga Projekt" />
+
+<SidebarItem icon={Route} to="/routes" label="Ruttplanering" />
+
+<SidebarItem icon={MessageCircle} to="/chat" label="Chatt" />
+
+<SidebarItem icon={Mic} to="/voice" label="Röstkanaler" />
+
+<SidebarItem icon={Clock} to="/tidsrapport" label="Tidsrapport" />
+
+</div>
+
+
+{/* FOOTER */}
+
+<div className="border-t border-zinc-200 p-4 text-xs text-zinc-500">
+
+Christoffer Tegnander
+
+</div>
+
+</div>
+
+)
+
+}
+
+function SidebarItem({ icon: Icon, label, to }:{
+icon:any
+label:string
+to:string
+}){
+
+return(
+
+<NavLink
+to={to}
+className={({isActive}) =>`
+
+flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+
+${isActive
+? "bg-zinc-100 text-zinc-900"
+: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}
+
+`}
+>
+
+<Icon size={18}/>
+
+{label}
+
+</NavLink>
+
+)
 
 }
