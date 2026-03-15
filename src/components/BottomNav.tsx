@@ -53,7 +53,7 @@ export default function BottomNav() {
       {/* Home button */}
 
       <button onClick={() => navigate("/")} className="flex flex-col items-center -mt-6">
-        <div className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 rounded-none border-solid flex items-center justify-center gap-0 border-muted bg-primary-foreground border-0">
+        <div className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 rounded-none border-solid flex items-center justify-center gap-0 border-muted border-0 bg-transparent">
           <img
             className="w-132px] h-[132px] border-none border-0 border-[#f5faf7]/0 rounded-none object-contain"
             src="/lovable-uploads/64783441-db13-4667-a680-5e20a437c612.png" />
