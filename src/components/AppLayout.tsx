@@ -9,18 +9,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
     <SidebarProvider>
 
-      <div className="min-h-[100dvh] flex w-full bg-zinc-100 dark:bg-zinc-900">
+      <div className="min-h-[100dvh] flex w-full bg-zinc-100 text-zinc-900">
 
-        {/* Desktop Sidebar */}
+        {/* Desktop sidebar */}
 
-        <div className="hidden md:block border-r border-zinc-200 dark:border-zinc-800">
+        <div className="hidden md:block border-r border-zinc-200 bg-white">
           <AppSidebar />
         </div>
 
-
         <div className="flex-1 flex flex-col min-w-0">
 
-          {/* TOPBAR */}
+          {/* Topbar */}
 
           <header
             className="
@@ -33,18 +32,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             sticky
             top-0
             z-50
-            backdrop-blur-xl
-            bg-white/70
-            dark:bg-zinc-900/70
+            bg-white/90
+            backdrop-blur
             border-b
             border-zinc-200
-            dark:border-zinc-800
-            ">
+            "
+          >
 
             {/* Sidebar button */}
 
             <div className="md:hidden">
-              <SidebarTrigger className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition" />
+              <SidebarTrigger className="text-zinc-600 hover:text-zinc-900 transition" />
             </div>
 
 
@@ -56,16 +54,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
                 <img
                   src="/apple-touch-icon.png"
-                  className="
-                  h-9
-                  w-9
-                  object-contain
-                  rounded-lg
-                  "
+                  className="h-9 w-9 rounded-lg object-contain"
                 />
 
-                <span className="hidden md:block text-sm font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">
-                  CLC
+                <span className="hidden md:block font-semibold tracking-tight text-zinc-800">
+                  CLC Fastighetsservice
                 </span>
 
               </div>
@@ -75,16 +68,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* Notifications */}
 
-            <div className="flex items-center">
-
-              <NotificationBell />
-
-            </div>
+            <NotificationBell />
 
           </header>
 
 
-          {/* CONTENT */}
+          {/* Main content */}
 
           <main
             className="
@@ -97,16 +86,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             md:px-8
             pt-6
             pb-[120px]
-            ">
+            "
+          >
 
             {children}
 
           </main>
 
 
-          {/* MOBILE NAV */}
+          {/* Bottom navigation */}
 
-          <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl">
+          <div className="md:hidden bg-white border-t border-zinc-200">
 
             <BottomNav />
 
@@ -119,5 +109,4 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
 
   )
-
 }
