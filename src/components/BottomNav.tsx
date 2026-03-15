@@ -54,7 +54,7 @@ ${isActive ? "text-emerald-400" : "text-white/40"}`
 ${isActive ? "text-emerald-400" : "text-white/40"}`
             }>
             
-<MessageCircle className="w-5 h-5" />
+<MessageCircle className="w-5 h-5 text-secondary-foreground" />
 <span>Chatt</span>
 </NavLink>
 
