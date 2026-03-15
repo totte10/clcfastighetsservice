@@ -1,4 +1,4 @@
-import { Home, CalendarDays, Clock, Settings } from "lucide-react"
+import { Home, CalendarDays, MessageCircle, Settings } from "lucide-react"
 import { NavLink } from "react-router-dom"
 
 export default function MobileNavbar(){
@@ -48,14 +48,14 @@ ${isActive ? "text-emerald-400" : "text-white/40"}`
 
 
 <NavLink
-to="/tidsrapport"
+to="/chat"
 className={({isActive}) =>
 `flex flex-col items-center text-xs transition
 ${isActive ? "text-emerald-400" : "text-white/40"}`
 }
 >
-<Clock className="w-5 h-5"/>
-<span>Tidsrapport</span>
+<MessageCircle className="w-5 h-5"/>
+<span>Chatt</span>
 </NavLink>
 
 
