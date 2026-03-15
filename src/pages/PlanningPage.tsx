@@ -318,8 +318,8 @@ export default function PlanningPage() {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324] text-[#f5faf7]/[0.02] bg-zinc-200">
-      <div className="max-w-md mx-auto px-4 pt-6 space-y-5 bg-zinc-800 py-0 border-2 border-zinc-600 pb-[260px] rounded-md">
+    <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324] text-[#f5faf7]/[0.02] border-0 border-zinc-800 bg-zinc-800/0">
+      <div className="max-w-md mx-auto px-4 space-y-5 bg-zinc-800 py-0 border-zinc-600 pb-[260px] pt-[20px] my-[20px] shadow-none border-solid border-0 rounded-none">
 
         {/* Header */}
         <div className="space-y-1">
