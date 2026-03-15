@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { format, addDays, subDays, isToday, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
-import { Plus, MapPin, Hash, Pencil, X, Check, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { Plus, MapPin, Hash, Pencil, Check, ChevronLeft, ChevronRight, CalendarDays, Layers } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-interface Project {
+type SourceType = "tidx" | "egna" | "tmm" | "optimal" | "project";
+
+interface UnifiedJob {
   id: string;
+  source: SourceType;
   name: string;
   address: string;
-  datum_planerat: string;
+  datum: string;
   project_number: string;
   status: string;
+  serviceLabel: string;
 }
 
 interface Worker {
@@ -40,15 +44,31 @@ const PROJECT_TYPES = [
   { value: "ovrigt", label: "Övrigt" },
 ];
 
+const SOURCE_LABELS: Record<SourceType, string> = {
+  tidx: "Tidx",
+  egna: "Egna",
+  tmm: "TMM",
+  optimal: "Optimal",
+  project: "Projekt",
+};
+
+const SOURCE_COLORS: Record<SourceType, string> = {
+  tidx: "bg-cyan-500/15 text-cyan-400",
+  egna: "bg-violet-500/15 text-violet-400",
+  tmm: "bg-amber-500/15 text-amber-400",
+  optimal: "bg-emerald-500/15 text-emerald-400",
+  project: "bg-blue-500/15 text-blue-400",
+};
+
 export default function PlanningPage() {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
 
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [jobs, setJobs] = useState<UnifiedJob[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [editProject, setEditProject] = useState<Project | null>(null);
+  const [editJob, setEditJob] = useState<UnifiedJob | null>(null);
   const [creating, setCreating] = useState(false);
 
   const [form, setForm] = useState({
@@ -61,12 +81,92 @@ export default function PlanningPage() {
   });
 
   const load = useCallback(async () => {
-    const [projRes, workRes, assignRes] = await Promise.all([
+    const [tidxRes, egnaRes, tmmRes, optRes, projRes, workRes, assignRes] = await Promise.all([
+      supabase.from("tidx_entries").select("id,address,omrade,datum_planerat,project_number,status"),
+      supabase.from("egna_entries").select("id,address,datum_planerat,project_number,blow_status,sweep_status"),
+      supabase.from("tmm_entries").select("id,beskrivning,address,datum,status,typ"),
+      supabase.from("optimal_entries").select("id,name,address,datum_start,status,typ"),
       supabase.from("projects").select("id,name,address,datum_planerat,project_number,status"),
       supabase.from("profiles").select("id,full_name"),
       supabase.from("project_assignments").select("entry_id,entry_type,user_id"),
     ]);
-    setProjects(projRes.data ?? []);
+
+    const unified: UnifiedJob[] = [];
+
+    // Tidx
+    (tidxRes.data ?? []).forEach((t: any) => {
+      unified.push({
+        id: t.id,
+        source: "tidx",
+        name: t.omrade ? `${t.omrade} – ${t.address}` : t.address,
+        address: t.address,
+        datum: (t.datum_planerat || "").slice(0, 10),
+        project_number: t.project_number || "",
+        status: t.status,
+        serviceLabel: "Maskinsopning",
+      });
+    });
+
+    // Egna
+    (egnaRes.data ?? []).forEach((e: any) => {
+      const blowDone = e.blow_status === "done";
+      const sweepDone = e.sweep_status === "done";
+      const status = blowDone && sweepDone ? "done" : (e.blow_status === "in-progress" || e.sweep_status === "in-progress") ? "in-progress" : "pending";
+      unified.push({
+        id: e.id,
+        source: "egna",
+        name: e.address,
+        address: e.address,
+        datum: (e.datum_planerat || "").slice(0, 10),
+        project_number: e.project_number || "",
+        status,
+        serviceLabel: "Egna områden",
+      });
+    });
+
+    // TMM
+    (tmmRes.data ?? []).forEach((t: any) => {
+      unified.push({
+        id: t.id,
+        source: "tmm",
+        name: t.beskrivning || t.address,
+        address: t.address,
+        datum: (t.datum || "").slice(0, 10),
+        project_number: "",
+        status: t.status,
+        serviceLabel: t.typ === "framblasning" ? "Framblåsning" : "Maskinsopning",
+      });
+    });
+
+    // Optimal
+    (optRes.data ?? []).forEach((o: any) => {
+      unified.push({
+        id: o.id,
+        source: "optimal",
+        name: o.name,
+        address: o.address,
+        datum: (o.datum_start || "").slice(0, 10),
+        project_number: "",
+        status: o.status,
+        serviceLabel: o.typ === "framblasning" ? "Framblåsning" : "Maskinsopning",
+      });
+    });
+
+    // Projects
+    (projRes.data ?? []).forEach((p: any) => {
+      unified.push({
+        id: p.id,
+        source: "project",
+        name: p.name,
+        address: p.address,
+        datum: (p.datum_planerat || "").slice(0, 10),
+        project_number: p.project_number || "",
+        status: p.status,
+        serviceLabel: "Projekt",
+      });
+    });
+
+    setJobs(unified);
     setWorkers(workRes.data ?? []);
     setAssignments(assignRes.data ?? []);
   }, []);
@@ -75,37 +175,37 @@ export default function PlanningPage() {
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  const filteredProjects = useMemo(() =>
-    projects.filter(p => (p.datum_planerat || "").slice(0, 10) === dateStr),
-    [projects, dateStr]
+  const filteredJobs = useMemo(() =>
+    jobs.filter(j => j.datum === dateStr),
+    [jobs, dateStr]
   );
 
-  // Generate horizontal date strip (7 days centered on selectedDate)
-  const dateStrip = useMemo(() => {
-    return Array.from({ length: 9 }, (_, i) => addDays(selectedDate, i - 4));
-  }, [selectedDate]);
+  const dateStrip = useMemo(() =>
+    Array.from({ length: 9 }, (_, i) => addDays(selectedDate, i - 4)),
+    [selectedDate]
+  );
 
-  function getAssignedWorkers(projectId: string): string[] {
+  function getAssignedWorkers(jobId: string, source: SourceType): string[] {
     return assignments
-      .filter(a => a.entry_id === projectId && a.entry_type === "project")
+      .filter(a => a.entry_id === jobId && a.entry_type === source)
       .map(a => a.user_id);
   }
 
-  function getWorkerNames(projectId: string): string {
-    const ids = getAssignedWorkers(projectId);
+  function getWorkerNames(jobId: string, source: SourceType): string {
+    const ids = getAssignedWorkers(jobId, source);
     if (ids.length === 0) return "Inga tilldelade";
     return ids.map(id => workers.find(w => w.id === id)?.full_name || "Okänd").join(", ");
   }
 
-  function openEdit(project: Project) {
-    setEditProject(project);
+  function openEdit(job: UnifiedJob) {
+    setEditJob(job);
     setForm({
-      name: project.name,
-      address: project.address,
-      project_number: project.project_number,
-      datum_planerat: project.datum_planerat,
-      status: project.status,
-      selectedWorkers: getAssignedWorkers(project.id),
+      name: job.name,
+      address: job.address,
+      project_number: job.project_number,
+      datum_planerat: job.datum,
+      status: job.status,
+      selectedWorkers: getAssignedWorkers(job.id, job.source),
     });
   }
 
@@ -122,43 +222,61 @@ export default function PlanningPage() {
   }
 
   async function saveEdit() {
-    if (!editProject) return;
-    await supabase.from("projects").update({
-      name: form.name,
-      address: form.address,
-      project_number: form.project_number,
-      datum_planerat: form.datum_planerat,
-      status: form.status,
-    }).eq("id", editProject.id);
+    if (!editJob) return;
+
+    // Update the correct table based on source
+    if (editJob.source === "project") {
+      await supabase.from("projects").update({
+        name: form.name, address: form.address,
+        project_number: form.project_number,
+        datum_planerat: form.datum_planerat, status: form.status,
+      }).eq("id", editJob.id);
+    } else if (editJob.source === "tidx") {
+      await supabase.from("tidx_entries").update({
+        address: form.address, datum_planerat: form.datum_planerat,
+        project_number: form.project_number, status: form.status,
+      }).eq("id", editJob.id);
+    } else if (editJob.source === "egna") {
+      await supabase.from("egna_entries").update({
+        address: form.address, datum_planerat: form.datum_planerat,
+        project_number: form.project_number,
+      }).eq("id", editJob.id);
+    } else if (editJob.source === "tmm") {
+      await supabase.from("tmm_entries").update({
+        address: form.address, datum: form.datum_planerat,
+        beskrivning: form.name, status: form.status,
+      }).eq("id", editJob.id);
+    } else if (editJob.source === "optimal") {
+      await supabase.from("optimal_entries").update({
+        name: form.name, address: form.address,
+        datum_start: form.datum_planerat, status: form.status,
+      }).eq("id", editJob.id);
+    }
 
     // Update assignments
     await supabase.from("project_assignments")
       .delete()
-      .eq("entry_id", editProject.id)
-      .eq("entry_type", "project");
+      .eq("entry_id", editJob.id)
+      .eq("entry_type", editJob.source);
 
     if (form.selectedWorkers.length > 0) {
       await supabase.from("project_assignments").insert(
         form.selectedWorkers.map(uid => ({
-          entry_id: editProject.id,
-          entry_type: "project",
-          user_id: uid,
+          entry_id: editJob.id, entry_type: editJob.source, user_id: uid,
         }))
       );
     }
 
     toast({ title: "Uppdrag uppdaterat" });
-    setEditProject(null);
+    setEditJob(null);
     await load();
   }
 
   async function createProject() {
     const { data, error } = await supabase.from("projects").insert({
-      name: form.name,
-      address: form.address,
+      name: form.name, address: form.address,
       project_number: form.project_number,
-      datum_planerat: form.datum_planerat,
-      status: form.status,
+      datum_planerat: form.datum_planerat, status: form.status,
     }).select("id").single();
 
     if (error || !data) {
@@ -169,9 +287,7 @@ export default function PlanningPage() {
     if (form.selectedWorkers.length > 0) {
       await supabase.from("project_assignments").insert(
         form.selectedWorkers.map(uid => ({
-          entry_id: data.id,
-          entry_type: "project",
-          user_id: uid,
+          entry_id: data.id, entry_type: "project", user_id: uid,
         }))
       );
     }
@@ -190,9 +306,16 @@ export default function PlanningPage() {
     }));
   }
 
-  if (!isAdmin) return <Navigate to="/" replace />;
+  // Count jobs per day for date strip dots
+  const jobCountByDate = useMemo(() => {
+    const map: Record<string, number> = {};
+    jobs.forEach(j => { map[j.datum] = (map[j.datum] || 0) + 1; });
+    return map;
+  }, [jobs]);
 
-  const dialogOpen = !!editProject || creating;
+  const dialogOpen = !!editJob || creating;
+
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324]">
@@ -217,9 +340,10 @@ export default function PlanningPage() {
 
           <div className="flex-1 flex gap-1 overflow-x-auto scrollbar-hide">
             {dateStrip.map((day) => {
+              const ds = format(day, "yyyy-MM-dd");
               const active = isSameDay(day, selectedDate);
               const today = isToday(day);
-              const dayJobs = projects.filter(p => (p.datum_planerat || "").slice(0, 10) === format(day, "yyyy-MM-dd")).length;
+              const dayJobs = jobCountByDate[ds] || 0;
               return (
                 <button
                   key={day.toISOString()}
@@ -263,64 +387,69 @@ export default function PlanningPage() {
             {format(selectedDate, "EEEE d MMMM", { locale: sv })}
           </span>
           <span className="ml-auto text-xs text-white/30">
-            {filteredProjects.length} uppdrag
+            {filteredJobs.length} uppdrag
           </span>
         </div>
 
         {/* Job cards */}
         <div className="space-y-3">
-          {filteredProjects.length === 0 ? (
+          {filteredJobs.length === 0 ? (
             <div className="rounded-2xl bg-[#111827] border border-white/5 p-8 text-center shadow-xl">
               <CalendarDays className="h-8 w-8 text-white/10 mx-auto mb-3" />
               <p className="text-sm text-white/30">Inga uppdrag denna dag</p>
               <p className="text-xs text-white/15 mt-1">Tryck + för att skapa</p>
             </div>
           ) : (
-            filteredProjects.map((project) => {
-              const workerNames = getWorkerNames(project.id);
-              const statusColor = project.status === "done"
+            filteredJobs.map((job) => {
+              const workerNames = getWorkerNames(job.id, job.source);
+              const statusColor = job.status === "done"
                 ? "bg-emerald-500/15 text-emerald-400"
-                : project.status === "in-progress"
+                : job.status === "in-progress"
                   ? "bg-amber-500/15 text-amber-400"
                   : "bg-white/5 text-white/40";
 
               return (
                 <div
-                  key={project.id}
+                  key={`${job.source}-${job.id}`}
                   className="rounded-2xl bg-[#111827] border border-white/5 p-4 shadow-xl"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${statusColor}`}>
-                          {project.status === "done" ? "Klar" : project.status === "in-progress" ? "Pågår" : "Planerad"}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${SOURCE_COLORS[job.source]}`}>
+                          {SOURCE_LABELS[job.source]}
                         </span>
-                        {project.project_number && (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${statusColor}`}>
+                          {job.status === "done" ? "Klar" : job.status === "in-progress" ? "Pågår" : "Planerad"}
+                        </span>
+                        {job.project_number && (
                           <span className="text-[10px] text-white/25 flex items-center gap-0.5">
                             <Hash className="h-2.5 w-2.5" />
-                            {project.project_number}
+                            {job.project_number}
                           </span>
                         )}
                       </div>
 
                       <h3 className="font-semibold text-white text-sm leading-tight truncate">
-                        {project.name}
+                        {job.name}
                       </h3>
 
-                      {project.address && (
+                      {job.address && job.address !== job.name && (
                         <p className="text-xs text-white/35 flex items-center gap-1">
                           <MapPin className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{project.address}</span>
+                          <span className="truncate">{job.address}</span>
                         </p>
                       )}
 
-                      <p className="text-[11px] text-white/25 truncate">
-                        {workerNames}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-white/20">{job.serviceLabel}</span>
+                        <span className="text-[10px] text-white/10">•</span>
+                        <p className="text-[11px] text-white/25 truncate">{workerNames}</p>
+                      </div>
                     </div>
 
                     <button
-                      onClick={() => openEdit(project)}
+                      onClick={() => openEdit(job)}
                       className="shrink-0 mt-1 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/5 text-xs text-white/60 hover:text-white transition-all flex items-center gap-1.5"
                     >
                       <Pencil className="h-3 w-3" />
@@ -343,12 +472,21 @@ export default function PlanningPage() {
 
         {/* Edit / Create Dialog */}
         <Dialog open={dialogOpen} onOpenChange={(open) => {
-          if (!open) { setEditProject(null); setCreating(false); }
+          if (!open) { setEditJob(null); setCreating(false); }
         }}>
           <DialogContent className="bg-[#111827] border-white/5 text-white max-w-[calc(100vw-2rem)] sm:max-w-md rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold text-white">
-                {creating ? "Nytt uppdrag" : "Redigera uppdrag"}
+              <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
+                {creating ? "Nytt uppdrag" : (
+                  <>
+                    Redigera uppdrag
+                    {editJob && (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${SOURCE_COLORS[editJob.source]}`}>
+                        {SOURCE_LABELS[editJob.source]}
+                      </span>
+                    )}
+                  </>
+                )}
               </DialogTitle>
             </DialogHeader>
 
@@ -394,19 +532,37 @@ export default function PlanningPage() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs text-white/40 font-medium">Projekttyp</label>
-                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-                  <SelectTrigger className="bg-white/[0.04] border-white/10 text-white rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#1a2234] border-white/10">
-                    {PROJECT_TYPES.map(pt => (
-                      <SelectItem key={pt.value} value={pt.value} className="text-white">{pt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {(creating || editJob?.source === "project") && (
+                <div className="space-y-1.5">
+                  <label className="text-xs text-white/40 font-medium">Projekttyp</label>
+                  <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                    <SelectTrigger className="bg-white/[0.04] border-white/10 text-white rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a2234] border-white/10">
+                      {PROJECT_TYPES.map(pt => (
+                        <SelectItem key={pt.value} value={pt.value} className="text-white">{pt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {!creating && editJob && editJob.source !== "project" && (
+                <div className="space-y-1.5">
+                  <label className="text-xs text-white/40 font-medium">Status</label>
+                  <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                    <SelectTrigger className="bg-white/[0.04] border-white/10 text-white rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a2234] border-white/10">
+                      <SelectItem value="pending" className="text-white">Planerad</SelectItem>
+                      <SelectItem value="in-progress" className="text-white">Pågår</SelectItem>
+                      <SelectItem value="done" className="text-white">Klar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Workers */}
               <div className="space-y-2">
@@ -434,7 +590,7 @@ export default function PlanningPage() {
 
               <Button
                 onClick={creating ? createProject : saveEdit}
-                disabled={!form.name.trim()}
+                disabled={!form.name.trim() && !form.address.trim()}
                 className="w-full bg-blue-500 hover:bg-blue-400 text-white font-medium rounded-xl h-11"
               >
                 <Check className="h-4 w-4 mr-2" />
