@@ -1,87 +1,77 @@
-<header className="
-h-[64px]
-flex
-items-center
-justify-between
-px-4 md:px-6
-sticky
-top-0
-z-50
-border-b
-border-white/5
-bg-gradient-to-b
-from-[#0b1220]/90
-to-[#0b1220]/40
-backdrop-blur-2xl
-shadow-[0_10px_40px_rgba(0,0,0,0.6)]
-">
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/AppSidebar"
+import { NotificationBell } from "@/components/NotificationBell"
+import BottomNav from "@/components/BottomNav"
 
-{/* Sidebar button */}
+export function AppLayout({ children }: { children: React.ReactNode }) {
 
-<div className="md:hidden">
+  return (
 
-<SidebarTrigger className="
-text-white/60
-hover:text-white
-transition
-"/>
+    <SidebarProvider>
 
-</div>
+      <div className="min-h-[100dvh] flex w-full bg-[#020617]">
 
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <AppSidebar />
+        </div>
 
-{/* Logo center */}
+        <div className="flex-1 flex flex-col min-w-0">
 
-<div className="flex-1 flex justify-center md:justify-start">
+          {/* Topbar */}
 
-<div className="
-relative
-flex
-items-center
-justify-center
-">
+          <header className="h-[64px] flex items-center justify-between px-4 md:px-6 border-b border-white/5 bg-black/30 backdrop-blur-xl sticky top-0 z-50">
 
-<img
-src="/apple-touch-icon.png"
-className="
-h-10
-w-10
-object-contain
-rounded-xl
-drop-shadow-[0_0_12px_rgba(59,130,246,0.8)]
-"
-/>
+            {/* Left - Sidebar trigger */}
 
-<div className="
-absolute
-inset-0
-rounded-xl
-bg-blue-500/20
-blur-xl
-opacity-40
-"/>
+            <div className="md:hidden">
+              <SidebarTrigger className="text-white/60 hover:text-white transition-colors" />
+            </div>
 
-</div>
+            {/* Center - Logo */}
 
-</div>
+            <div className="flex-1 flex justify-center md:justify-start">
+
+              <img
+                src="/logo.png"
+                className="h-9 w-9 rounded-xl object-contain"
+              />
+
+            </div>
+
+            {/* Right - Notifications */}
+
+            <div className="flex items-center">
+
+              <NotificationBell />
+
+            </div>
+
+          </header>
 
 
-{/* Notifications */}
+          {/* Page content */}
 
-<div className="relative">
+          <main className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 md:px-8 pt-6 pb-[120px]">
 
-<NotificationBell />
+            {children}
 
-<span className="
-absolute
-- top-1
-- right-1
-w-2.5
-h-2.5
-bg-emerald-400
-rounded-full
-animate-pulse
-"/>
+          </main>
 
-</div>
 
-</header>
+          {/* Bottom navigation mobile */}
+
+          <div className="md:hidden">
+
+            <BottomNav />
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </SidebarProvider>
+
+  )
+}
