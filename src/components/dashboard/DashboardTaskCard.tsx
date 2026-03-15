@@ -1,3 +1,6 @@
+import { useRef } from "react"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Fan, Wind, Wrench, Building2, Hammer, Check, Play, MapPin, Truck, Undo2 } from "lucide-react";
