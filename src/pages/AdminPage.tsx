@@ -22,7 +22,7 @@ export default function AdminPage() {
     setAreas(await getAreas());
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {refresh();}, [refresh]);
 
   const handleAdd = async () => {
     if (!name.trim() || !address.trim()) {
@@ -39,7 +39,7 @@ export default function AdminPage() {
       sweepStatus: "pending",
       images: [],
       lat: coords?.lat,
-      lng: coords?.lng,
+      lng: coords?.lng
     });
     await refresh();
     setName("");
@@ -57,7 +57,7 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Admin</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-primary-foreground ml-[5px] mt-0">Admin</h1>
 
       <UserManagement />
 
@@ -92,12 +92,12 @@ export default function AdminPage() {
           <CardTitle className="text-lg">Alla områden ({areas.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {areas.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Inga områden tillagda ännu.</p>
-          ) : (
-            <div className="space-y-2">
-              {areas.map((area) => (
-                <div key={area.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+          {areas.length === 0 ?
+          <p className="text-sm text-muted-foreground">Inga områden tillagda ännu.</p> :
+
+          <div className="space-y-2">
+              {areas.map((area) =>
+            <div key={area.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50">
                   <div>
                     <p className="text-sm font-medium">{area.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -109,11 +109,11 @@ export default function AdminPage() {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              ))}
+            )}
             </div>
-          )}
+          }
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>);
+
 }
