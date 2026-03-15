@@ -95,7 +95,7 @@ export default function BottomNav() {
         
 
         <div
-          className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 flex items-center justify-center rounded-none border border-solid border-secondary">
+          className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 flex items-center justify-center rounded-none border border-solid border-secondary bg-inherit">
 
 
 
