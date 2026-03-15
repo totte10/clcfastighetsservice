@@ -67,19 +67,9 @@ FASTIGHETSSERVICE
 
 <SidebarMenu>
 
-{/* DASHBOARD */}
-
 <MenuItem icon={LayoutDashboard} to="/" label="Dashboard"/>
 
-{/* DISPATCH */}
-
 <MenuItem icon={Map} to="/dispatch" label="Dispatch Center"/>
-
-{/* FLEET CONTROL */}
-
-<MenuItem icon={Truck} to="/fleet" label="Fleet Control"/>
-
-{/* PLANNING */}
 
 <MenuItem icon={Calendar} to="/planning" label="Planering"/>
 
@@ -122,19 +112,11 @@ Maskinsopning
 
 )}
 
-{/* ROUTE */}
-
 <MenuItem icon={Route} to="/route" label="Ruttplanering"/>
-
-{/* CHAT */}
 
 <MenuItem icon={MessageCircle} to="/chat" label="Chatt"/>
 
-{/* VOICE */}
-
 <MenuItem icon={Mic} to="/voice" label="Röstkanaler"/>
-
-{/* TIME */}
 
 <MenuItem icon={Clock} to="/time" label="Tidsrapport"/>
 
