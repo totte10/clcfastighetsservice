@@ -9,7 +9,7 @@ export default function MobileNavbar() {
 
 <div className="max-w-md mx-auto px-4 pb-4 text-primary-foreground">
 
-<div className="backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl shadow-black/40 flex justify-between items-center px-6 py-3 bg-zinc-900 text-primary-foreground">
+<div className="backdrop-blur-xl border-white/5 shadow-black/40 flex justify-between items-center px-6 py-3 bg-zinc-900 text-primary-foreground border-4 border-solid rounded-3xl shadow-2xl">
 
 
 
