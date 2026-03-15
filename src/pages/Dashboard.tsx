@@ -342,7 +342,7 @@ export default function Dashboard() {
             task={task}
             updating={null}
             onStart={() => {}}
-            onComplete={() => {}} />
+            onComplete={async (_task: DailyTask, _data: CompletionData) => {}} />
 
           )}
 
