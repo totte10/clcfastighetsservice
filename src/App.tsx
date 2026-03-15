@@ -1,179 +1,187 @@
-import { Toaster } from "@/components/ui/toaster"
-import { Toaster as Sonner } from "@/components/ui/sonner"
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { AppLayout } from "@/components/AppLayout";
 
-import {
-BrowserRouter,
-Routes,
-Route,
-Navigate
-} from "react-router-dom"
+import Dashboard from "@/pages/Dashboard";
+import AreasPage from "@/pages/AreasPage";
+import TimePage from "@/pages/TimePage";
+import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
+import AdminPage from "@/pages/AdminPage";
+import TidxSopningarPage from "@/pages/TidxSopningarPage";
+import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
+import ProjectsPage from "@/pages/ProjectsPage";
+import ChatPage from "@/pages/ChatPage";
+import PlanningPage from "@/pages/PlanningPage";
+import OptimalPage from "@/pages/OptimalPage";
+import TmmPage from "@/pages/TmmPage";
+import LoginPage from "@/pages/LoginPage";
+import MissingCoordinatesPage from "@/pages/MissingCoordinatesPage";
+import PayrollPage from "@/pages/PayrollPage";
+import RoutePlanningPage from "@/pages/RoutePlanningPage";
+import VoicePage from "@/pages/VoicePage";
 
-import { AuthProvider, useAuth } from "@/hooks/useAuth"
-import { AppLayout } from "@/components/AppLayout"
+import NotFound from "@/pages/NotFound";
 
-import { Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react";
 
-/* PAGES */
+const queryClient = new QueryClient();
 
-import Dashboard from "@/pages/Dashboard"
-import DispatchCenter from "@/pages/DispatchCenter"
-import FleetControlPage from "@/pages/FleetControlPage"
 
-import AreasPage from "@/pages/AreasPage"
-import TimePage from "@/pages/TimePage"
-import AllTimeReportsPage from "@/pages/AllTimeReportsPage"
-import AdminPage from "@/pages/AdminPage"
 
-import TidxSopningarPage from "@/pages/TidxSopningarPage"
-import EgnaOmradenPage from "@/pages/EgnaOmradenPage"
+/*
+  Protected app routes
+*/
 
-import ProjectsPage from "@/pages/ProjectsPage"
-import PlanningPage from "@/pages/PlanningPage"
+function ProtectedRoutes() {
 
-import OptimalPage from "@/pages/OptimalPage"
-import TmmPage from "@/pages/TmmPage"
+  const { user, loading } = useAuth();
 
-import ChatPage from "@/pages/ChatPage"
-import VoicePage from "@/pages/VoicePage"
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-import PayrollPage from "@/pages/PayrollPage"
-import MissingCoordinatesPage from "@/pages/MissingCoordinatesPage"
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-import RoutePlanningPage from "@/pages/RoutePlanningPage"
+  return (
 
-import LoginPage from "@/pages/LoginPage"
-import NotFound from "@/pages/NotFound"
+    <AppLayout>
 
-const queryClient = new QueryClient()
+      <Routes>
 
-/* PROTECTED ROUTES */
+        {/* Dashboard */}
 
-function ProtectedRoutes(){
+        <Route path="/" element={<Dashboard />} />
 
-const { user, loading } = useAuth()
+        {/* Time */}
 
-if(loading){
+        <Route path="/time" element={<TimePage />} />
+        <Route path="/time/reports" element={<AllTimeReportsPage />} />
 
-return(
-<div className="min-h-screen flex items-center justify-center bg-background">
-<Loader2 className="h-8 w-8 animate-spin text-primary"/>
-</div>
-)
+        {/* Projects */}
 
-}
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/planning" element={<PlanningPage />} />
 
-if(!user){
-return <Navigate to="/login" replace />
-}
+        {/* Areas */}
 
-return(
+        <Route path="/areas" element={<AreasPage />} />
+        <Route path="/egna" element={<EgnaOmradenPage />} />
+        <Route path="/tidx" element={<TidxSopningarPage />} />
 
-<AppLayout>
+        {/* Customers */}
 
-<Routes>
+        <Route path="/optimal" element={<OptimalPage />} />
+        <Route path="/tmm" element={<TmmPage />} />
 
-<Route path="/" element={<Dashboard/>} />
+        {/* Communication */}
 
-<Route path="/dispatch" element={<DispatchCenter/>} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/voice" element={<VoicePage />} />
 
-<Route path="/fleet" element={<FleetControlPage/>} />
+        {/* Routing */}
 
-<Route path="/time" element={<TimePage/>} />
-<Route path="/time/reports" element={<AllTimeReportsPage/>} />
+        <Route path="/route" element={<RoutePlanningPage />} />
 
-<Route path="/projects" element={<ProjectsPage/>} />
-<Route path="/planning" element={<PlanningPage/>} />
+        {/* Reports */}
 
-<Route path="/areas" element={<AreasPage/>} />
-<Route path="/egna" element={<EgnaOmradenPage/>} />
-<Route path="/tidx" element={<TidxSopningarPage/>} />
+        <Route path="/payroll" element={<PayrollPage />} />
+        <Route path="/missing-coords" element={<MissingCoordinatesPage />} />
 
-<Route path="/optimal" element={<OptimalPage/>} />
-<Route path="/tmm" element={<TmmPage/>} />
+        {/* Admin */}
 
-<Route path="/chat" element={<ChatPage/>} />
-<Route path="/voice" element={<VoicePage/>} />
+        <Route path="/admin" element={<AdminPage />} />
 
-<Route path="/route" element={<RoutePlanningPage/>} />
+        {/* Fallback */}
 
-<Route path="/payroll" element={<PayrollPage/>} />
-<Route path="/missing-coords" element={<MissingCoordinatesPage/>} />
+        <Route path="*" element={<NotFound />} />
 
-<Route path="/admin" element={<AdminPage/>} />
+      </Routes>
 
-<Route path="*" element={<NotFound/>} />
+    </AppLayout>
 
-</Routes>
-
-</AppLayout>
-
-)
-
-}
-
-/* PUBLIC ROUTES */
-
-function AppRoutes(){
-
-const { user, loading } = useAuth()
-
-if(loading){
-
-return(
-<div className="min-h-screen flex items-center justify-center bg-background">
-<Loader2 className="h-8 w-8 animate-spin text-primary"/>
-</div>
-)
+  );
 
 }
 
-return(
 
-<Routes>
 
-<Route
-path="/login"
-element={user ? <Navigate to="/" replace /> : <LoginPage/>}
-/>
+/*
+  Public routes
+*/
 
-<Route path="/*" element={<ProtectedRoutes/>}/>
+function AppRoutes() {
 
-</Routes>
+  const { user, loading } = useAuth();
 
-)
+  if (loading) {
+
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+
+  }
+
+  return (
+
+    <Routes>
+
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/" replace /> : <LoginPage />}
+      />
+
+      <Route path="/*" element={<ProtectedRoutes />} />
+
+    </Routes>
+
+  );
 
 }
 
-/* ROOT APP */
 
-export default function App(){
 
-return(
+/*
+  Root App
+*/
 
-<QueryClientProvider client={queryClient}>
+export default function App() {
 
-<TooltipProvider>
+  return (
 
-<Toaster/>
-<Sonner/>
+    <QueryClientProvider client={queryClient}>
 
-<BrowserRouter>
+      <TooltipProvider>
 
-<AuthProvider>
+        <Toaster />
+        <Sonner />
 
-<AppRoutes/>
+        <BrowserRouter>
 
-</AuthProvider>
+          <AuthProvider>
 
-</BrowserRouter>
+            <AppRoutes />
 
-</TooltipProvider>
+          </AuthProvider>
 
-</QueryClientProvider>
+        </BrowserRouter>
 
-)
+      </TooltipProvider>
+
+    </QueryClientProvider>
+
+  );
 
 }

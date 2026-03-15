@@ -319,7 +319,7 @@ export default function PlanningPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324] text-[#f5faf7]/[0.02] border-0 border-zinc-800 bg-zinc-800/0">
-      <div className="max-w-md mx-auto px-4 space-y-5 bg-zinc-800 py-0 border-zinc-600 pt-[20px] my-[20px] shadow-none border-solid border-0 pb-[280px] rounded-none">
+      <div className="max-w-md mx-auto px-4 space-y-5 bg-zinc-800 py-0 border-zinc-600 pt-[20px] my-[20px] shadow-none border-solid border-0 rounded-none pb-[280px]">
 
         {/* Header */}
         <div className="space-y-1">
@@ -411,7 +411,7 @@ export default function PlanningPage() {
             return (
               <div
                 key={`${job.source}-${job.id}`}
-                className="rounded-2xl border border-white/5 p-4 shadow-xl bg-zinc-900">
+                className="rounded-2xl bg-[#111827] border border-white/5 p-4 shadow-xl">
                 
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0 space-y-2">
@@ -465,7 +465,7 @@ export default function PlanningPage() {
         {/* Floating create button */}
         <button
           onClick={openCreate}
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-14 h-14 rounded-full shadow-2xl shadow-blue-500/30 transition-all active:scale-95 bg-zinc-500 hover:bg-zinc-400 flex items-center justify-center">
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-400 shadow-2xl shadow-blue-500/30 flex items-center justify-center transition-all active:scale-95">
           
           <Plus className="h-7 w-7 text-white" />
         </button>
