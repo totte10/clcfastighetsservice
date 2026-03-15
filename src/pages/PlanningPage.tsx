@@ -318,7 +318,7 @@ export default function PlanningPage() {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324] bg-zinc-600">
+    <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324] bg-primary-foreground">
       <div className="max-w-md mx-auto px-4 pt-6 pb-32 space-y-5 bg-zinc-800">
 
         {/* Header */}
@@ -394,7 +394,7 @@ export default function PlanningPage() {
         {/* Job cards */}
         <div className="space-y-3">
           {filteredJobs.length === 0 ?
-          <div className="rounded-2xl bg-[#111827] border border-white/5 p-8 text-center shadow-xl">
+          <div className="rounded-2xl border border-white/5 p-8 text-center shadow-xl bg-zinc-900">
               <CalendarDays className="h-8 w-8 text-white/10 mx-auto mb-3" />
               <p className="text-sm text-white/30">Inga uppdrag denna dag</p>
               <p className="text-xs text-white/15 mt-1">Tryck + för att skapa</p>
