@@ -1,4 +1,14 @@
+import {
+Sidebar,
+SidebarContent,
+SidebarHeader,
+SidebarMenu,
+SidebarMenuItem,
+SidebarMenuButton
+} from "@/components/ui/sidebar"
+
 import { NavLink } from "react-router-dom"
+
 import {
 LayoutDashboard,
 Wind,
@@ -11,15 +21,17 @@ Mic,
 Clock
 } from "lucide-react"
 
-export function AppSidebar() {
+export function AppSidebar(){
 
-return (
+return(
 
-<div className="w-[260px] h-screen bg-white border-r border-zinc-200 flex flex-col">
+<Sidebar className="bg-white border-r border-zinc-200">
 
 {/* HEADER */}
 
-<div className="flex items-center gap-3 px-5 py-5 border-b border-zinc-200">
+<SidebarHeader className="border-b border-zinc-200 px-4 py-4">
+
+<div className="flex items-center gap-3">
 
 <img
 src="/apple-touch-icon.png"
@@ -40,51 +52,48 @@ FASTIGHETSSERVICE
 
 </div>
 
+</SidebarHeader>
+
 
 {/* MENU */}
 
-<div className="flex-1 px-3 py-4 space-y-1">
+<SidebarContent>
 
-<SidebarItem icon={LayoutDashboard} to="/" label="Dashboard" />
+<SidebarMenu>
 
-<SidebarItem icon={Wind} to="/maskinsopning" label="Maskinsopning" />
+<MenuItem icon={LayoutDashboard} to="/" label="Dashboard" />
 
-<SidebarItem icon={Route} to="/tidx" label="Tidx Sopningar" />
+<MenuItem icon={Wind} to="/maskinsopning" label="Maskinsopning" />
 
-<SidebarItem icon={Home} to="/egna" label="Egna Områden" />
+<MenuItem icon={Route} to="/tidx" label="Tidx Sopningar" />
 
-<SidebarItem icon={Truck} to="/optimal" label="Optimal Områden" />
+<MenuItem icon={Home} to="/egna" label="Egna områden" />
 
-<SidebarItem icon={Folder} to="/tmm" label="Sopningar TMM" />
+<MenuItem icon={Truck} to="/optimal" label="Optimal områden" />
 
-<SidebarItem icon={Folder} to="/projects" label="Övriga Projekt" />
+<MenuItem icon={Folder} to="/tmm" label="Sopningar TMM" />
 
-<SidebarItem icon={Route} to="/routes" label="Ruttplanering" />
+<MenuItem icon={Folder} to="/projects" label="Övriga projekt" />
 
-<SidebarItem icon={MessageCircle} to="/chat" label="Chatt" />
+<MenuItem icon={Route} to="/routes" label="Ruttplanering" />
 
-<SidebarItem icon={Mic} to="/voice" label="Röstkanaler" />
+<MenuItem icon={MessageCircle} to="/chat" label="Chatt" />
 
-<SidebarItem icon={Clock} to="/tidsrapport" label="Tidsrapport" />
+<MenuItem icon={Mic} to="/voice" label="Röstkanaler" />
 
-</div>
+<MenuItem icon={Clock} to="/tidsrapport" label="Tidsrapport" />
 
+</SidebarMenu>
 
-{/* FOOTER */}
+</SidebarContent>
 
-<div className="border-t border-zinc-200 p-4 text-xs text-zinc-500">
-
-Christoffer Tegnander
-
-</div>
-
-</div>
+</Sidebar>
 
 )
 
 }
 
-function SidebarItem({ icon: Icon, label, to }:{
+function MenuItem({ icon:Icon, label, to }:{
 icon:any
 label:string
 to:string
@@ -92,16 +101,20 @@ to:string
 
 return(
 
-<NavLink
-to={to}
-className={({isActive}) =>`
+<SidebarMenuItem>
 
-flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
+<NavLink to={to}>
+
+{({isActive}) => (
+
+<SidebarMenuButton
+className={`
+flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
 
 ${isActive
 ? "bg-zinc-100 text-zinc-900"
-: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}
-
+: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+}
 `}
 >
 
@@ -109,7 +122,13 @@ ${isActive
 
 {label}
 
+</SidebarMenuButton>
+
+)}
+
 </NavLink>
+
+</SidebarMenuItem>
 
 )
 
