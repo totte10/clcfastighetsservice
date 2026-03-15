@@ -1,75 +1,81 @@
-import { MessageCircle, Calendar, Settings, Menu } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import clcLogo from "@/assets/clc-logo.png";
+import { Home, CalendarDays, Clock, Settings } from "lucide-react"
+import { NavLink } from "react-router-dom"
 
-export default function BottomNav() {
-  const navigate = useNavigate();
-  const location = useLocation();
+export default function MobileNavbar(){
 
-  const Item = ({ icon: Icon, label, path }: {icon: any;label: string;path: string;}) => {
-    const active = location.pathname === path;
+return(
 
-    return (
-      <button
-        onClick={() => navigate(path)}
-        className={`
-        flex flex-col items-center justify-center
-        text-[10px]
-        gap-[3px]
-        transition-all duration-200
-        ${active ? "text-primary" : "text-muted-foreground"}
-        `}>
-        
-        <Icon
-          className={`
-          w-[20px] h-[20px]
-          transition-transform
-          ${active ? "scale-110 text-primary" : ""}
-          `} />
-        
+<div className="fixed bottom-0 left-0 right-0 z-50">
 
-        <span>{label}</span>
-      </button>);
+<div className="max-w-md mx-auto px-4 pb-4">
 
-  };
+<div className="
+bg-[#0b1220]/80
+backdrop-blur-xl
+border border-white/5
+rounded-2xl
+shadow-2xl
+shadow-black/40
+flex
+justify-between
+items-center
+px-6
+py-3
+">
 
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 pb-[env(safe-area-inset-bottom)] pt-1.5 backdrop-blur-[30px] border-t border-white/5 shadow-[0_-8px_25px_rgba(0,0,0,0.7)] flex items-center justify-around z-50 bg-inherit">
-      {/* Sidebar */}
+<NavLink
+to="/"
+className={({isActive}) =>
+`flex flex-col items-center text-xs transition
+${isActive ? "text-emerald-400" : "text-white/40"}`
+}
+>
+<Home className="w-5 h-5"/>
+<span>Hem</span>
+</NavLink>
 
-      <div className="flex flex-col items-center text-[10px] text-muted-foreground">
-        <SidebarTrigger className="flex flex-col items-center gap-[3px]">
-          <Menu className="w-[20px] h-[20px]" />
 
-          <span>Meny</span>
-        </SidebarTrigger>
-      </div>
+<NavLink
+to="/planning"
+className={({isActive}) =>
+`flex flex-col items-center text-xs transition
+${isActive ? "text-emerald-400" : "text-white/40"}`
+}
+>
+<CalendarDays className="w-5 h-5"/>
+<span>Planering</span>
+</NavLink>
 
-      {/* Chat */}
 
-      <Item icon={MessageCircle} label="Chatt" path="/chat" />
+<NavLink
+to="/tidrapport"
+className={({isActive}) =>
+`flex flex-col items-center text-xs transition
+${isActive ? "text-emerald-400" : "text-white/40"}`
+}
+>
+<Clock className="w-5 h-5"/>
+<span>Tidsrapport</span>
+</NavLink>
 
-      {/* Home button */}
 
-      <button onClick={() => navigate("/")} className="flex flex-col items-center -mt-6">
-        <div className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 rounded-none border-solid flex items-center justify-center pr-0 gap-0 py-0 px-0 pb-0 pl-0 pt-0 bg-transparent border border-inherit">
-          <img
-            className="w-132px] h-[132px] shadow border-secondary object-scale-down border-0 border-none rounded-md" src="/lovable-uploads/a7599a67-cd3d-4bc3-9874-cf31cb9309bf.png" />
-          
-          
-        </div>
+<NavLink
+to="/admin"
+className={({isActive}) =>
+`flex flex-col items-center text-xs transition
+${isActive ? "text-emerald-400" : "text-white/40"}`
+}
+>
+<Settings className="w-5 h-5"/>
+<span>Admin</span>
+</NavLink>
 
-        <span className="text-[10px] text-primary mt-[3px]">Hem</span>
-      </button>
+</div>
 
-      {/* Planning */}
+</div>
 
-      <Item icon={Calendar} label="Planering" path="/planning" />
+</div>
 
-      {/* Admin */}
-
-      <Item icon={Settings} label="Admin" path="/admin" />
-    </nav>);
+)
 
 }
