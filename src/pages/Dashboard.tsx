@@ -245,7 +245,7 @@ export default function Dashboard() {
 
 <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22]" />
 
-<div className="space-y-4 bg-zinc-800 py-[20px] px-[20px]">
+<div className="space-y-4 bg-zinc-800 py-[20px] px-[20px] rounded-xl">
 
 {/* HEADER */}
 
