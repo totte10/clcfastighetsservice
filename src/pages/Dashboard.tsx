@@ -8,8 +8,6 @@ CalendarDays,
 Play,
 Check,
 Timer,
-Trophy,
-Medal,
 MapPin
 } from "lucide-react"
 
@@ -24,6 +22,7 @@ date:string
 status:string
 lat?:number
 lng?:number
+source:string
 }
 
 export default function Dashboard(){
@@ -35,7 +34,7 @@ const [weeklyHours,setWeeklyHours] = useState(0)
 
 const today = format(new Date(),"yyyy-MM-dd")
 
-/* LOAD JOBS */
+/* LOAD JOBS (synkad med planering) */
 
 const loadJobs = useCallback(async()=>{
 
@@ -47,77 +46,97 @@ tmm,
 optimal
 ] = await Promise.all([
 
-supabase.from("projects").select("id,name,address,datum_planerat,status,lat,lng"),
+supabase.from("projects").select("*"),
 
-supabase.from("tidx_entries").select("id,omrade,address,datum_planerat,status,lat,lng"),
+supabase.from("tidx_entries").select("*"),
 
-supabase.from("egna_entries").select("id,address,datum_planerat,lat,lng"),
+supabase.from("egna_entries").select("*"),
 
-supabase.from("tmm_entries").select("id,beskrivning,address,datum,status,lat,lng"),
+supabase.from("tmm_entries").select("*"),
 
-supabase.from("optimal_entries").select("id,name,address,datum_start,status,lat,lng")
+supabase.from("optimal_entries").select("*")
 
 ])
 
 const result:Job[] = []
 
+/* PROJECTS */
+
 projects.data?.forEach(p=>{
+if(!p.datum_planerat) return
 result.push({
-id:p.id,
+id:`project-${p.id}`,
 name:p.name,
 address:p.address,
-status:p.status,
-date:(p.datum_planerat||"").slice(0,10),
+status:p.status || "pending",
+date:p.datum_planerat.slice(0,10),
 lat:p.lat,
-lng:p.lng
+lng:p.lng,
+source:"project"
 })
 })
+
+/* TIDX */
 
 tidx.data?.forEach(t=>{
+if(!t.datum_planerat) return
 result.push({
-id:t.id,
+id:`tidx-${t.id}`,
 name:t.omrade || t.address,
 address:t.address,
-status:t.status,
-date:(t.datum_planerat||"").slice(0,10),
+status:t.status || "pending",
+date:t.datum_planerat.slice(0,10),
 lat:t.lat,
-lng:t.lng
+lng:t.lng,
+source:"tidx"
 })
 })
 
+/* EGNA */
+
 egna.data?.forEach(e=>{
+if(!e.datum_planerat) return
 result.push({
-id:e.id,
+id:`egna-${e.id}`,
 name:e.address,
 address:e.address,
 status:"pending",
-date:(e.datum_planerat||"").slice(0,10),
+date:e.datum_planerat.slice(0,10),
 lat:e.lat,
-lng:e.lng
+lng:e.lng,
+source:"egna"
 })
 })
+
+/* TMM */
 
 tmm.data?.forEach(t=>{
+if(!t.datum) return
 result.push({
-id:t.id,
-name:t.beskrivning,
+id:`tmm-${t.id}`,
+name:t.beskrivning || t.address,
 address:t.address,
-status:t.status,
-date:(t.datum||"").slice(0,10),
+status:t.status || "pending",
+date:t.datum.slice(0,10),
 lat:t.lat,
-lng:t.lng
+lng:t.lng,
+source:"tmm"
 })
 })
 
+/* OPTIMAL */
+
 optimal.data?.forEach(o=>{
+if(!o.datum_start) return
 result.push({
-id:o.id,
+id:`optimal-${o.id}`,
 name:o.name,
 address:o.address,
-status:o.status,
-date:(o.datum_start||"").slice(0,10),
+status:o.status || "pending",
+date:o.datum_start.slice(0,10),
 lat:o.lat,
-lng:o.lng
+lng:o.lng,
+source:"optimal"
 })
 })
 
@@ -128,7 +147,6 @@ setJobs(result)
 useEffect(()=>{
 loadJobs()
 },[loadJobs])
-
 
 /* HOURS */
 
@@ -151,7 +169,6 @@ loadHours()
 
 },[])
 
-
 /* TODAY JOBS */
 
 const todayJobs = jobs.filter(j=>j.date===today)
@@ -163,7 +180,6 @@ const progress =
 todayJobs.length > 0
 ? Math.round((done / todayJobs.length) * 100)
 : 0
-
 
 /* MAP */
 
@@ -182,7 +198,6 @@ status:j.status
 
 },[todayJobs])
 
-
 /* WEEK STRIP */
 
 const weekDays = Array.from({length:7}).map((_,i)=>{
@@ -196,7 +211,6 @@ const count = jobs.filter(j=>j.date===str).length
 return {date:d,count}
 
 })
-
 
 return(
 
@@ -224,7 +238,6 @@ Arbete idag
 
 </div>
 
-
 {/* PROGRESS */}
 
 <div className="rounded-xl border border-white/5 bg-white/[0.04] p-3">
@@ -238,7 +251,7 @@ Dagens framsteg
 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
 
 <div
-className="h-full bg-primary"
+className="h-full bg-primary transition-all"
 style={{width:`${progress}%`}}
 />
 
@@ -252,7 +265,6 @@ style={{width:`${progress}%`}}
 
 </div>
 
-
 {/* STATS */}
 
 <div className="grid grid-cols-2 gap-3">
@@ -264,10 +276,9 @@ style={{width:`${progress}%`}}
 
 </div>
 
-
 {/* WEEK */}
 
-<div className="flex gap-2 overflow-x-auto">
+<div className="flex gap-2 overflow-x-auto pb-1">
 
 {weekDays.map((d,i)=>(
 
@@ -300,17 +311,25 @@ className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-2 py
 
 </div>
 
-
 {/* MAP */}
 
 {mapJobs.length>0 &&
 <DashboardWorkerMap jobs={mapJobs}/>
 }
 
-
 {/* JOBS */}
 
 <div className="space-y-2">
+
+{todayJobs.length===0 &&(
+
+<div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-5">
+
+Inga uppdrag planerade idag
+
+</div>
+
+)}
 
 {todayJobs.map(job=>(
 
@@ -361,7 +380,6 @@ bg-primary/10
 )
 
 }
-
 
 function Stat({label,value,icon}:{label:string,value:any,icon:any}){
 
