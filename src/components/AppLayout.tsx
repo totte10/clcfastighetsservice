@@ -1,102 +1,83 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import { NotificationBell } from "@/components/NotificationBell";
-import BottomNav from "@/components/BottomNav";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/AppSidebar"
+import { NotificationBell } from "@/components/NotificationBell"
+import BottomNav from "@/components/BottomNav"
 
-export function AppLayout({ children }: {children: React.ReactNode;}) {
+export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
 
     <SidebarProvider>
 
-      <div className="min-h-[100dvh] flex w-full bg-[#020617]">
+      <div className="min-h-[100dvh] flex w-full bg-zinc-100 dark:bg-zinc-900">
 
         {/* Desktop Sidebar */}
-        <div className="hidden md:block">
+
+        <div className="hidden md:block border-r border-zinc-200 dark:border-zinc-800">
           <AppSidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 bg-zinc-800">
 
-          {/* PREMIUM TOPBAR */}
+        <div className="flex-1 flex flex-col min-w-0">
+
+          {/* TOPBAR */}
 
           <header
-            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 border-b border-white/5 bg-gradient-to-b from-[#0b1220]/90 to-[#0b1220]/40 backdrop-blur-2xl mt-0 shadow-none pb-[30px] pt-[95px] bg-zinc-900 text-primary-foreground">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
+            className="
+            h-[64px]
+            flex
+            items-center
+            justify-between
+            px-4
+            md:px-6
+            sticky
+            top-0
+            z-50
+            backdrop-blur-xl
+            bg-white/70
+            dark:bg-zinc-900/70
+            border-b
+            border-zinc-200
+            dark:border-zinc-800
+            ">
 
             {/* Sidebar button */}
 
             <div className="md:hidden">
-              <SidebarTrigger className="text-white/60 hover:text-white transition" />
+              <SidebarTrigger className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition" />
             </div>
+
 
             {/* Logo */}
 
-            <div className="flex-1 flex justify-center md:justify-start pt-[50px] pb-[50px]">
+            <div className="flex-1 flex justify-center md:justify-start">
 
-              <div className="relative flex items-center justify-center">
+              <div className="flex items-center gap-2">
 
                 <img
                   src="/apple-touch-icon.png"
                   className="
-                  h-10
-                  w-10
+                  h-9
+                  w-9
                   object-contain
-                  rounded-xl
-                  drop-shadow-[0_0_12px_rgba(59,130,246,0.8)]
-                  " />
-                
+                  rounded-lg
+                  "
+                />
 
-                <div
-                  className="
-                  absolute
-                  inset-0
-                  rounded-xl
-                  bg-blue-500/20
-                  blur-xl
-                  opacity-40
-                  " />
-                
+                <span className="hidden md:block text-sm font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">
+                  CLC
+                </span>
 
               </div>
 
             </div>
 
+
             {/* Notifications */}
 
-            <div className="relative flex items-center">
+            <div className="flex items-center">
 
               <NotificationBell />
-
-              <span
-                className="
-                absolute
-                -top-1
-                -right-1
-                w-2.5
-                h-2.5
-                bg-emerald-400
-                rounded-full
-                animate-pulse
-                " />
-              
 
             </div>
 
@@ -117,7 +98,6 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
             pt-6
             pb-[120px]
             ">
-            
 
             {children}
 
@@ -126,15 +106,18 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
 
           {/* MOBILE NAV */}
 
-          <div className="md:hidden">
+          <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl">
+
             <BottomNav />
+
           </div>
 
         </div>
 
       </div>
 
-    </SidebarProvider>);
+    </SidebarProvider>
 
+  )
 
 }
