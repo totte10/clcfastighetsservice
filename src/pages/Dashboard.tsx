@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/hooks/useAuth"
 import { DashboardWorkerMap } from "@/components/DashboardWorkerMap"
 
 import {
@@ -27,34 +26,26 @@ source:string
 
 export default function Dashboard(){
 
-const { user } = useAuth()
-
 const [jobs,setJobs] = useState<Job[]>([])
 const [weeklyHours,setWeeklyHours] = useState(0)
 
 const today = format(new Date(),"yyyy-MM-dd")
 
-/* ---------------- LOAD ALL JOBS ---------------- */
+/* LOAD JOBS */
 
 const loadJobs = useCallback(async()=>{
 
 const [projects,tidx,egna,tmm,optimal] = await Promise.all([
 
 supabase.from("projects").select("*"),
-
 supabase.from("tidx_entries").select("*"),
-
 supabase.from("egna_entries").select("*"),
-
 supabase.from("tmm_entries").select("*"),
-
 supabase.from("optimal_entries").select("*")
 
 ])
 
-const result:Job[] = []
-
-/* PROJECTS */
+const result:Job[]=[]
 
 projects.data?.forEach((p:any)=>{
 if(!p.datum_planerat) return
@@ -71,8 +62,6 @@ source:"project"
 })
 })
 
-/* TIDX */
-
 tidx.data?.forEach((t:any)=>{
 if(!t.datum_planerat) return
 
@@ -87,8 +76,6 @@ lng:t.lng,
 source:"tidx"
 })
 })
-
-/* EGNA */
 
 egna.data?.forEach((e:any)=>{
 if(!e.datum_planerat) return
@@ -105,8 +92,6 @@ source:"egna"
 })
 })
 
-/* TMM */
-
 tmm.data?.forEach((t:any)=>{
 if(!t.datum) return
 
@@ -121,8 +106,6 @@ lng:t.lng,
 source:"tmm"
 })
 })
-
-/* OPTIMAL */
 
 optimal.data?.forEach((o:any)=>{
 if(!o.datum_start) return
@@ -145,7 +128,7 @@ setJobs(result)
 
 useEffect(()=>{loadJobs()},[loadJobs])
 
-/* ---------------- HOURS ---------------- */
+/* HOURS */
 
 useEffect(()=>{
 
@@ -166,7 +149,7 @@ loadHours()
 
 },[])
 
-/* ---------------- TODAY JOBS ---------------- */
+/* TODAY JOBS */
 
 const todayJobs = jobs.filter(j=>j.date===today)
 
@@ -178,7 +161,7 @@ todayJobs.length>0
 ? Math.round(done/todayJobs.length*100)
 :0
 
-/* ---------------- AI ROUTE ---------------- */
+/* AI ROUTE */
 
 const mapJobs = useMemo(()=>{
 
@@ -218,7 +201,7 @@ return route
 
 },[todayJobs])
 
-/* ---------------- WEEK STRIP ---------------- */
+/* WEEK STRIP */
 
 const weekDays = Array.from({length:7}).map((_,i)=>{
 
@@ -236,8 +219,6 @@ return(
 
 <div className="relative min-h-screen pb-28">
 
-<div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22]" />
-
 <div className="space-y-4 bg-zinc-800 p-5 rounded-xl">
 
 {/* HEADER */}
@@ -245,15 +226,11 @@ return(
 <div>
 
 <h1 className="text-xl font-semibold text-white">
-
 Arbete idag
-
 </h1>
 
 <p className="text-xs text-zinc-400">
-
 {format(new Date(),"EEEE d MMMM",{locale:sv})}
-
 </p>
 
 </div>
@@ -263,9 +240,7 @@ Arbete idag
 <div className="rounded-xl border border-white/5 bg-white/[0.04] p-3">
 
 <p className="text-xs mb-1 text-zinc-300">
-
 Dagens framsteg
-
 </p>
 
 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
@@ -278,9 +253,7 @@ style={{width:`${progress}%`}}
 </div>
 
 <p className="text-[10px] mt-1 text-right text-zinc-400">
-
 {progress}%
-
 </p>
 
 </div>
@@ -305,21 +278,15 @@ style={{width:`${progress}%`}}
 <div key={i} className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-2 py-2 text-center">
 
 <p className="text-[9px] text-zinc-400">
-
 {format(d.date,"EEE",{locale:sv})}
-
 </p>
 
 <p className="text-sm font-semibold">
-
 {format(d.date,"d")}
-
 </p>
 
 <p className="text-[10px] text-zinc-300">
-
 {d.count}
-
 </p>
 
 </div>
@@ -336,16 +303,6 @@ style={{width:`${progress}%`}}
 
 <div className="space-y-2">
 
-{todayJobs.length===0 &&(
-
-<div className="text-center text-xs text-zinc-400 border border-white/10 rounded-xl p-5">
-
-Inga uppdrag planerade idag
-
-</div>
-
-)}
-
 {mapJobs.map(job=>(
 
 <div key={job.id} className="rounded-xl border border-white/5 bg-white/[0.04] p-3 flex justify-between items-center">
@@ -353,24 +310,18 @@ Inga uppdrag planerade idag
 <div>
 
 <p className="font-medium text-white">
-
 {job.name}
-
 </p>
 
 <p className="text-xs text-zinc-400 flex items-center gap-1">
-
 <MapPin size={12}/>
 {job.address}
-
 </p>
 
 </div>
 
 <span className="text-[10px] px-2 py-1 rounded bg-primary/10">
-
 {job.status}
-
 </span>
 
 </div>
@@ -396,23 +347,17 @@ return(
 <div>
 
 <p className="text-[9px] uppercase text-zinc-400">
-
 {label}
-
 </p>
 
 <p className="text-lg font-semibold text-white">
-
 {value}
-
 </p>
 
 </div>
 
 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-
 {icon}
-
 </div>
 
 </div>
