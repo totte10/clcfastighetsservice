@@ -20,6 +20,7 @@ import { Loader2 } from "lucide-react"
 
 import Dashboard from "@/pages/Dashboard"
 import DispatchCenter from "@/pages/DispatchCenter"
+import FleetControlPage from "@/pages/FleetControlPage"
 
 import AreasPage from "@/pages/AreasPage"
 import TimePage from "@/pages/TimePage"
@@ -46,13 +47,9 @@ import RoutePlanningPage from "@/pages/RoutePlanningPage"
 import LoginPage from "@/pages/LoginPage"
 import NotFound from "@/pages/NotFound"
 
-
 const queryClient = new QueryClient()
 
-
-/*
-PROTECTED ROUTES
-*/
+/* PROTECTED ROUTES */
 
 function ProtectedRoutes(){
 
@@ -62,9 +59,7 @@ if(loading){
 
 return(
 <div className="min-h-screen flex items-center justify-center bg-background">
-
 <Loader2 className="h-8 w-8 animate-spin text-primary"/>
-
 </div>
 )
 
@@ -80,54 +75,34 @@ return(
 
 <Routes>
 
-{/* DASHBOARD */}
-
 <Route path="/" element={<Dashboard/>} />
-
-{/* DISPATCH */}
 
 <Route path="/dispatch" element={<DispatchCenter/>} />
 
-{/* TIME */}
+<Route path="/fleet" element={<FleetControlPage/>} />
 
 <Route path="/time" element={<TimePage/>} />
 <Route path="/time/reports" element={<AllTimeReportsPage/>} />
 
-{/* PROJECTS */}
-
 <Route path="/projects" element={<ProjectsPage/>} />
 <Route path="/planning" element={<PlanningPage/>} />
-
-{/* AREAS */}
 
 <Route path="/areas" element={<AreasPage/>} />
 <Route path="/egna" element={<EgnaOmradenPage/>} />
 <Route path="/tidx" element={<TidxSopningarPage/>} />
 
-{/* CUSTOMERS */}
-
 <Route path="/optimal" element={<OptimalPage/>} />
 <Route path="/tmm" element={<TmmPage/>} />
-
-{/* COMMUNICATION */}
 
 <Route path="/chat" element={<ChatPage/>} />
 <Route path="/voice" element={<VoicePage/>} />
 
-{/* ROUTING */}
-
 <Route path="/route" element={<RoutePlanningPage/>} />
-
-{/* REPORTS */}
 
 <Route path="/payroll" element={<PayrollPage/>} />
 <Route path="/missing-coords" element={<MissingCoordinatesPage/>} />
 
-{/* ADMIN */}
-
 <Route path="/admin" element={<AdminPage/>} />
-
-{/* 404 */}
 
 <Route path="*" element={<NotFound/>} />
 
@@ -139,10 +114,7 @@ return(
 
 }
 
-
-/*
-PUBLIC ROUTES
-*/
+/* PUBLIC ROUTES */
 
 function AppRoutes(){
 
@@ -152,9 +124,7 @@ if(loading){
 
 return(
 <div className="min-h-screen flex items-center justify-center bg-background">
-
 <Loader2 className="h-8 w-8 animate-spin text-primary"/>
-
 </div>
 )
 
@@ -177,10 +147,7 @@ element={user ? <Navigate to="/" replace /> : <LoginPage/>}
 
 }
 
-
-/*
-ROOT APP
-*/
+/* ROOT APP */
 
 export default function App(){
 
