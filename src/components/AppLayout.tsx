@@ -54,7 +54,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <div className="relative flex items-center justify-center">
 
                 <img
-                  src="/everyvear.svg"
+                  src="/apple-touch-icon.png"
                   className="
                   h-10
                   w-10
