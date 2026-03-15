@@ -1,9 +1,9 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/AppSidebar"
-import { NotificationBell } from "@/components/NotificationBell"
-import BottomNav from "@/components/BottomNav"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { NotificationBell } from "@/components/NotificationBell";
+import BottomNav from "@/components/BottomNav";
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+export function AppLayout({ children }: {children: React.ReactNode;}) {
 
   return (
 
@@ -21,25 +21,25 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* PREMIUM TOPBAR */}
 
           <header
-            className="
-            h-[64px]
-            flex
-            items-center
-            justify-between
-            px-4
-            md:px-6
-            sticky
-            top-0
-            z-50
-            border-b
-            border-white/5
-            bg-gradient-to-b
-            from-[#0b1220]/90
-            to-[#0b1220]/40
-            backdrop-blur-2xl
-            shadow-[0_10px_40px_rgba(0,0,0,0.6)]
-            "
-          >
+            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 border-b border-white/5 bg-gradient-to-b from-[#0b1220]/90 to-[#0b1220]/40 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] pb-[10px] mt-[20px] pt-[10px]">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
 
             {/* Sidebar button */}
 
@@ -61,8 +61,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   object-contain
                   rounded-xl
                   drop-shadow-[0_0_12px_rgba(59,130,246,0.8)]
-                  "
-                />
+                  " />
+                
 
                 <div
                   className="
@@ -72,8 +72,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   bg-blue-500/20
                   blur-xl
                   opacity-40
-                  "
-                />
+                  " />
+                
 
               </div>
 
@@ -95,8 +95,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 bg-emerald-400
                 rounded-full
                 animate-pulse
-                "
-              />
+                " />
+              
 
             </div>
 
@@ -116,8 +116,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             md:px-8
             pt-6
             pb-[120px]
-            "
-          >
+            ">
+            
 
             {children}
 
@@ -134,7 +134,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       </div>
 
-    </SidebarProvider>
+    </SidebarProvider>);
 
-  )
+
 }
