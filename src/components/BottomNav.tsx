@@ -55,7 +55,7 @@ export default function BottomNav() {
       <button onClick={() => navigate("/")} className="flex flex-col items-center -mt-6">
         <div className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 rounded-none border-solid flex items-center justify-center border-0 bg-inherit pr-0 gap-0 py-0 px-0 border-[#1b1f27]/0 pb-0 pl-0 pt-0">
           <img
-            className="w-132px] h-[132px] rounded-none shadow object-contain border-secondary border border-solid" src="/lovable-uploads/498cabb5-b471-4489-8a6f-7aa14ad1d997.png" />
+            className="w-132px] h-[132px] rounded-none shadow border-secondary border-solid object-scale-down border-2" src="/lovable-uploads/498cabb5-b471-4489-8a6f-7aa14ad1d997.png" />
           
           
         </div>
