@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
-import { DashboardWorkerMap } from "@/components/DashboardWorkerMap"
+import { DispatchMap } from "@/components/maps/DispatchMap"
 
 import {
 CalendarDays,
@@ -34,31 +34,30 @@ const [weeklyHours,setWeeklyHours] = useState(0)
 
 const today = format(new Date(),"yyyy-MM-dd")
 
-/* ---------------- LOAD ALL JOBS ---------------- */
+/* LOAD JOBS */
 
 const loadJobs = useCallback(async()=>{
 
-const [projects,tidx,egna,tmm,optimal] = await Promise.all([
+const [
+projects,
+tidx,
+egna,
+tmm,
+optimal
+] = await Promise.all([
 
 supabase.from("projects").select("*"),
-
 supabase.from("tidx_entries").select("*"),
-
 supabase.from("egna_entries").select("*"),
-
 supabase.from("tmm_entries").select("*"),
-
 supabase.from("optimal_entries").select("*")
 
 ])
 
-const result:Job[] = []
-
-/* PROJECTS */
+const result:Job[]=[]
 
 projects.data?.forEach((p:any)=>{
 if(!p.datum_planerat) return
-
 result.push({
 id:`project-${p.id}`,
 name:p.name || "Projekt",
@@ -71,11 +70,8 @@ source:"project"
 })
 })
 
-/* TIDX */
-
 tidx.data?.forEach((t:any)=>{
 if(!t.datum_planerat) return
-
 result.push({
 id:`tidx-${t.id}`,
 name:t.omrade || t.address,
@@ -88,11 +84,8 @@ source:"tidx"
 })
 })
 
-/* EGNA */
-
 egna.data?.forEach((e:any)=>{
 if(!e.datum_planerat) return
-
 result.push({
 id:`egna-${e.id}`,
 name:e.address,
@@ -105,11 +98,8 @@ source:"egna"
 })
 })
 
-/* TMM */
-
 tmm.data?.forEach((t:any)=>{
 if(!t.datum) return
-
 result.push({
 id:`tmm-${t.id}`,
 name:t.beskrivning || t.address,
@@ -122,11 +112,8 @@ source:"tmm"
 })
 })
 
-/* OPTIMAL */
-
 optimal.data?.forEach((o:any)=>{
 if(!o.datum_start) return
-
 result.push({
 id:`optimal-${o.id}`,
 name:o.name,
@@ -145,7 +132,7 @@ setJobs(result)
 
 useEffect(()=>{loadJobs()},[loadJobs])
 
-/* ---------------- HOURS ---------------- */
+/* HOURS */
 
 useEffect(()=>{
 
@@ -166,7 +153,7 @@ loadHours()
 
 },[])
 
-/* ---------------- TODAY JOBS ---------------- */
+/* TODAY JOBS */
 
 const todayJobs = jobs.filter(j=>j.date===today)
 
@@ -178,7 +165,7 @@ todayJobs.length>0
 ? Math.round(done/todayJobs.length*100)
 :0
 
-/* ---------------- AI ROUTE ---------------- */
+/* AI ROUTE */
 
 const mapJobs = useMemo(()=>{
 
@@ -218,7 +205,7 @@ return route
 
 },[todayJobs])
 
-/* ---------------- WEEK STRIP ---------------- */
+/* WEEK */
 
 const weekDays = Array.from({length:7}).map((_,i)=>{
 
@@ -296,7 +283,7 @@ style={{width:`${progress}%`}}
 
 </div>
 
-{/* WEEK */}
+{/* WEEK STRIP */}
 
 <div className="flex gap-2 overflow-x-auto">
 
@@ -328,9 +315,9 @@ style={{width:`${progress}%`}}
 
 </div>
 
-{/* MAP */}
+{/* DISPATCH MAP */}
 
-{mapJobs.length>0 && <DashboardWorkerMap jobs={mapJobs}/>}
+{mapJobs.length>0 && <DispatchMap jobs={mapJobs}/>}
 
 {/* JOB LIST */}
 
