@@ -22,7 +22,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Topbar */}
 
           <header
-            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-zinc-200 border-0 bg-white">
+            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-0 bg-zinc-800 pt-[95px] pb-[30px] border-zinc-950">
 
 
 
@@ -54,7 +54,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
 
                 <img
 
-                  className="h-9 w-9 rounded-none shadow-none object-contain opacity-100" src="/lovable-uploads/7963cbbf-367d-4ad5-b9da-7c4df26ef52e.png" />
+                  className="h-9 w-9 rounded-none shadow-none object-contain opacity-100" src="/lovable-uploads/eb761a10-27f3-4121-809d-7e0154afd1e3.png" />
                 
 
                 <span className="hidden md:block font-semibold tracking-tight text-zinc-800">
@@ -76,7 +76,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Main content */}
 
           <main
-            className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 md:px-8 pt-6 pb-[120px] border-0 bg-primary-foreground">
+            className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 md:px-8 pb-[120px] border-0 bg-zinc-600 pt-[15px]">
 
 
 
