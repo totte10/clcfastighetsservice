@@ -22,7 +22,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Topbar */}
 
           <header
-            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-0 pt-[95px] pb-[30px] border-zinc-950 bg-zinc-700">
+            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-0 pt-[95px] pb-[30px] border-zinc-950 bg-zinc-700/[0.74]">
 
 
 
