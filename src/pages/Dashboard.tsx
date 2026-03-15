@@ -1,55 +1,41 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
+import { DashboardWorkerMap } from "@/components/DashboardWorkerMap"
+
 import {
 CalendarDays,
 Play,
 Check,
 Timer,
 Trophy,
-Medal
+Medal,
+MapPin
 } from "lucide-react"
-
-import { DashboardWorkerMap } from "@/components/DashboardWorkerMap"
 
 import { format, addDays, getISOWeek } from "date-fns"
 import { sv } from "date-fns/locale"
 
-
-
-interface Job {
+interface Job{
 id:string
 name:string
 address:string
-status:string
 date:string
+status:string
 lat?:number
 lng?:number
 }
-
-
-
-interface LeaderboardEntry{
-userId:string
-name:string
-hours:number
-}
-
-
 
 export default function Dashboard(){
 
 const { user } = useAuth()
 
 const [jobs,setJobs] = useState<Job[]>([])
-const [leaderboard,setLeaderboard] = useState<LeaderboardEntry[]>([])
 const [weeklyHours,setWeeklyHours] = useState(0)
 
 const today = format(new Date(),"yyyy-MM-dd")
 
-
-
-/* LOAD JOBS (SYNC WITH PLANNING) */
+/* LOAD JOBS */
 
 const loadJobs = useCallback(async()=>{
 
@@ -76,7 +62,6 @@ supabase.from("optimal_entries").select("id,name,address,datum_start,status,lat,
 const result:Job[] = []
 
 projects.data?.forEach(p=>{
-
 result.push({
 id:p.id,
 name:p.name,
@@ -86,11 +71,9 @@ date:(p.datum_planerat||"").slice(0,10),
 lat:p.lat,
 lng:p.lng
 })
-
 })
 
 tidx.data?.forEach(t=>{
-
 result.push({
 id:t.id,
 name:t.omrade || t.address,
@@ -100,11 +83,9 @@ date:(t.datum_planerat||"").slice(0,10),
 lat:t.lat,
 lng:t.lng
 })
-
 })
 
 egna.data?.forEach(e=>{
-
 result.push({
 id:e.id,
 name:e.address,
@@ -114,11 +95,9 @@ date:(e.datum_planerat||"").slice(0,10),
 lat:e.lat,
 lng:e.lng
 })
-
 })
 
 tmm.data?.forEach(t=>{
-
 result.push({
 id:t.id,
 name:t.beskrivning,
@@ -128,11 +107,9 @@ date:(t.datum||"").slice(0,10),
 lat:t.lat,
 lng:t.lng
 })
-
 })
 
 optimal.data?.forEach(o=>{
-
 result.push({
 id:o.id,
 name:o.name,
@@ -142,19 +119,15 @@ date:(o.datum_start||"").slice(0,10),
 lat:o.lat,
 lng:o.lng
 })
-
 })
 
 setJobs(result)
 
 },[])
 
-
-
 useEffect(()=>{
 loadJobs()
 },[loadJobs])
-
 
 
 /* HOURS */
@@ -179,64 +152,6 @@ loadHours()
 },[])
 
 
-
-/* LEADERBOARD */
-
-useEffect(()=>{
-
-async function loadLeaderboard(){
-
-const { data } = await supabase
-.from("user_time_entries")
-.select("user_id,hours")
-
-if(!data) return
-
-const map = new Map<string,number>()
-
-data.forEach((r:any)=>{
-
-map.set(
-r.user_id,
-(map.get(r.user_id) ?? 0) + (Number(r.hours)||0)
-)
-
-})
-
-const ids = Array.from(map.keys())
-
-const { data:profiles } = await supabase
-.from("profiles")
-.select("id,full_name")
-.in("id",ids)
-
-const nameMap = new Map<string,string>()
-
-profiles?.forEach((p:any)=>{
-nameMap.set(p.id,p.full_name)
-})
-
-setLeaderboard(
-
-ids.map(id=>({
-
-userId:id,
-name:nameMap.get(id)||"Okänd",
-hours:map.get(id)??0
-
-}))
-.sort((a,b)=>b.hours-a.hours)
-
-)
-
-}
-
-loadLeaderboard()
-
-},[])
-
-
-
 /* TODAY JOBS */
 
 const todayJobs = jobs.filter(j=>j.date===today)
@@ -244,6 +159,10 @@ const todayJobs = jobs.filter(j=>j.date===today)
 const done = todayJobs.filter(j=>j.status==="done").length
 const started = todayJobs.filter(j=>j.status==="in-progress").length
 
+const progress =
+todayJobs.length > 0
+? Math.round((done / todayJobs.length) * 100)
+: 0
 
 
 /* MAP */
@@ -253,18 +172,15 @@ const mapJobs = useMemo(()=>{
 return todayJobs
 .filter(j=>j.lat && j.lng)
 .map(j=>({
-
 id:j.id,
 name:j.name,
 address:j.address,
 lat:j.lat!,
 lng:j.lng!,
 status:j.status
-
 }))
 
 },[todayJobs])
-
 
 
 /* WEEK STRIP */
@@ -280,7 +196,6 @@ const count = jobs.filter(j=>j.date===str).length
 return {date:d,count}
 
 })
-
 
 
 return(
@@ -310,24 +225,47 @@ Arbete idag
 </div>
 
 
+{/* PROGRESS */}
+
+<div className="rounded-xl border border-white/5 bg-white/[0.04] p-3">
+
+<p className="text-xs mb-1 text-muted-foreground">
+
+Dagens framsteg
+
+</p>
+
+<div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+
+<div
+className="h-full bg-primary"
+style={{width:`${progress}%`}}
+/>
+
+</div>
+
+<p className="text-[10px] mt-1 text-right">
+
+{progress}%
+
+</p>
+
+</div>
+
 
 {/* STATS */}
 
 <div className="grid grid-cols-2 gap-3">
 
 <Stat label="Totalt" value={todayJobs.length} icon={<CalendarDays size={16}/>}/>
-
 <Stat label="Påbörjade" value={started} icon={<Play size={16}/>}/>
-
 <Stat label="Klara" value={done} icon={<Check size={16}/>}/>
-
 <Stat label={`v.${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer size={16}/>}/>
 
 </div>
 
 
-
-{/* WEEK STRIP */}
+{/* WEEK */}
 
 <div className="flex gap-2 overflow-x-auto">
 
@@ -335,15 +273,8 @@ Arbete idag
 
 <div
 key={i}
-className="
-min-w-[60px]
-rounded-xl
-border border-white/5
-bg-white/[0.04]
-px-2
-py-2
-text-center
-">
+className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-2 py-2 text-center"
+>
 
 <p className="text-[9px] text-muted-foreground">
 
@@ -370,94 +301,25 @@ text-center
 </div>
 
 
-
 {/* MAP */}
 
 {mapJobs.length>0 &&
-
 <DashboardWorkerMap jobs={mapJobs}/>
-
 }
 
 
-
-{/* LEADERBOARD */}
-
-{leaderboard.length>0 &&
-
-<div className="rounded-xl border border-white/5 bg-white/[0.04] p-3">
-
-<div className="flex items-center gap-2 mb-2">
-
-<Trophy className="h-4 w-4 text-primary"/>
-
-<p className="text-xs font-semibold">
-
-Topplista – Timmar
-
-</p>
-
-</div>
-
-{leaderboard.slice(0,5).map((u,i)=>(
-
-<div
-key={u.userId}
-className="flex items-center justify-between text-xs py-1"
->
-
-<div className="flex items-center gap-2">
-
-{i<3 ?
-<Medal className="h-3 w-3 text-yellow-400"/> :
-<span className="text-muted-foreground">{i+1}</span>
-}
-
-{u.name}
-
-</div>
-
-<span className="font-semibold">
-
-{u.hours.toFixed(1)}h
-
-</span>
-
-</div>
-
-))}
-
-</div>
-
-}
-
-
-
-{/* JOB LIST */}
+{/* JOBS */}
 
 <div className="space-y-2">
-
-{todayJobs.length===0 &&
-
-<div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-5">
-
-Inga uppdrag planerade idag
-
-</div>
-
-}
 
 {todayJobs.map(job=>(
 
 <div
 key={job.id}
-className="
-rounded-xl
-border border-white/5
-bg-white/[0.04]
-p-3
-text-sm
-">
+className="rounded-xl border border-white/5 bg-white/[0.04] p-3 flex justify-between items-center"
+>
+
+<div>
 
 <p className="font-medium">
 
@@ -465,11 +327,26 @@ text-sm
 
 </p>
 
-<p className="text-xs text-muted-foreground">
+<p className="text-xs text-muted-foreground flex items-center gap-1">
 
+<MapPin size={12}/>
 {job.address}
 
 </p>
+
+</div>
+
+<span className="
+text-[10px]
+px-2
+py-1
+rounded
+bg-primary/10
+">
+
+{job.status}
+
+</span>
 
 </div>
 
@@ -486,25 +363,11 @@ text-sm
 }
 
 
-
-function Stat({
-label,
-value,
-icon
-}:{label:string,value:string|number,icon:React.ReactNode}){
+function Stat({label,value,icon}:{label:string,value:any,icon:any}){
 
 return(
 
-<div className="
-rounded-xl
-border border-white/5
-bg-white/[0.04]
-px-3
-py-2.5
-flex
-items-center
-justify-between
-">
+<div className="rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2.5 flex items-center justify-between">
 
 <div>
 
