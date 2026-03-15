@@ -21,7 +21,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* PREMIUM TOPBAR */}
 
           <header
-            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 border-b border-white/5 bg-gradient-to-b from-[#0b1220]/90 to-[#0b1220]/40 backdrop-blur-2xl mt-0 shadow-none pb-[30px] pt-[100px]">
+            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 border-b border-white/5 bg-gradient-to-b from-[#0b1220]/90 to-[#0b1220]/40 backdrop-blur-2xl mt-0 shadow-none pb-[30px] pt-[95px]">
 
 
 
