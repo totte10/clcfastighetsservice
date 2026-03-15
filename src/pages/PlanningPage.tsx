@@ -1,584 +1,449 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
-
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-import { CalendarDays } from "lucide-react";
-
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  addMonths,
-  subMonths,
-  isToday } from
-"date-fns";
-
+import { format, addDays, subDays, isToday, isSameDay } from "date-fns";
 import { sv } from "date-fns/locale";
+import { Plus, MapPin, Hash, Pencil, X, Check, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
-type EntryType =
-"tidx" |
-"egna" |
-"project" |
-"optimal" |
-"tmm";
-
-interface PlanningItem {
+interface Project {
   id: string;
-  type: EntryType;
-  title: string;
+  name: string;
   address: string;
-  date: string;
+  datum_planerat: string;
+  project_number: string;
   status: string;
-  project_number?: string;
 }
 
-function color(type: EntryType) {
-
-  switch (type) {
-
-    case "tidx":
-      return "bg-blue-500";
-
-    case "egna":
-      return "bg-emerald-500";
-
-    case "optimal":
-      return "bg-purple-500";
-
-    case "tmm":
-      return "bg-orange-500";
-
-    default:
-      return "bg-cyan-500";
-
-  }
-
+interface Worker {
+  id: string;
+  full_name: string;
 }
 
-function tableFromType(type: EntryType) {
-
-  switch (type) {
-
-    case "tidx":
-      return "tidx_entries";
-
-    case "egna":
-      return "egna_entries";
-
-    case "project":
-      return "projects";
-
-    case "optimal":
-      return "optimal_entries";
-
-    case "tmm":
-      return "tmm_entries";
-
-  }
-
+interface Assignment {
+  entry_id: string;
+  entry_type: string;
+  user_id: string;
 }
+
+const PROJECT_TYPES = [
+  { value: "maskinsopning", label: "Maskinsopning" },
+  { value: "framblasning", label: "Framblåsning" },
+  { value: "snorojning", label: "Snöröjning" },
+  { value: "halkbekampning", label: "Halkbekämpning" },
+  { value: "ovrigt", label: "Övrigt" },
+];
 
 export default function PlanningPage() {
+  const { user, isAdmin } = useAuth();
+  const { toast } = useToast();
 
-  const { user } = useAuth();
-
-  const [items, setItems] = useState<PlanningItem[]>([]);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
-  const [editing, setEditing] = useState<PlanningItem | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [editProject, setEditProject] = useState<Project | null>(null);
   const [creating, setCreating] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
     address: "",
-    date: "",
-    project_number: ""
+    project_number: "",
+    datum_planerat: "",
+    status: "pending",
+    selectedWorkers: [] as string[],
   });
 
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-
-  useEffect(() => {
-
-    if (!user) return;
-
-    supabase.
-    from("user_roles").
-    select("role").
-    eq("user_id", user.id).
-    eq("role", "admin").
-    maybeSingle().
-    then(({ data }) => {
-      setIsAdmin(!!data);
-    });
-
-  }, [user]);
-
-  async function loadItems() {
-
-    const [
-
-    tidxRes,
-    egnaRes,
-    projRes,
-    optimalRes,
-    tmmRes] =
-
-    await Promise.all([
-
-    supabase.
-    from("tidx_entries").
-    select("id,omrade,address,datum_planerat,status"),
-
-    supabase.
-    from("egna_entries").
-    select("id,address,datum_planerat"),
-
-    supabase.
-    from("projects").
-    select("id,name,address,datum_planerat,status,project_number"),
-
-    supabase.
-    from("optimal_entries").
-    select("id,name,datum_start,status"),
-
-    supabase.
-    from("tmm_entries").
-    select("id,address,beskrivning,datum,status")]
-
-    );
-
-    const result: PlanningItem[] = [];
-
-    tidxRes.data?.forEach((r) => {
-      if (!r.datum_planerat) return;
-      result.push({
-        id: r.id,
-        type: "tidx",
-        title: r.omrade,
-        address: r.address ?? "",
-        date: r.datum_planerat.slice(0, 10),
-        status: r.status
-      });
-    });
-
-    egnaRes.data?.forEach((r) => {
-      if (!r.datum_planerat) return;
-      result.push({
-        id: r.id,
-        type: "egna",
-        title: r.address,
-        address: r.address,
-        date: r.datum_planerat.slice(0, 10),
-        status: "pending"
-      });
-    });
-
-    projRes.data?.forEach((r) => {
-      if (!r.datum_planerat) return;
-      result.push({
-        id: r.id,
-        type: "project",
-        title: r.name,
-        address: r.address ?? "",
-        date: r.datum_planerat.slice(0, 10),
-        status: r.status,
-        project_number: r.project_number
-      });
-    });
-
-    optimalRes.data?.forEach((r) => {
-      if (!r.datum_start) return;
-      result.push({
-        id: r.id,
-        type: "optimal",
-        title: r.name,
-        address: "",
-        date: r.datum_start.slice(0, 10),
-        status: r.status
-      });
-    });
-
-    tmmRes.data?.forEach((r) => {
-      if (!r.datum) return;
-      result.push({
-        id: r.id,
-        type: "tmm",
-        title: r.beskrivning,
-        address: r.address ?? "",
-        date: r.datum.slice(0, 10),
-        status: r.status
-      });
-    });
-
-    setItems(result);
-
-  }
-
-  useEffect(() => {
-    loadItems();
+  const load = useCallback(async () => {
+    const [projRes, workRes, assignRes] = await Promise.all([
+      supabase.from("projects").select("id,name,address,datum_planerat,project_number,status"),
+      supabase.from("profiles").select("id,full_name"),
+      supabase.from("project_assignments").select("entry_id,entry_type,user_id"),
+    ]);
+    setProjects(projRes.data ?? []);
+    setWorkers(workRes.data ?? []);
+    setAssignments(assignRes.data ?? []);
   }, []);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
+  useEffect(() => { load(); }, [load]);
 
-  const days = eachDayOfInterval({
-    start: monthStart,
-    end: monthEnd
-  });
+  const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  const itemsByDate = useMemo(() => {
+  const filteredProjects = useMemo(() =>
+    projects.filter(p => (p.datum_planerat || "").slice(0, 10) === dateStr),
+    [projects, dateStr]
+  );
 
-    const map = new Map<string, PlanningItem[]>();
+  // Generate horizontal date strip (7 days centered on selectedDate)
+  const dateStrip = useMemo(() => {
+    return Array.from({ length: 9 }, (_, i) => addDays(selectedDate, i - 4));
+  }, [selectedDate]);
 
-    items.forEach((i) => {
-      const arr = map.get(i.date) ?? [];
-      arr.push(i);
-      map.set(i.date, arr);
+  function getAssignedWorkers(projectId: string): string[] {
+    return assignments
+      .filter(a => a.entry_id === projectId && a.entry_type === "project")
+      .map(a => a.user_id);
+  }
+
+  function getWorkerNames(projectId: string): string {
+    const ids = getAssignedWorkers(projectId);
+    if (ids.length === 0) return "Inga tilldelade";
+    return ids.map(id => workers.find(w => w.id === id)?.full_name || "Okänd").join(", ");
+  }
+
+  function openEdit(project: Project) {
+    setEditProject(project);
+    setForm({
+      name: project.name,
+      address: project.address,
+      project_number: project.project_number,
+      datum_planerat: project.datum_planerat,
+      status: project.status,
+      selectedWorkers: getAssignedWorkers(project.id),
     });
+  }
 
-    return map;
-
-  }, [items]);
-
-  const selectedItems = useMemo(() => {
-
-    if (!selectedDay) return [];
-
-    const key = format(selectedDay, "yyyy-MM-dd");
-
-    return itemsByDate.get(key) ?? [];
-
-  }, [selectedDay, itemsByDate]);
-
-  if (isAdmin === null) return null;
-  if (!isAdmin) return <Navigate to="/" replace />;
+  function openCreate() {
+    setCreating(true);
+    setForm({
+      name: "",
+      address: "",
+      project_number: "",
+      datum_planerat: dateStr,
+      status: "pending",
+      selectedWorkers: [],
+    });
+  }
 
   async function saveEdit() {
-
-    if (!editing) return;
-
-    await supabase.
-    from(tableFromType(editing.type)).
-    update({
+    if (!editProject) return;
+    await supabase.from("projects").update({
       name: form.name,
       address: form.address,
       project_number: form.project_number,
-      datum_planerat: form.date
-    }).
-    eq("id", editing.id);
+      datum_planerat: form.datum_planerat,
+      status: form.status,
+    }).eq("id", editProject.id);
 
-    await loadItems();
-    setEditing(null);
+    // Update assignments
+    await supabase.from("project_assignments")
+      .delete()
+      .eq("entry_id", editProject.id)
+      .eq("entry_type", "project");
 
+    if (form.selectedWorkers.length > 0) {
+      await supabase.from("project_assignments").insert(
+        form.selectedWorkers.map(uid => ({
+          entry_id: editProject.id,
+          entry_type: "project",
+          user_id: uid,
+        }))
+      );
+    }
+
+    toast({ title: "Uppdrag uppdaterat" });
+    setEditProject(null);
+    await load();
   }
 
-  async function createJob() {
-
-    await supabase.
-    from("projects").
-    insert({
+  async function createProject() {
+    const { data, error } = await supabase.from("projects").insert({
       name: form.name,
       address: form.address,
       project_number: form.project_number,
-      datum_planerat: form.date
-    });
+      datum_planerat: form.datum_planerat,
+      status: form.status,
+    }).select("id").single();
 
-    await loadItems();
+    if (error || !data) {
+      toast({ title: "Fel", description: error?.message, variant: "destructive" });
+      return;
+    }
+
+    if (form.selectedWorkers.length > 0) {
+      await supabase.from("project_assignments").insert(
+        form.selectedWorkers.map(uid => ({
+          entry_id: data.id,
+          entry_type: "project",
+          user_id: uid,
+        }))
+      );
+    }
+
+    toast({ title: "Uppdrag skapat" });
     setCreating(false);
-
+    await load();
   }
+
+  function toggleWorker(workerId: string) {
+    setForm(prev => ({
+      ...prev,
+      selectedWorkers: prev.selectedWorkers.includes(workerId)
+        ? prev.selectedWorkers.filter(id => id !== workerId)
+        : [...prev.selectedWorkers, workerId],
+    }));
+  }
+
+  if (!isAdmin) return <Navigate to="/" replace />;
+
+  const dialogOpen = !!editProject || creating;
 
   return (
+    <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324]">
+      <div className="max-w-md mx-auto px-4 pt-6 pb-32 space-y-5">
 
-    <div className="space-y-6 pb-32">
+        {/* Header */}
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight text-white">Planering</h1>
+          <p className="text-sm text-white/40">
+            {format(new Date(), "EEEE d MMMM yyyy", { locale: sv })}
+          </p>
+        </div>
 
-<div className="flex justify-between items-center">
+        {/* Date strip */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setSelectedDate(d => subDays(d, 1))}
+            className="p-1.5 rounded-xl text-white/40 hover:text-white/70 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
 
-<div className="flex items-center gap-3">
+          <div className="flex-1 flex gap-1 overflow-x-auto scrollbar-hide">
+            {dateStrip.map((day) => {
+              const active = isSameDay(day, selectedDate);
+              const today = isToday(day);
+              const dayJobs = projects.filter(p => (p.datum_planerat || "").slice(0, 10) === format(day, "yyyy-MM-dd")).length;
+              return (
+                <button
+                  key={day.toISOString()}
+                  onClick={() => setSelectedDate(day)}
+                  className={`
+                    flex-1 min-w-[44px] py-2 rounded-xl text-center transition-all
+                    ${active
+                      ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
+                      : today
+                        ? "bg-white/[0.08] text-white border border-white/10"
+                        : "text-white/50 hover:bg-white/[0.04]"
+                    }
+                  `}
+                >
+                  <p className="text-[9px] font-medium uppercase tracking-wider">
+                    {format(day, "EEE", { locale: sv })}
+                  </p>
+                  <p className={`text-sm font-bold ${active ? "text-white" : ""}`}>
+                    {format(day, "d")}
+                  </p>
+                  {dayJobs > 0 && (
+                    <div className={`w-1.5 h-1.5 rounded-full mx-auto mt-0.5 ${active ? "bg-white" : "bg-blue-400"}`} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-<CalendarDays className="w-7 h-7 text-emerald-400" />
+          <button
+            onClick={() => setSelectedDate(d => addDays(d, 1))}
+            className="p-1.5 rounded-xl text-white/40 hover:text-white/70 transition-colors"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
 
-<h1 className="text-3xl font-semibold">
-Planering
-</h1>
+        {/* Selected date label */}
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-blue-400" />
+          <span className="text-sm font-medium text-white/70">
+            {format(selectedDate, "EEEE d MMMM", { locale: sv })}
+          </span>
+          <span className="ml-auto text-xs text-white/30">
+            {filteredProjects.length} uppdrag
+          </span>
+        </div>
 
-</div>
+        {/* Job cards */}
+        <div className="space-y-3">
+          {filteredProjects.length === 0 ? (
+            <div className="rounded-2xl bg-[#111827] border border-white/5 p-8 text-center shadow-xl">
+              <CalendarDays className="h-8 w-8 text-white/10 mx-auto mb-3" />
+              <p className="text-sm text-white/30">Inga uppdrag denna dag</p>
+              <p className="text-xs text-white/15 mt-1">Tryck + för att skapa</p>
+            </div>
+          ) : (
+            filteredProjects.map((project) => {
+              const workerNames = getWorkerNames(project.id);
+              const statusColor = project.status === "done"
+                ? "bg-emerald-500/15 text-emerald-400"
+                : project.status === "in-progress"
+                  ? "bg-amber-500/15 text-amber-400"
+                  : "bg-white/5 text-white/40";
 
-<div className="flex items-center gap-3">
-
-<Button
-            variant="ghost"
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-            
-←
-</Button>
-
-<h2 className="text-lg font-medium">
-{format(currentMonth, "MMMM yyyy", { locale: sv })}
-</h2>
-
-<Button
-            variant="ghost"
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-            
-→
-</Button>
-
-<Button
-            className="bg-emerald-500 hover:bg-emerald-600"
-            onClick={() => {
-
-              setCreating(true);
-
-              setForm({
-                name: "",
-                address: "",
-                date: format(new Date(), "yyyy-MM-dd"),
-                project_number: ""
-              });
-
-            }}>
-            
-
-Nytt uppdrag
-
-</Button>
-
-</div>
-
-</div>
-
-<div className="grid grid-cols-7 gap-3 text-center text-sm text-white/40">
-
-{["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"].map((d) =>
-        <div key={d}>{d}</div>
-        )}
-
-</div>
-
-<div className="grid grid-cols-7 gap-3 text-destructive-foreground bg-transparent">
-
-{days.map((day) => {
-
-          const key = format(day, "yyyy-MM-dd");
-          const dayItems = itemsByDate.get(key) ?? [];
-
-          return (
-
-            <Card
-              key={key}
-              onClick={() => setSelectedDay(day)}
-              className={`p-3 h-28 cursor-pointer border border-white/5 hover:border-emerald-500/40 transition
-${isToday(day) ? "bg-emerald-500/10 border-emerald-500/40" : "bg-[#071226]"}`}>
-              
-
-<div className="text-sm mb-2 font-medium">
-{day.getDate()}
-</div>
-
-<div className="space-y-1">
-
-{dayItems.slice(0, 3).map((item) =>
-
+              return (
                 <div
-                  key={item.id}
-                  className="flex items-center gap-2 text-xs truncate">
-                  
+                  key={project.id}
+                  className="rounded-2xl bg-[#111827] border border-white/5 p-4 shadow-xl"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${statusColor}`}>
+                          {project.status === "done" ? "Klar" : project.status === "in-progress" ? "Pågår" : "Planerad"}
+                        </span>
+                        {project.project_number && (
+                          <span className="text-[10px] text-white/25 flex items-center gap-0.5">
+                            <Hash className="h-2.5 w-2.5" />
+                            {project.project_number}
+                          </span>
+                        )}
+                      </div>
 
-<div className={`w-2 h-2 rounded-full ${color(item.type)}`} />
+                      <h3 className="font-semibold text-white text-sm leading-tight truncate">
+                        {project.name}
+                      </h3>
 
-<span className="truncate">{item.title}</span>
+                      {project.address && (
+                        <p className="text-xs text-white/35 flex items-center gap-1">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{project.address}</span>
+                        </p>
+                      )}
 
-</div>
+                      <p className="text-[11px] text-white/25 truncate">
+                        {workerNames}
+                      </p>
+                    </div>
 
-                )}
-
-{dayItems.length > 3 &&
-
-                <div className="text-xs text-white/40">
-
-+{dayItems.length - 3} fler
-
-</div>
-
-                }
-
-</div>
-
-</Card>);
-
-
-
-        })}
-
-</div>
-
-{selectedDay &&
-
-      <Card className="bg-[#071226] border border-white/5 p-5">
-
-<h2 className="text-lg font-semibold mb-4">
-
-{format(selectedDay, "EEEE d MMMM yyyy", { locale: sv })}
-
-</h2>
-
-<div className="space-y-3">
-
-{selectedItems.map((item) =>
-
-          <div
-            key={item.id}
-            onClick={() => {
-
-              setEditing(item);
-
-              setForm({
-                name: item.title,
-                address: item.address,
-                date: item.date,
-                project_number: item.project_number ?? ""
-              });
-
-            }}
-            className="p-4 rounded-xl border border-white/5 hover:border-emerald-500/40 cursor-pointer">
-            
-
-<p className="font-medium">
-{item.title}
-</p>
-
-<p className="text-xs text-white/50">
-{item.address}
-</p>
-
-</div>
-
+                    <button
+                      onClick={() => openEdit(project)}
+                      className="shrink-0 mt-1 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/5 text-xs text-white/60 hover:text-white transition-all flex items-center gap-1.5"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Ändra
+                    </button>
+                  </div>
+                </div>
+              );
+            })
           )}
+        </div>
 
-</div>
+        {/* Floating create button */}
+        <button
+          onClick={openCreate}
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-400 shadow-2xl shadow-blue-500/30 flex items-center justify-center transition-all active:scale-95"
+        >
+          <Plus className="h-7 w-7 text-white" />
+        </button>
 
-</Card>
+        {/* Edit / Create Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          if (!open) { setEditProject(null); setCreating(false); }
+        }}>
+          <DialogContent className="bg-[#111827] border-white/5 text-white max-w-[calc(100vw-2rem)] sm:max-w-md rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-white">
+                {creating ? "Nytt uppdrag" : "Redigera uppdrag"}
+              </DialogTitle>
+            </DialogHeader>
 
-      }
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-xs text-white/40 font-medium">Namn</label>
+                <Input
+                  className="bg-white/[0.04] border-white/10 text-white placeholder:text-white/20 rounded-xl"
+                  placeholder="Projektnamn"
+                  value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                />
+              </div>
 
-{editing &&
+              <div className="space-y-1.5">
+                <label className="text-xs text-white/40 font-medium">Adress</label>
+                <Input
+                  className="bg-white/[0.04] border-white/10 text-white placeholder:text-white/20 rounded-xl"
+                  placeholder="Gatuadress"
+                  value={form.address}
+                  onChange={e => setForm({ ...form, address: e.target.value })}
+                />
+              </div>
 
-      <Dialog open onOpenChange={() => setEditing(null)}>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-white/40 font-medium">Projektnummer</label>
+                  <Input
+                    className="bg-white/[0.04] border-white/10 text-white placeholder:text-white/20 rounded-xl"
+                    placeholder="P-2026-001"
+                    value={form.project_number}
+                    onChange={e => setForm({ ...form, project_number: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-white/40 font-medium">Datum</label>
+                  <Input
+                    type="date"
+                    className="bg-white/[0.04] border-white/10 text-white rounded-xl [color-scheme:dark]"
+                    value={form.datum_planerat}
+                    onChange={e => setForm({ ...form, datum_planerat: e.target.value })}
+                  />
+                </div>
+              </div>
 
-<DialogContent className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs text-white/40 font-medium">Projekttyp</label>
+                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                  <SelectTrigger className="bg-white/[0.04] border-white/10 text-white rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a2234] border-white/10">
+                    {PROJECT_TYPES.map(pt => (
+                      <SelectItem key={pt.value} value={pt.value} className="text-white">{pt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-<DialogHeader>
+              {/* Workers */}
+              <div className="space-y-2">
+                <label className="text-xs text-white/40 font-medium">Tilldelade arbetare</label>
+                <div className="rounded-xl bg-white/[0.03] border border-white/5 p-3 space-y-2 max-h-48 overflow-y-auto">
+                  {workers.length === 0 ? (
+                    <p className="text-xs text-white/20">Inga arbetare hittade</p>
+                  ) : (
+                    workers.map(w => (
+                      <label
+                        key={w.id}
+                        className="flex items-center gap-3 py-1.5 px-1 rounded-lg hover:bg-white/[0.04] cursor-pointer transition-colors"
+                      >
+                        <Checkbox
+                          checked={form.selectedWorkers.includes(w.id)}
+                          onCheckedChange={() => toggleWorker(w.id)}
+                          className="border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                        />
+                        <span className="text-sm text-white/80">{w.full_name || "Okänd"}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
 
-<DialogTitle>
-Redigera uppdrag
-</DialogTitle>
-
-</DialogHeader>
-
-<Input
-            placeholder="Namn"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          
-
-<Input
-            placeholder="Adress"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })} />
-          
-
-<Input
-            placeholder="Projektnummer"
-            value={form.project_number}
-            onChange={(e) => setForm({ ...form, project_number: e.target.value })} />
-          
-
-<Input
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })} />
-          
-
-<Button
-            className="bg-emerald-500 hover:bg-emerald-600"
-            onClick={saveEdit}>
-            
-
-Spara ändringar
-
-</Button>
-
-</DialogContent>
-
-</Dialog>
-
-      }
-
-{creating &&
-
-      <Dialog open onOpenChange={() => setCreating(false)}>
-
-<DialogContent className="space-y-4">
-
-<DialogHeader>
-
-<DialogTitle>
-Nytt uppdrag
-</DialogTitle>
-
-</DialogHeader>
-
-<Input
-            placeholder="Namn"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          
-
-<Input
-            placeholder="Adress"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })} />
-          
-
-<Input
-            placeholder="Projektnummer"
-            value={form.project_number}
-            onChange={(e) => setForm({ ...form, project_number: e.target.value })} />
-          
-
-<Input
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })} />
-          
-
-<Button
-            className="bg-emerald-500 hover:bg-emerald-600"
-            onClick={createJob}>
-            
-
-Skapa uppdrag
-
-</Button>
-
-</DialogContent>
-
-</Dialog>
-
-      }
-
-</div>);
-
-
-
+              <Button
+                onClick={creating ? createProject : saveEdit}
+                disabled={!form.name.trim()}
+                className="w-full bg-blue-500 hover:bg-blue-400 text-white font-medium rounded-xl h-11"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                {creating ? "Skapa uppdrag" : "Spara ändringar"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
 }
