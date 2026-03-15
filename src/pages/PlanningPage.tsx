@@ -319,7 +319,7 @@ export default function PlanningPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324] text-[#f5faf7]/[0.02] bg-zinc-200">
-      <div className="max-w-md mx-auto px-4 pt-6 space-y-5 bg-zinc-800 py-0 pb-[240px]">
+      <div className="max-w-md mx-auto px-4 pt-6 space-y-5 bg-zinc-800 py-0 border-2 border-zinc-600 pb-[260px]">
 
         {/* Header */}
         <div className="space-y-1">

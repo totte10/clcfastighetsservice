@@ -22,7 +22,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Topbar */}
 
           <header
-            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-zinc-200 bg-zinc-700 border-0">
+            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-zinc-200 border-0 bg-primary-foreground">
 
 
 
@@ -53,8 +53,8 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
               <div className="flex items-center gap-2">
 
                 <img
-                  src="/apple-touch-icon.png"
-                  className="h-9 w-9 rounded-lg object-contain" />
+
+                  className="h-9 w-9 rounded-lg object-contain" src="/lovable-uploads/639e0839-9b62-42fb-a8c5-ce09b3f7ff52.png" />
                 
 
                 <span className="hidden md:block font-semibold tracking-tight text-zinc-800">
@@ -76,7 +76,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Main content */}
 
           <main
-            className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 md:px-8 pt-6 pb-[120px] bg-zinc-700">
+            className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 md:px-8 pt-6 pb-[120px] border-0 bg-primary-foreground">
 
 
 
