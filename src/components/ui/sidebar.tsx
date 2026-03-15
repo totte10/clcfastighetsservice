@@ -307,7 +307,7 @@ const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div
 SidebarHeader.displayName = "SidebarHeader";
 
 const SidebarFooter = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => {
-  return <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-2 border-2 border-zinc-800 bg-zinc-800", className)} {...props} />;
+  return <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-2 border-zinc-800 bg-zinc-800 border-0 shadow-none", className)} {...props} />;
 });
 SidebarFooter.displayName = "SidebarFooter";
 
