@@ -49,7 +49,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
 
             {/* Logo */}
 
-            <div className="flex-1 flex justify-center md:justify-start">
+            <div className="flex-1 flex justify-center md:justify-start pt-[50px] pb-[50px]">
 
               <div className="relative flex items-center justify-center">
 
