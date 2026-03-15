@@ -87,7 +87,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="bg-sidebar border-r border-sidebar-border/50">
-        <div className="p-4 flex items-center gap-3 pb-0 my-[4px] py-[60px] pt-[60px] bg-zinc-800 border-zinc-800">
+        <div className="p-4 flex items-center py-[60px] pt-[60px] bg-zinc-800 border-zinc-800 gap-[10px] my-0 pb-[5px]">
           <div className="w-9 h-9 overflow-hidden shrink-0 ring-1 ring-sidebar-border/50 rounded-none">
             <img alt="CLC" className="w-full h-full object-cover border-0 border-zinc-800" src="/lovable-uploads/9d2e95cf-3e49-443a-a987-d2763582e735.png" />
           </div>
