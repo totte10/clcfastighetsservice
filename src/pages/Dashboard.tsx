@@ -15,7 +15,8 @@ import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
 import {
   DashboardTaskCard,
   type DailyTask,
-  type Status } from
+  type Status,
+  type CompletionData } from
 "@/components/dashboard/DashboardTaskCard";
 import { Link } from "react-router-dom";
 import { format, getISOWeek, addDays } from "date-fns";
