@@ -318,7 +318,7 @@ export default function PlanningPage() {
   if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324] bg-primary-foreground">
+    <div className="min-h-screen bg-gradient-to-b from-[#060b16] to-[#0c1324] text-[#f5faf7]/[0.02] bg-zinc-200">
       <div className="max-w-md mx-auto px-4 pt-6 pb-32 space-y-5 bg-zinc-800">
 
         {/* Header */}
