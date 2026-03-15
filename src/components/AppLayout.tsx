@@ -22,7 +22,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Topbar */}
 
           <header
-            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-0 bg-zinc-800 pt-[95px] pb-[30px] border-zinc-950">
+            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-0 pt-[95px] pb-[30px] border-zinc-950 bg-zinc-700">
 
 
 
@@ -76,7 +76,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Main content */}
 
           <main
-            className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 md:px-8 pb-[120px] pt-[15px] border-zinc-700 bg-zinc-600 border-0">
+            className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 md:px-8 pb-[120px] pt-[15px] border-zinc-700 border-0 bg-zinc-500">
 
 
 
