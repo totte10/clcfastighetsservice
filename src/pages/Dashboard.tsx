@@ -34,42 +34,57 @@ export default function Dashboard() {
 
   async function loadJobs() {
 
-    const result: Job[] = []
+    try {
 
-    const tables = [
-      { table: "projects", date: "datum_planerat" },
-      { table: "tidx_entries", date: "datum_planerat" },
-      { table: "egna_entries", date: "datum_planerat" },
-      { table: "tmm_entries", date: "datum" },
-      { table: "optimal_entries", date: "datum_start" }
-    ]
+      const result: Job[] = []
 
-    for (const t of tables) {
+      const tables = [
+        { table: "projects", date: "datum_planerat" },
+        { table: "tidx_entries", date: "datum_planerat" },
+        { table: "egna_entries", date: "datum_planerat" },
+        { table: "tmm_entries", date: "datum" },
+        { table: "optimal_entries", date: "datum_start" }
+      ]
 
-      const { data } = await supabase
-        .from(t.table)
-        .select("*")
+      for (const t of tables) {
 
-      data?.forEach((row: any) => {
+        const { data, error } = await supabase
+          .from(t.table)
+          .select("*")
 
-        const d = row[t.date]
-        if (!d) return
+        if (error || !data) continue
 
-        result.push({
-          id: `${t.table}-${row.id}`,
-          name: row.name || row.omrade || row.beskrivning || row.address || "Uppdrag",
-          address: row.address || "",
-          status: row.status || "pending",
-          date: String(d).slice(0, 10),
-          lat: row.lat ?? null,
-          lng: row.lng ?? null
+        data.forEach((row: any) => {
+
+          const d = row[t.date]
+          if (!d) return
+
+          result.push({
+            id: `${t.table}-${row.id}`,
+            name:
+              row.name ||
+              row.omrade ||
+              row.beskrivning ||
+              row.address ||
+              "Uppdrag",
+            address: row.address || "",
+            status: row.status || "pending",
+            date: String(d).slice(0, 10),
+            lat: row.lat ?? null,
+            lng: row.lng ?? null
+          })
+
         })
 
-      })
+      }
+
+      setJobs(result)
+
+    } catch (err) {
+
+      console.error("JOB LOAD ERROR", err)
 
     }
-
-    setJobs(result)
 
   }
 
@@ -81,12 +96,17 @@ export default function Dashboard() {
 
     async function loadHours() {
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_time_entries")
         .select("hours")
 
-      const total =
-        (data ?? []).reduce((s: any, r: any) => s + (Number(r.hours) || 0), 0)
+      if (error || !data) return
+
+      const total = data.reduce(
+        (sum: number, row: any) =>
+          sum + (Number(row.hours) || 0),
+        0
+      )
 
       setWeeklyHours(total)
 
@@ -97,7 +117,9 @@ export default function Dashboard() {
   }, [])
 
   const todayJobs = jobs.filter(j => j.date === today)
-  const done = todayJobs.filter(j => j.status === "done").length
+
+  const done =
+    todayJobs.filter(j => j.status === "done").length
 
   const mapJobs =
     todayJobs.filter(j => j.lat && j.lng)
@@ -140,11 +162,15 @@ export default function Dashboard() {
 
       </div>
 
-      <div className="rounded-xl overflow-hidden border border-white/10">
+      {mapJobs.length > 0 && (
 
-        <FleetMap jobs={mapJobs} />
+        <div className="rounded-xl overflow-hidden border border-white/10">
 
-      </div>
+          <FleetMap jobs={mapJobs} />
+
+        </div>
+
+      )}
 
       <div className="space-y-2">
 
@@ -190,7 +216,15 @@ export default function Dashboard() {
 
 }
 
-function Stat({ label, value, icon }: { label: string, value: any, icon: any }) {
+function Stat({
+  label,
+  value,
+  icon
+}: {
+  label: string
+  value: any
+  icon: any
+}) {
 
   return (
 
