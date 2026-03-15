@@ -43,7 +43,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-4 border-muted bg-sidebar">
       <Card className="w-full max-w-sm glass-card">
         <CardContent className="pt-8 pb-8 flex flex-col items-center gap-6">
-          <img alt="CLC" className="w-16 h-16 rounded-xl object-contain" src="/lovable-uploads/cbfae36b-62ed-43e9-aee0-f48ff405c52c.png" />
+          <img alt="CLC" className="w-16 h-16 rounded-xl object-contain" src="/lovable-uploads/aed03cab-4a8b-4f6e-9ed0-bb0d0061caa8.png" />
           <div className="text-center">
             <h1 className="text-xl font-bold tracking-tight">CLC Fastighetsservice</h1>
             <p className="text-sm text-muted-foreground mt-1">
