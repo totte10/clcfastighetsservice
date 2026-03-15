@@ -181,7 +181,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="bg-sidebar border-t border-sidebar-border/30">
-        <div className="p-2 bg-zinc-800">
+        <div className="p-2 bg-zinc-800 border-zinc-800">
           {!collapsed && displayName &&
           <p className="text-[10px] text-sidebar-foreground/35 truncate px-3 mb-1.5 font-medium">
               {displayName}
