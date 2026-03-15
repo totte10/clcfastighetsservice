@@ -330,7 +330,7 @@ const SidebarContent = React.forwardRef<HTMLDivElement, React.ComponentProps<"di
     <div
       ref={ref}
       data-sidebar="content"
-      className={cn("flex min-h-0 flex-1 flex-col overflow-auto group-data-[collapsible=icon]:overflow-hidden bg-zinc-800 border-zinc-800 gap-0 rounded-none shadow-none border-0",
+      className={cn("flex min-h-0 flex-1 flex-col overflow-auto group-data-[collapsible=icon]:overflow-hidden bg-zinc-800 gap-0 rounded-none shadow-none border-0 border-zinc-800/0",
 
       className
       )}
