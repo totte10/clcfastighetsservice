@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client"
 
 const containerStyle = {
   width: "100%",
-  height: "520px"
+  height: "420px"
 }
 
 const center = {
@@ -12,7 +12,7 @@ const center = {
   lng: 11.9746
 }
 
-export function FleetMap({ jobs = [] }: any){
+export function FleetMap({ jobs = [] }: any) {
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
@@ -38,7 +38,7 @@ export function FleetMap({ jobs = [] }: any){
       .channel("worker_locations")
       .on(
         "postgres_changes",
-        {event:"*",schema:"public",table:"worker_locations"},
+        { event:"*", schema:"public", table:"worker_locations" },
         ()=>loadWorkers()
       )
       .subscribe()
@@ -47,7 +47,7 @@ export function FleetMap({ jobs = [] }: any){
 
   },[])
 
-  if(!isLoaded) return <div className="p-6">Laddar karta...</div>
+  if(!isLoaded) return <div className="p-6 text-white">Laddar karta...</div>
 
   const validJobs = jobs.filter((j:any)=>j.lat && j.lng)
 
@@ -72,23 +72,12 @@ position={{
 lat:Number(job.lat),
 lng:Number(job.lng)
 }}
-icon={{
-url:"https://maps.google.com/mapfiles/ms/icons/red-dot.png"
-}}
 />
 ))}
 
-{/* WORKERS */}
+{/* WORKER GPS */}
 
-{workers.map((w:any)=>{
-
-const online =
-new Date().getTime() -
-new Date(w.updated_at).getTime()
-< 120000
-
-return(
-
+{workers.map((w:any)=>(
 <Marker
 key={w.user_id}
 position={{
@@ -96,17 +85,12 @@ lat:Number(w.lat),
 lng:Number(w.lng)
 }}
 icon={{
-url: online
-? "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
-: "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png"
+url:"https://maps.google.com/mapfiles/ms/icons/green-dot.png"
 }}
 />
+))}
 
-)
-
-})}
-
-{/* ROUTE LINE */}
+{/* ROUTE */}
 
 <Polyline
 path={validJobs.map((j:any)=>({
@@ -122,5 +106,4 @@ strokeWeight:4
 </GoogleMap>
 
   )
-
 }
