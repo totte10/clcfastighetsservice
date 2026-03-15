@@ -43,7 +43,7 @@ ${isActive ? "text-emerald-400" : "text-white/40"}`
             }>
             
 <CalendarDays className="w-5 h-5 text-secondary-foreground" />
-<span>Planering</span>
+<span className="text-primary-foreground">Planering</span>
 </NavLink>
 
 
@@ -55,7 +55,7 @@ ${isActive ? "text-emerald-400" : "text-white/40"}`
             }>
             
 <MessageCircle className="w-5 h-5 text-secondary-foreground" />
-<span>Chatt</span>
+<span className="text-primary-foreground">Chatt</span>
 </NavLink>
 
 
