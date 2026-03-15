@@ -4,10 +4,11 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton } from
-"@/components/ui/sidebar";
+  SidebarMenuButton
+} from "@/components/ui/sidebar"
 
-import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom"
+import { useState } from "react"
 
 import {
   LayoutDashboard,
@@ -18,14 +19,18 @@ import {
   Route,
   MessageCircle,
   Mic,
-  Clock } from
-"lucide-react";
+  Clock,
+  ChevronDown,
+  ChevronRight
+} from "lucide-react"
 
 export function AppSidebar() {
 
-  return (
+  const [maskinOpen,setMaskinOpen] = useState(false)
 
-    <Sidebar className="bg-white border-r border-zinc-200">
+  return(
+
+<Sidebar className="bg-white border-r border-zinc-200">
 
 {/* HEADER */}
 
@@ -34,9 +39,9 @@ export function AppSidebar() {
 <div className="flex items-center gap-3 ml-[5px]">
 
 <img
-
-            className="h-9 w-9 rounded-none" src="/lovable-uploads/f50fb16e-0a0e-4157-a6a4-ac098b2d14fb.png" />
-          
+src="/lovable-uploads/f50fb16e-0a0e-4157-a6a4-ac098b2d14fb.png"
+className="h-9 w-9"
+/>
 
 <div>
 
@@ -61,75 +66,120 @@ FASTIGHETSSERVICE
 
 <SidebarMenu>
 
-<MenuItem icon={LayoutDashboard} to="/" label="Dashboard" />
+{/* DASHBOARD */}
 
-<MenuItem icon={Wind} to="/maskinsopning" label="Maskinsopning" />
+<MenuItem icon={LayoutDashboard} to="/" label="Dashboard"/>
 
-<MenuItem icon={Route} to="/tidx" label="Tidx Sopningar" />
 
-<MenuItem icon={Home} to="/egna" label="Egna områden" />
+{/* MASKINSOPNING GROUP */}
 
-<MenuItem icon={Truck} to="/optimal" label="Optimal områden" />
+<SidebarMenuItem>
 
-<MenuItem icon={Folder} to="/tmm" label="Sopningar TMM" />
+<button
+onClick={()=>setMaskinOpen(!maskinOpen)}
+className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+>
 
-<MenuItem icon={Folder} to="/projects" label="Övriga projekt" />
+<Wind size={18}/>
 
-<MenuItem icon={Route} to="/routes" label="Ruttplanering" />
+<span className="flex-1 text-left">
+Maskinsopning
+</span>
 
-<MenuItem icon={MessageCircle} to="/chat" label="Chatt" />
+{maskinOpen ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
 
-<MenuItem icon={Mic} to="/voice" label="Röstkanaler" />
+</button>
 
-<MenuItem icon={Clock} to="/tidsrapport" label="Tidsrapport" />
+</SidebarMenuItem>
+
+
+{maskinOpen && (
+
+<div className="ml-6 space-y-1">
+
+<MenuItem icon={Route} to="/tidx" label="Tidx Sopningar"/>
+
+<MenuItem icon={Home} to="/egna" label="Egna områden"/>
+
+<MenuItem icon={Truck} to="/optimal" label="Optimal områden"/>
+
+<MenuItem icon={Folder} to="/tmm" label="Sopningar TMM"/>
+
+<MenuItem icon={Folder} to="/projects" label="Övriga projekt"/>
+
+</div>
+
+)}
+
+
+{/* RUTTPLANERING */}
+
+<MenuItem icon={Route} to="/route" label="Ruttplanering"/>
+
+
+{/* CHAT */}
+
+<MenuItem icon={MessageCircle} to="/chat" label="Chatt"/>
+
+
+{/* VOICE */}
+
+<MenuItem icon={Mic} to="/voice" label="Röstkanaler"/>
+
+
+{/* TIDSRAPPORT */}
+
+<MenuItem icon={Clock} to="/time" label="Tidsrapport"/>
+
 
 </SidebarMenu>
 
 </SidebarContent>
 
-</Sidebar>);
+</Sidebar>
 
-
+)
 
 }
 
-function MenuItem({ icon: Icon, label, to
 
 
+function MenuItem({
+  icon:Icon,
+  label,
+  to
+}:{icon:any,label:string,to:string}){
 
-}: {icon: any;label: string;to: string;}) {
+return(
 
-  return (
-
-    <SidebarMenuItem>
+<SidebarMenuItem>
 
 <NavLink to={to}>
 
-{({ isActive }) =>
+{({isActive})=>(
 
-        <SidebarMenuButton
-          className={`
+<SidebarMenuButton
+className={`
 flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
 
-${isActive ?
-          "bg-zinc-100 text-zinc-900" :
-          "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}
-`
-          }>
-          
+${isActive
+? "bg-zinc-100 text-zinc-900"
+: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}
+`}
+>
 
-<Icon size={18} />
+<Icon size={18}/>
 
 {label}
 
 </SidebarMenuButton>
 
-        }
+)}
 
 </NavLink>
 
-</SidebarMenuItem>);
+</SidebarMenuItem>
 
-
+)
 
 }
