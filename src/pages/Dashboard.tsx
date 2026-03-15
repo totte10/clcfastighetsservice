@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { FleetMap } from "@/components/maps/FleetMap"
-import { useWorkerGPS } from "@/hooks/useWorkerGPS"
 
 import {
   CalendarDays,
@@ -23,18 +22,9 @@ interface Job {
   lng?: number | null
 }
 
-interface Worker {
-  user_id: string
-  lat: number
-  lng: number
-}
-
 export default function Dashboard(){
 
-  useWorkerGPS()
-
   const [jobs,setJobs] = useState<Job[]>([])
-  const [workers,setWorkers] = useState<Worker[]>([])
   const [weeklyHours,setWeeklyHours] = useState(0)
 
   const today = format(new Date(),"yyyy-MM-dd")
@@ -45,60 +35,112 @@ export default function Dashboard(){
 
     const result:Job[]=[]
 
-    const tables = [
-      {table:"projects",date:"datum_planerat"},
-      {table:"tidx_entries",date:"datum_planerat"},
-      {table:"egna_entries",date:"datum_planerat"},
-      {table:"tmm_entries",date:"datum"},
-      {table:"optimal_entries",date:"datum_start"}
-    ]
+    const { data:projects } = await supabase
+      .from("projects")
+      .select("*")
 
-    for(const t of tables){
+    projects?.forEach((p:any)=>{
 
-      const { data } = await supabase
-        .from(t.table)
-        .select("*")
+      if(!p.datum_planerat) return
 
-      data?.forEach((row:any)=>{
-
-        const d=row[t.date]
-        if(!d) return
-
-        result.push({
-          id:`${t.table}-${row.id}`,
-          name:row.name || row.omrade || row.beskrivning || row.address || "Uppdrag",
-          address:row.address || "",
-          status:row.status || "pending",
-          date:String(d).slice(0,10),
-          lat:row.lat ?? null,
-          lng:row.lng ?? null
-        })
-
+      result.push({
+        id:`project-${p.id}`,
+        name:p.name || "Projekt",
+        address:p.address || "",
+        status:p.status || "pending",
+        date:String(p.datum_planerat).slice(0,10),
+        lat:p.lat ?? null,
+        lng:p.lng ?? null
       })
 
-    }
+    })
+
+    const { data:tidx } = await supabase
+      .from("tidx_entries")
+      .select("*")
+
+    tidx?.forEach((t:any)=>{
+
+      if(!t.datum_planerat) return
+
+      result.push({
+        id:`tidx-${t.id}`,
+        name:t.omrade || t.address,
+        address:t.address || "",
+        status:t.status || "pending",
+        date:String(t.datum_planerat).slice(0,10),
+        lat:t.lat ?? null,
+        lng:t.lng ?? null
+      })
+
+    })
+
+    const { data:egna } = await supabase
+      .from("egna_entries")
+      .select("*")
+
+    egna?.forEach((e:any)=>{
+
+      if(!e.datum_planerat) return
+
+      result.push({
+        id:`egna-${e.id}`,
+        name:e.address || "Område",
+        address:e.address || "",
+        status:"pending",
+        date:String(e.datum_planerat).slice(0,10),
+        lat:e.lat ?? null,
+        lng:e.lng ?? null
+      })
+
+    })
+
+    const { data:tmm } = await supabase
+      .from("tmm_entries")
+      .select("*")
+
+    tmm?.forEach((t:any)=>{
+
+      if(!t.datum) return
+
+      result.push({
+        id:`tmm-${t.id}`,
+        name:t.beskrivning || t.address,
+        address:t.address || "",
+        status:t.status || "pending",
+        date:String(t.datum).slice(0,10),
+        lat:t.lat ?? null,
+        lng:t.lng ?? null
+      })
+
+    })
+
+    const { data:optimal } = await supabase
+      .from("optimal_entries")
+      .select("*")
+
+    optimal?.forEach((o:any)=>{
+
+      if(!o.datum_start) return
+
+      result.push({
+        id:`optimal-${o.id}`,
+        name:o.name || "Område",
+        address:o.address || "",
+        status:o.status || "pending",
+        date:String(o.datum_start).slice(0,10),
+        lat:o.lat ?? null,
+        lng:o.lng ?? null
+      })
+
+    })
 
     setJobs(result)
 
   }
 
-  /* LOAD WORKERS */
-
-  async function loadWorkers(){
-
-    const { data } = await supabase
-      .from("worker_locations")
-      .select("*")
-
-    setWorkers(data || [])
-
-  }
-
   useEffect(()=>{
-
     loadJobs()
-    loadWorkers()
-
   },[])
 
   /* LOAD HOURS */
@@ -132,8 +174,6 @@ export default function Dashboard(){
 
 <div className="space-y-4">
 
-{/* HEADER */}
-
 <div>
 
 <h1 className="text-xl font-semibold text-white">
@@ -145,8 +185,6 @@ Fleet Dispatch
 </p>
 
 </div>
-
-{/* STATS */}
 
 <div className="grid grid-cols-3 gap-3">
 
@@ -170,18 +208,15 @@ icon={<Timer size={16}/>}
 
 </div>
 
-{/* DISPATCH MAP */}
+{mapJobs.length>0 &&(
 
 <div className="rounded-xl overflow-hidden border border-white/10">
 
-<FleetMap
-jobs={mapJobs}
-workers={workers}
-/>
+<FleetMap jobs={mapJobs}/>
 
 </div>
 
-{/* JOB LIST */}
+)}
 
 <div className="space-y-2">
 
