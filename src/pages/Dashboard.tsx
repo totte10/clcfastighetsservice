@@ -23,55 +23,46 @@ interface Job {
   lng?: number | null
 }
 
-interface Worker {
-  user_id: string
-  lat: number
-  lng: number
-}
-
-export default function Dashboard(){
+export default function Dashboard() {
 
   useWorkerGPS()
 
-  const [jobs,setJobs] = useState<Job[]>([])
-  const [workers,setWorkers] = useState<Worker[]>([])
-  const [weeklyHours,setWeeklyHours] = useState(0)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [weeklyHours, setWeeklyHours] = useState(0)
 
-  const today = format(new Date(),"yyyy-MM-dd")
+  const today = format(new Date(), "yyyy-MM-dd")
 
-  /* LOAD JOBS */
+  async function loadJobs() {
 
-  async function loadJobs(){
-
-    const result:Job[]=[]
+    const result: Job[] = []
 
     const tables = [
-      {table:"projects",date:"datum_planerat"},
-      {table:"tidx_entries",date:"datum_planerat"},
-      {table:"egna_entries",date:"datum_planerat"},
-      {table:"tmm_entries",date:"datum"},
-      {table:"optimal_entries",date:"datum_start"}
+      { table: "projects", date: "datum_planerat" },
+      { table: "tidx_entries", date: "datum_planerat" },
+      { table: "egna_entries", date: "datum_planerat" },
+      { table: "tmm_entries", date: "datum" },
+      { table: "optimal_entries", date: "datum_start" }
     ]
 
-    for(const t of tables){
+    for (const t of tables) {
 
       const { data } = await supabase
         .from(t.table)
         .select("*")
 
-      data?.forEach((row:any)=>{
+      data?.forEach((row: any) => {
 
-        const d=row[t.date]
-        if(!d) return
+        const d = row[t.date]
+        if (!d) return
 
         result.push({
-          id:`${t.table}-${row.id}`,
-          name:row.name || row.omrade || row.beskrivning || row.address || "Uppdrag",
-          address:row.address || "",
-          status:row.status || "pending",
-          date:String(d).slice(0,10),
-          lat:row.lat ?? null,
-          lng:row.lng ?? null
+          id: `${t.table}-${row.id}`,
+          name: row.name || row.omrade || row.beskrivning || row.address || "Uppdrag",
+          address: row.address || "",
+          status: row.status || "pending",
+          date: String(d).slice(0, 10),
+          lat: row.lat ?? null,
+          lng: row.lng ?? null
         })
 
       })
@@ -82,37 +73,20 @@ export default function Dashboard(){
 
   }
 
-  /* LOAD WORKERS */
-
-  async function loadWorkers(){
-
-    const { data } = await supabase
-      .from("worker_locations")
-      .select("*")
-
-    setWorkers(data || [])
-
-  }
-
-  useEffect(()=>{
-
+  useEffect(() => {
     loadJobs()
-    loadWorkers()
+  }, [])
 
-  },[])
+  useEffect(() => {
 
-  /* LOAD HOURS */
-
-  useEffect(()=>{
-
-    async function loadHours(){
+    async function loadHours() {
 
       const { data } = await supabase
         .from("user_time_entries")
         .select("hours")
 
       const total =
-        (data ?? []).reduce((s:any,r:any)=>s+(Number(r.hours)||0),0)
+        (data ?? []).reduce((s: any, r: any) => s + (Number(r.hours) || 0), 0)
 
       setWeeklyHours(total)
 
@@ -120,137 +94,126 @@ export default function Dashboard(){
 
     loadHours()
 
-  },[])
+  }, [])
 
-  const todayJobs = jobs.filter(j=>j.date===today)
-  const done = todayJobs.filter(j=>j.status==="done").length
+  const todayJobs = jobs.filter(j => j.date === today)
+  const done = todayJobs.filter(j => j.status === "done").length
 
   const mapJobs =
-    todayJobs.filter(j=>j.lat && j.lng)
+    todayJobs.filter(j => j.lat && j.lng)
 
-  return(
+  return (
 
-<div className="space-y-4">
+    <div className="space-y-4">
 
-{/* HEADER */}
+      <div>
 
-<div>
+        <h1 className="text-xl font-semibold text-white">
+          Fleet Dispatch
+        </h1>
 
-<h1 className="text-xl font-semibold text-white">
-Fleet Dispatch
-</h1>
+        <p className="text-xs text-zinc-400">
+          {format(new Date(), "EEEE d MMMM", { locale: sv })}
+        </p>
 
-<p className="text-xs text-zinc-400">
-{format(new Date(),"EEEE d MMMM",{locale:sv})}
-</p>
+      </div>
 
-</div>
+      <div className="grid grid-cols-3 gap-3">
 
-{/* STATS */}
+        <Stat
+          label="Uppdrag idag"
+          value={todayJobs.length}
+          icon={<CalendarDays size={16} />}
+        />
 
-<div className="grid grid-cols-3 gap-3">
+        <Stat
+          label="Klara"
+          value={done}
+          icon={<Check size={16} />}
+        />
 
-<Stat
-label="Uppdrag idag"
-value={todayJobs.length}
-icon={<CalendarDays size={16}/>}
-/>
+        <Stat
+          label={`v.${getISOWeek(new Date())}`}
+          value={`${weeklyHours.toFixed(1)}h`}
+          icon={<Timer size={16} />}
+        />
 
-<Stat
-label="Klara"
-value={done}
-icon={<Check size={16}/>}
-/>
+      </div>
 
-<Stat
-label={`v.${getISOWeek(new Date())}`}
-value={`${weeklyHours.toFixed(1)}h`}
-icon={<Timer size={16}/>}
-/>
+      <div className="rounded-xl overflow-hidden border border-white/10">
 
-</div>
+        <FleetMap jobs={mapJobs} />
 
-{/* DISPATCH MAP */}
+      </div>
 
-<div className="rounded-xl overflow-hidden border border-white/10">
+      <div className="space-y-2">
 
-<FleetMap
-jobs={mapJobs}
-workers={workers}
-/>
+        {todayJobs.map(job => (
 
-</div>
+          <div
+            key={job.id}
+            className="bg-zinc-800 border border-white/10 p-3 rounded-xl flex justify-between"
+          >
 
-{/* JOB LIST */}
+            <div>
 
-<div className="space-y-2">
+              <p className="text-white text-sm font-medium">
+                {job.name}
+              </p>
 
-{todayJobs.map(job=>(
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address)}`}
+                target="_blank"
+                className="text-xs text-zinc-400 flex items-center gap-1"
+              >
 
-<div
-key={job.id}
-className="bg-zinc-800 border border-white/10 p-3 rounded-xl flex justify-between"
->
+                <MapPin size={12} />
+                {job.address || "Adress saknas"}
 
-<div>
+              </a>
 
-<p className="text-white text-sm font-medium">
-{job.name}
-</p>
+            </div>
 
-<a
-href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address)}`}
-target="_blank"
-className="text-xs text-zinc-400 flex items-center gap-1"
->
+            <span className="text-[10px] px-2 py-1 rounded bg-primary/10">
+              {job.status}
+            </span>
 
-<MapPin size={12}/>
-{job.address || "Adress saknas"}
+          </div>
 
-</a>
+        ))}
 
-</div>
+      </div>
 
-<span className="text-[10px] px-2 py-1 rounded bg-primary/10">
-{job.status}
-</span>
+    </div>
 
-</div>
-
-))}
-
-</div>
-
-</div>
-
-)
+  )
 
 }
 
-function Stat({label,value,icon}:{label:string,value:any,icon:any}){
+function Stat({ label, value, icon }: { label: string, value: any, icon: any }) {
 
-return(
+  return (
 
-<div className="bg-zinc-800 border border-white/10 rounded-xl px-3 py-2 flex items-center justify-between">
+    <div className="bg-zinc-800 border border-white/10 rounded-xl px-3 py-2 flex items-center justify-between">
 
-<div>
+      <div>
 
-<p className="text-[10px] text-zinc-400 uppercase">
-{label}
-</p>
+        <p className="text-[10px] text-zinc-400 uppercase">
+          {label}
+        </p>
 
-<p className="text-lg text-white font-semibold">
-{value}
-</p>
+        <p className="text-lg text-white font-semibold">
+          {value}
+        </p>
 
-</div>
+      </div>
 
-<div className="bg-primary/10 p-2 rounded-lg">
-{icon}
-</div>
+      <div className="bg-primary/10 p-2 rounded-lg">
+        {icon}
+      </div>
 
-</div>
+    </div>
 
-)
+  )
 
 }
