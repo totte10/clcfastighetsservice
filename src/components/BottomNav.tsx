@@ -48,7 +48,7 @@ ${isActive ? "text-emerald-400" : "text-white/40"}`
 
 
 <NavLink
-to="/tidrapport"
+to="/tidsrapport"
 className={({isActive}) =>
 `flex flex-col items-center text-xs transition
 ${isActive ? "text-emerald-400" : "text-white/40"}`
