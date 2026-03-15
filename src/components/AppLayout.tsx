@@ -22,21 +22,21 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
           {/* Topbar */}
 
           <header
-            className="
-            h-[64px]
-            flex
-            items-center
-            justify-between
-            px-4
-            md:px-6
-            sticky
-            top-0
-            z-50
-            bg-white/90
-            backdrop-blur
-            border-b
-            border-zinc-200
-            ">
+            className="h-[64px] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 backdrop-blur border-b border-zinc-200 bg-zinc-700 border-0">
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
             
 
             {/* Sidebar button */}
@@ -48,7 +48,7 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
 
             {/* Logo */}
 
-            <div className="flex-1 flex justify-center md:justify-start">
+            <div className="flex-1 flex justify-center md:justify-start text-destructive-foreground">
 
               <div className="flex items-center gap-2">
 
