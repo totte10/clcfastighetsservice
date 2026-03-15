@@ -66,7 +66,7 @@ ${isActive ? "text-emerald-400" : "text-white/40"}`
 ${isActive ? "text-emerald-400" : "text-white/40"}`
             }>
             
-<Settings className="w-5 h-5" />
+<Settings className="w-5 h-5 text-secondary-foreground" />
 <span>Admin</span>
 </NavLink>
 
