@@ -14,221 +14,214 @@ import { format, addDays, getISOWeek } from "date-fns"
 import { sv } from "date-fns/locale"
 
 interface Job {
-  id: string
-  name: string
-  address: string
-  date: string
-  status: string
-  lat?: number
-  lng?: number
-  source: string
+  id:string
+  name:string
+  address:string
+  date:string
+  status:string
+  lat?:number
+  lng?:number
+  source:string
 }
 
-export default function Dashboard() {
+export default function Dashboard(){
 
-  const [jobs,setJobs] = useState<Job[]>([])
-  const [weeklyHours,setWeeklyHours] = useState(0)
+const [jobs,setJobs] = useState<Job[]>([])
+const [weeklyHours,setWeeklyHours] = useState(0)
 
-  const today = format(new Date(),"yyyy-MM-dd")
+const today = format(new Date(),"yyyy-MM-dd")
 
-  /* LOAD JOBS */
+/* ---------------- LOAD JOBS ---------------- */
 
-  const loadJobs = useCallback(async()=>{
+const loadJobs = useCallback(async()=>{
 
-    const [
-      projects,
-      tidx,
-      egna,
-      tmm,
-      optimal
-    ] = await Promise.all([
+const [projects,tidx,egna,tmm,optimal] = await Promise.all([
 
-      supabase.from("projects").select("*"),
-      supabase.from("tidx_entries").select("*"),
-      supabase.from("egna_entries").select("*"),
-      supabase.from("tmm_entries").select("*"),
-      supabase.from("optimal_entries").select("*")
+supabase.from("projects").select("*"),
+supabase.from("tidx_entries").select("*"),
+supabase.from("egna_entries").select("*"),
+supabase.from("tmm_entries").select("*"),
+supabase.from("optimal_entries").select("*")
 
-    ])
+])
 
-    const result:Job[] = []
+const result:Job[] = []
 
-    projects.data?.forEach((p:any)=>{
-      if(!p.datum_planerat) return
+projects.data?.forEach((p:any)=>{
+if(!p.datum_planerat) return
 
-      result.push({
-        id:`project-${p.id}`,
-        name:p.name || "Projekt",
-        address:p.address || "",
-        status:p.status || "pending",
-        date:String(p.datum_planerat).slice(0,10),
-        lat:p.lat,
-        lng:p.lng,
-        source:"project"
-      })
-    })
+result.push({
+id:`project-${p.id}`,
+name:p.name || "Projekt",
+address:p.address || "",
+status:p.status || "pending",
+date:String(p.datum_planerat).slice(0,10),
+lat:p.lat,
+lng:p.lng,
+source:"project"
+})
+})
 
-    tidx.data?.forEach((t:any)=>{
-      if(!t.datum_planerat) return
+tidx.data?.forEach((t:any)=>{
+if(!t.datum_planerat) return
 
-      result.push({
-        id:`tidx-${t.id}`,
-        name:t.omrade || t.address,
-        address:t.address || "",
-        status:t.status || "pending",
-        date:String(t.datum_planerat).slice(0,10),
-        lat:t.lat,
-        lng:t.lng,
-        source:"tidx"
-      })
-    })
+result.push({
+id:`tidx-${t.id}`,
+name:t.omrade || t.address,
+address:t.address || "",
+status:t.status || "pending",
+date:String(t.datum_planerat).slice(0,10),
+lat:t.lat,
+lng:t.lng,
+source:"tidx"
+})
+})
 
-    egna.data?.forEach((e:any)=>{
-      if(!e.datum_planerat) return
+egna.data?.forEach((e:any)=>{
+if(!e.datum_planerat) return
 
-      result.push({
-        id:`egna-${e.id}`,
-        name:e.address,
-        address:e.address,
-        status:"pending",
-        date:String(e.datum_planerat).slice(0,10),
-        lat:e.lat,
-        lng:e.lng,
-        source:"egna"
-      })
-    })
+result.push({
+id:`egna-${e.id}`,
+name:e.address,
+address:e.address,
+status:"pending",
+date:String(e.datum_planerat).slice(0,10),
+lat:e.lat,
+lng:e.lng,
+source:"egna"
+})
+})
 
-    tmm.data?.forEach((t:any)=>{
-      if(!t.datum) return
+tmm.data?.forEach((t:any)=>{
+if(!t.datum) return
 
-      result.push({
-        id:`tmm-${t.id}`,
-        name:t.beskrivning || t.address,
-        address:t.address || "",
-        status:t.status || "pending",
-        date:String(t.datum).slice(0,10),
-        lat:t.lat,
-        lng:t.lng,
-        source:"tmm"
-      })
-    })
+result.push({
+id:`tmm-${t.id}`,
+name:t.beskrivning || t.address,
+address:t.address || "",
+status:t.status || "pending",
+date:String(t.datum).slice(0,10),
+lat:t.lat,
+lng:t.lng,
+source:"tmm"
+})
+})
 
-    optimal.data?.forEach((o:any)=>{
-      if(!o.datum_start) return
+optimal.data?.forEach((o:any)=>{
+if(!o.datum_start) return
 
-      result.push({
-        id:`optimal-${o.id}`,
-        name:o.name,
-        address:o.address,
-        status:o.status || "pending",
-        date:String(o.datum_start).slice(0,10),
-        lat:o.lat,
-        lng:o.lng,
-        source:"optimal"
-      })
-    })
+result.push({
+id:`optimal-${o.id}`,
+name:o.name,
+address:o.address,
+status:o.status || "pending",
+date:String(o.datum_start).slice(0,10),
+lat:o.lat,
+lng:o.lng,
+source:"optimal"
+})
+})
 
-    setJobs(result)
+setJobs(result)
 
-  },[])
+},[])
 
-  useEffect(()=>{
-    loadJobs()
-  },[loadJobs])
+useEffect(()=>{
+loadJobs()
+},[loadJobs])
 
-  /* HOURS */
+/* ---------------- HOURS ---------------- */
 
-  useEffect(()=>{
+useEffect(()=>{
 
-    async function loadHours(){
+async function loadHours(){
 
-      const { data } = await supabase
-        .from("user_time_entries")
-        .select("hours")
+const { data } = await supabase
+.from("user_time_entries")
+.select("hours")
 
-      const total =
-        (data ?? []).reduce((s:any,r:any)=>s+(Number(r.hours)||0),0)
+const total =
+(data ?? []).reduce((s:any,r:any)=>s+(Number(r.hours)||0),0)
 
-      setWeeklyHours(total)
+setWeeklyHours(total)
 
-    }
+}
 
-    loadHours()
+loadHours()
 
-  },[])
+},[])
 
-  /* TODAY JOBS */
+/* ---------------- TODAY JOBS ---------------- */
 
-  const todayJobs = jobs.filter(j=>j.date===today)
+const todayJobs = jobs.filter(j=>j.date===today)
 
-  const done = todayJobs.filter(j=>j.status==="done").length
-  const started = todayJobs.filter(j=>j.status==="in-progress").length
+const done = todayJobs.filter(j=>j.status==="done").length
+const started = todayJobs.filter(j=>j.status==="in-progress").length
 
-  const progress =
-    todayJobs.length>0
-      ? Math.round(done/todayJobs.length*100)
-      : 0
+const progress =
+todayJobs.length>0
+? Math.round(done/todayJobs.length*100)
+:0
 
-  /* AI ROUTE */
+/* ---------------- AI ROUTE ---------------- */
 
-  const mapJobs = useMemo(()=>{
+const mapJobs = useMemo(()=>{
 
-    const jobsWithCoords =
-      todayJobs.filter(j=>j.lat && j.lng)
+const jobsWithCoords =
+todayJobs.filter(j=>j.lat && j.lng)
 
-    if(jobsWithCoords.length<=1)
-      return jobsWithCoords
+if(jobsWithCoords.length<=1) return jobsWithCoords
 
-    const remaining=[...jobsWithCoords]
-    const route=[remaining.shift()!]
+const remaining=[...jobsWithCoords]
+const route=[remaining.shift()!]
 
-    while(remaining.length){
+while(remaining.length){
 
-      const last=route[route.length-1]
+const last=route[route.length-1]
 
-      let nearestIndex=0
-      let shortest=Infinity
+let nearestIndex=0
+let shortest=Infinity
 
-      remaining.forEach((j,i)=>{
+remaining.forEach((j,i)=>{
 
-        const dx=last.lat!-j.lat!
-        const dy=last.lng!-j.lng!
+const dx=last.lat!-j.lat!
+const dy=last.lng!-j.lng!
 
-        const dist=Math.sqrt(dx*dx+dy*dy)
+const dist=Math.sqrt(dx*dx+dy*dy)
 
-        if(dist<shortest){
-          shortest=dist
-          nearestIndex=i
-        }
+if(dist<shortest){
+shortest=dist
+nearestIndex=i
+}
 
-      })
+})
 
-      route.push(
-        remaining.splice(nearestIndex,1)[0]
-      )
+route.push(
+remaining.splice(nearestIndex,1)[0]
+)
 
-    }
+}
 
-    return route
+return route
 
-  },[todayJobs])
+},[todayJobs])
 
-  /* WEEK STRIP */
+/* ---------------- WEEK STRIP ---------------- */
 
-  const weekDays =
-    Array.from({length:7}).map((_,i)=>{
+const weekDays =
+Array.from({length:7}).map((_,i)=>{
 
-      const d=addDays(new Date(),i-3)
-      const str=format(d,"yyyy-MM-dd")
+const d=addDays(new Date(),i-3)
+const str=format(d,"yyyy-MM-dd")
 
-      const count=
-        jobs.filter(j=>j.date===str).length
+const count =
+jobs.filter(j=>j.date===str).length
 
-      return{date:d,count}
+return{date:d,count}
 
-    })
+})
 
-  return(
+return(
 
 <div className="relative min-h-screen pb-28">
 
@@ -259,7 +252,7 @@ Dagens framsteg
 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
 
 <div
-className="h-full bg-primary"
+className="h-full bg-primary transition-all"
 style={{width:`${progress}%`}}
 />
 
@@ -288,7 +281,10 @@ style={{width:`${progress}%`}}
 
 {weekDays.map((d,i)=>(
 
-<div key={i} className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-2 py-2 text-center">
+<div
+key={i}
+className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-2 py-2 text-center"
+>
 
 <p className="text-[9px] text-zinc-400">
 {format(d.date,"EEE",{locale:sv})}
@@ -311,16 +307,27 @@ style={{width:`${progress}%`}}
 {/* DISPATCH MAP */}
 
 {mapJobs.length>0 &&
-  <DispatchMap jobs={mapJobs}/>
+<DispatchMap jobs={mapJobs}/>
 }
 
 {/* JOB LIST */}
 
 <div className="space-y-2">
 
+{mapJobs.length===0 &&(
+
+<div className="text-center text-xs text-zinc-400 border border-white/10 rounded-xl p-5">
+Inga uppdrag planerade idag
+</div>
+
+)}
+
 {mapJobs.map(job=>(
 
-<div key={job.id} className="rounded-xl border border-white/5 bg-white/[0.04] p-3 flex justify-between items-center">
+<div
+key={job.id}
+className="rounded-xl border border-white/5 bg-white/[0.04] p-3 flex justify-between items-center"
+>
 
 <div>
 
@@ -328,10 +335,16 @@ style={{width:`${progress}%`}}
 {job.name}
 </p>
 
-<p className="text-xs text-zinc-400 flex items-center gap-1">
+<a
+href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address)}`}
+target="_blank"
+className="text-xs text-zinc-400 flex items-center gap-1 hover:text-white"
+>
+
 <MapPin size={12}/>
 {job.address}
-</p>
+
+</a>
 
 </div>
 
