@@ -465,7 +465,7 @@ export default function PlanningPage() {
         {/* Floating create button */}
         <button
           onClick={openCreate}
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-400 shadow-2xl shadow-blue-500/30 flex items-center justify-center transition-all active:scale-95">
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-14 h-14 rounded-full shadow-2xl shadow-blue-500/30 transition-all active:scale-95 bg-zinc-500 hover:bg-zinc-400 flex items-center justify-center">
           
           <Plus className="h-7 w-7 text-white" />
         </button>
