@@ -302,7 +302,7 @@ const SidebarInput = React.forwardRef<React.ElementRef<typeof Input>, React.Comp
 SidebarInput.displayName = "SidebarInput";
 
 const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => {
-  return <div ref={ref} data-sidebar="header" className={cn("flex flex-col gap-2 p-2 bg-zinc-800 text-primary-foreground pt-[60px] mt-0 pb-[20px] border-0 rounded-none", className)} {...props} />;
+  return <div ref={ref} data-sidebar="header" className={cn("flex flex-col gap-2 p-2 bg-zinc-800 text-primary-foreground mt-0 border-0 rounded-none pt-[60px] pb-[10px]", className)} {...props} />;
 });
 SidebarHeader.displayName = "SidebarHeader";
 
@@ -402,7 +402,7 @@ const SidebarGroupContent = React.forwardRef<HTMLDivElement, React.ComponentProp
 SidebarGroupContent.displayName = "SidebarGroupContent";
 
 const SidebarMenu = React.forwardRef<HTMLUListElement, React.ComponentProps<"ul">>(({ className, ...props }, ref) =>
-<ul ref={ref} data-sidebar="menu" className={cn("w-full min-w-0 flex-col bg-zinc-800 border-zinc-950/0 border-0 gap-[6px] flex items-start justify-start shadow-none px-0 ml-[10px]", className)} {...props} />
+<ul ref={ref} data-sidebar="menu" className={cn("w-full min-w-0 flex-col bg-zinc-800 border-zinc-950/0 border-0 gap-[6px] flex items-start justify-start shadow-none px-0 ml-[10px] pt-0 mt-[15px]", className)} {...props} />
 );
 SidebarMenu.displayName = "SidebarMenu";
 
