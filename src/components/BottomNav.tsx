@@ -31,7 +31,7 @@ ${isActive ? "text-emerald-400" : "text-white/40"}`
             }>
             
 <Home className="w-5 h-5 bg-black/0 text-destructive-foreground" />
-<span>Hem</span>
+<span className="text-primary-foreground">Hem</span>
 </NavLink>
 
 
