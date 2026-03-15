@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { DispatchMap } from "@/components/maps/DispatchMap"
+import { useWorkerGPS } from "@/hooks/useWorkerGPS"
 
 import {
   CalendarDays,
@@ -26,12 +27,16 @@ interface Job {
 
 export default function Dashboard(){
 
+/* START LIVE GPS */
+
+useWorkerGPS()
+
 const [jobs,setJobs] = useState<Job[]>([])
 const [weeklyHours,setWeeklyHours] = useState(0)
 
 const today = format(new Date(),"yyyy-MM-dd")
 
-/* ---------------- LOAD JOBS ---------------- */
+/* LOAD ALL JOBS */
 
 const loadJobs = useCallback(async()=>{
 
@@ -46,6 +51,8 @@ supabase.from("optimal_entries").select("*")
 ])
 
 const result:Job[] = []
+
+/* PROJECTS */
 
 projects.data?.forEach((p:any)=>{
 if(!p.datum_planerat) return
@@ -62,6 +69,8 @@ source:"project"
 })
 })
 
+/* TIDX */
+
 tidx.data?.forEach((t:any)=>{
 if(!t.datum_planerat) return
 
@@ -76,6 +85,8 @@ lng:t.lng,
 source:"tidx"
 })
 })
+
+/* EGNA */
 
 egna.data?.forEach((e:any)=>{
 if(!e.datum_planerat) return
@@ -92,6 +103,8 @@ source:"egna"
 })
 })
 
+/* TMM */
+
 tmm.data?.forEach((t:any)=>{
 if(!t.datum) return
 
@@ -106,6 +119,8 @@ lng:t.lng,
 source:"tmm"
 })
 })
+
+/* OPTIMAL */
 
 optimal.data?.forEach((o:any)=>{
 if(!o.datum_start) return
@@ -130,7 +145,7 @@ useEffect(()=>{
 loadJobs()
 },[loadJobs])
 
-/* ---------------- HOURS ---------------- */
+/* LOAD HOURS */
 
 useEffect(()=>{
 
@@ -151,7 +166,7 @@ loadHours()
 
 },[])
 
-/* ---------------- TODAY JOBS ---------------- */
+/* TODAY JOBS */
 
 const todayJobs = jobs.filter(j=>j.date===today)
 
@@ -163,9 +178,9 @@ todayJobs.length>0
 ? Math.round(done/todayJobs.length*100)
 :0
 
-/* ---------------- AI ROUTE ---------------- */
+/* AI ROUTE PLANNING */
 
-const mapJobs = useMemo(()=>{
+const routeJobs = useMemo(()=>{
 
 const jobsWithCoords =
 todayJobs.filter(j=>j.lat && j.lng)
@@ -206,7 +221,7 @@ return route
 
 },[todayJobs])
 
-/* ---------------- WEEK STRIP ---------------- */
+/* WEEK STRIP */
 
 const weekDays =
 Array.from({length:7}).map((_,i)=>{
@@ -275,7 +290,7 @@ style={{width:`${progress}%`}}
 
 </div>
 
-{/* WEEK */}
+{/* WEEK STRIP */}
 
 <div className="flex gap-2 overflow-x-auto">
 
@@ -304,17 +319,17 @@ className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-2 py
 
 </div>
 
-{/* DISPATCH MAP */}
+{/* LIVE DISPATCH MAP */}
 
-{mapJobs.length>0 &&
-<DispatchMap jobs={mapJobs}/>
-}
+{routeJobs.length>0 && (
+<DispatchMap jobs={routeJobs}/>
+)}
 
 {/* JOB LIST */}
 
 <div className="space-y-2">
 
-{mapJobs.length===0 &&(
+{routeJobs.length===0 &&(
 
 <div className="text-center text-xs text-zinc-400 border border-white/10 rounded-xl p-5">
 Inga uppdrag planerade idag
@@ -322,7 +337,7 @@ Inga uppdrag planerade idag
 
 )}
 
-{mapJobs.map(job=>(
+{routeJobs.map(job=>(
 
 <div
 key={job.id}
@@ -365,6 +380,8 @@ className="text-xs text-zinc-400 flex items-center gap-1 hover:text-white"
 )
 
 }
+
+/* STAT COMPONENT */
 
 function Stat({label,value,icon}:{label:string,value:any,icon:any}){
 
