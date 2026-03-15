@@ -30,7 +30,7 @@ export default function MobileNavbar() {
 ${isActive ? "text-emerald-400" : "text-white/40"}`
             }>
             
-<Home className="w-5 h-5" />
+<Home className="w-5 h-5 bg-secondary-foreground" />
 <span>Hem</span>
 </NavLink>
 
