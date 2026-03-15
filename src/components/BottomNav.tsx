@@ -7,7 +7,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const Item = ({ icon: Icon, label, path }: { icon: any; label: string; path: string }) => {
+  const Item = ({ icon: Icon, label, path }: {icon: any;label: string;path: string;}) => {
     const active = location.pathname === path;
 
     return (
@@ -19,19 +19,19 @@ export default function BottomNav() {
         gap-[3px]
         transition-all duration-200
         ${active ? "text-primary" : "text-muted-foreground"}
-        `}
-      >
+        `}>
+        
         <Icon
           className={`
           w-[20px] h-[20px]
           transition-transform
           ${active ? "scale-110 text-primary" : ""}
-          `}
-        />
+          `} />
+        
 
         <span>{label}</span>
-      </button>
-    );
+      </button>);
+
   };
 
   return (
@@ -55,9 +55,9 @@ export default function BottomNav() {
       <button onClick={() => navigate("/")} className="flex flex-col items-center -mt-6">
         <div className="w-[52px] h-[52px] bg-gradient-to-b from-[#0f172a] to-[#020617] shadow-[0_0_22px_rgba(34,197,94,0.35)] overflow-hidden transition-transform active:scale-95 rounded-none border border-solid flex items-center justify-center gap-0 border-muted bg-primary-foreground">
           <img
-            className="w-132px] h-[132px] border-none border-0 rounded-sm object-fill border-[#f5faf7]/0"
-            src="/lovable-uploads/64783441-db13-4667-a680-5e20a437c612.png"
-          />
+            className="w-132px] h-[132px] border-none border-0 object-fill border-[#f5faf7]/0 rounded-none"
+            src="/lovable-uploads/64783441-db13-4667-a680-5e20a437c612.png" />
+          
         </div>
 
         <span className="text-[10px] text-primary mt-[3px]">Hem</span>
@@ -70,6 +70,6 @@ export default function BottomNav() {
       {/* Admin */}
 
       <Item icon={Settings} label="Admin" path="/admin" />
-    </nav>
-  );
+    </nav>);
+
 }
