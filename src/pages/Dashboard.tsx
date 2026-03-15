@@ -15,7 +15,8 @@ import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
 import {
   DashboardTaskCard,
   type DailyTask,
-  type Status } from
+  type Status,
+  type CompletionData } from
 "@/components/dashboard/DashboardTaskCard";
 import { Link } from "react-router-dom";
 import { format, getISOWeek, addDays } from "date-fns";
@@ -51,8 +52,9 @@ export default function Dashboard() {
       projectName: p.name,
       serviceLabel: p.description || "Projekt",
       status: p.status as Status,
+      assignedUsers: [],
       scheduledDate: p.datum_planerat,
-      source: "project",
+      source: "project" as const,
       sourceField: "status",
       lat: p.lat,
       lng: p.lng
@@ -341,7 +343,7 @@ export default function Dashboard() {
             task={task}
             updating={null}
             onStart={() => {}}
-            onComplete={() => {}} />
+            onComplete={async (_task: DailyTask, _data: CompletionData) => {}} />
 
           )}
 
