@@ -16,15 +16,11 @@ export function FleetMap({ jobs = [] }: any) {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
   })
 
-  if (loadError) {
-    return <div>Google Maps kunde inte laddas</div>
-  }
+  if (loadError) return <div>Kunde inte ladda Google Maps</div>
 
-  if (!isLoaded) {
-    return <div>Laddar karta...</div>
-  }
+  if (!isLoaded) return <div>Laddar karta...</div>
 
-  const validJobs = jobs.filter((j:any)=> j.lat && j.lng)
+  const validJobs = jobs.filter((job:any)=> job.lat && job.lng)
 
   return (
     <GoogleMap
