@@ -1,46 +1,46 @@
 import {
-Sidebar,
-SidebarContent,
-SidebarHeader,
-SidebarMenu,
-SidebarMenuItem,
-SidebarMenuButton
-} from "@/components/ui/sidebar"
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton } from
+"@/components/ui/sidebar";
 
-import { NavLink } from "react-router-dom"
+import { NavLink } from "react-router-dom";
 
 import {
-LayoutDashboard,
-Wind,
-Home,
-Truck,
-Folder,
-Route,
-MessageCircle,
-Mic,
-Clock
-} from "lucide-react"
+  LayoutDashboard,
+  Wind,
+  Home,
+  Truck,
+  Folder,
+  Route,
+  MessageCircle,
+  Mic,
+  Clock } from
+"lucide-react";
 
-export function AppSidebar(){
+export function AppSidebar() {
 
-return(
+  return (
 
-<Sidebar className="bg-white border-r border-zinc-200">
+    <Sidebar className="bg-white border-r border-zinc-200">
 
 {/* HEADER */}
 
 <SidebarHeader className="border-b border-zinc-200 px-4 py-4">
 
-<div className="flex items-center gap-3">
+<div className="flex items-center gap-3 ml-[5px]">
 
 <img
-src="/apple-touch-icon.png"
-className="h-9 w-9 rounded-lg"
-/>
+
+            className="h-9 w-9 rounded-none" src="/lovable-uploads/f50fb16e-0a0e-4157-a6a4-ac098b2d14fb.png" />
+          
 
 <div>
 
-<p className="text-sm font-semibold text-zinc-900">
+<p className="text-sm font-semibold text-primary-foreground">
 CLC
 </p>
 
@@ -87,49 +87,49 @@ FASTIGHETSSERVICE
 
 </SidebarContent>
 
-</Sidebar>
+</Sidebar>);
 
-)
+
 
 }
 
-function MenuItem({ icon:Icon, label, to }:{
-icon:any
-label:string
-to:string
-}){
+function MenuItem({ icon: Icon, label, to
 
-return(
 
-<SidebarMenuItem>
+
+}: {icon: any;label: string;to: string;}) {
+
+  return (
+
+    <SidebarMenuItem>
 
 <NavLink to={to}>
 
-{({isActive}) => (
+{({ isActive }) =>
 
-<SidebarMenuButton
-className={`
+        <SidebarMenuButton
+          className={`
 flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
 
-${isActive
-? "bg-zinc-100 text-zinc-900"
-: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-}
-`}
->
+${isActive ?
+          "bg-zinc-100 text-zinc-900" :
+          "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}
+`
+          }>
+          
 
-<Icon size={18}/>
+<Icon size={18} />
 
 {label}
 
 </SidebarMenuButton>
 
-)}
+        }
 
 </NavLink>
 
-</SidebarMenuItem>
+</SidebarMenuItem>);
 
-)
+
 
 }
