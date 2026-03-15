@@ -38,7 +38,7 @@ return(
 
 <SidebarHeader className="border-b border-zinc-200 px-4 py-4">
 
-<div className="flex items-center gap-3 ml-1">
+<div className="flex items-center gap-3">
 
 <img
 src="/lovable-uploads/f50fb16e-0a0e-4157-a6a4-ac098b2d14fb.png"
@@ -61,7 +61,6 @@ FASTIGHETSSERVICE
 
 </SidebarHeader>
 
-
 {/* MENU */}
 
 <SidebarContent>
@@ -76,20 +75,21 @@ FASTIGHETSSERVICE
 
 <MenuItem icon={Map} to="/dispatch" label="Dispatch Center"/>
 
+{/* FLEET CONTROL */}
+
+<MenuItem icon={Truck} to="/fleet" label="Fleet Control"/>
+
 {/* PLANNING */}
 
 <MenuItem icon={Calendar} to="/planning" label="Planering"/>
 
-{/* MASKINSOPNING GROUP */}
+{/* MASKINSOPNING */}
 
 <SidebarMenuItem>
 
 <button
 onClick={()=>setOpen(!open)}
-className="
-flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm
-text-zinc-700 hover:bg-zinc-100 transition
-"
+className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-zinc-700 hover:bg-zinc-100 transition"
 >
 
 <Wind size={18}/>
@@ -122,7 +122,7 @@ Maskinsopning
 
 )}
 
-{/* ROUTE PLANNING */}
+{/* ROUTE */}
 
 <MenuItem icon={Route} to="/route" label="Ruttplanering"/>
 
@@ -148,7 +148,6 @@ Maskinsopning
 
 }
 
-
 function MenuItem({
 icon:Icon,
 label,
@@ -161,16 +160,14 @@ return(
 
 <NavLink to={to}>
 
-{({isActive})=>
+{({isActive})=>(
 
 <SidebarMenuButton
-className={`
-flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
-
-${isActive
+className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
+isActive
 ? "bg-zinc-100 text-zinc-900"
-: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}
-`}
+: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+}`}
 >
 
 <Icon size={18}/>
@@ -179,7 +176,7 @@ ${isActive
 
 </SidebarMenuButton>
 
-}
+)}
 
 </NavLink>
 
