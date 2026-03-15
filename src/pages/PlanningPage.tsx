@@ -1,353 +1,270 @@
-import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { useState,useEffect,useMemo } from "react"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
+import { Navigate } from "react-router-dom"
 
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-import { CalendarDays } from "lucide-react";
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  addMonths,
-  subMonths,
-  isToday } from
-"date-fns";
+Dialog,
+DialogContent,
+DialogHeader,
+DialogTitle
+} from "@/components/ui/dialog"
 
-import { sv } from "date-fns/locale";
+import { CalendarDays } from "lucide-react"
+
+import {
+format,
+startOfMonth,
+endOfMonth,
+eachDayOfInterval,
+addMonths,
+subMonths,
+isToday
+} from "date-fns"
+
+import { sv } from "date-fns/locale"
 
 type EntryType =
-"tidx" |
-"egna" |
-"project" |
-"optimal" |
-"tmm";
+| "project"
 
-interface PlanningItem {
-  id: string;
-  type: EntryType;
-  title: string;
-  address: string;
-  date: string;
-  status: string;
-  project_number?: string;
+interface PlanningItem{
+id:string
+title:string
+address:string
+date:string
+project_number?:string
+project_type?:string
+worker_id?:string
 }
 
-function color(type: EntryType) {
+export default function PlanningPage(){
 
-  switch (type) {
+const { user } = useAuth()
 
-    case "tidx":
-      return "bg-blue-500";
+const [items,setItems] = useState<PlanningItem[]>([])
+const [workers,setWorkers] = useState<any[]>([])
 
-    case "egna":
-      return "bg-emerald-500";
+const [selectedDay,setSelectedDay] = useState<Date | null>(new Date())
+const [currentMonth,setCurrentMonth] = useState(new Date())
 
-    case "optimal":
-      return "bg-purple-500";
+const [editing,setEditing] = useState<PlanningItem | null>(null)
+const [creating,setCreating] = useState(false)
 
-    case "tmm":
-      return "bg-orange-500";
+const [form,setForm] = useState({
+name:"",
+address:"",
+date:"",
+project_number:"",
+project_type:"",
+worker_id:""
+})
 
-    default:
-      return "bg-cyan-500";
+const [isAdmin,setIsAdmin] = useState<boolean | null>(null)
 
-  }
+useEffect(()=>{
+
+if(!user) return
+
+supabase
+.from("user_roles")
+.select("role")
+.eq("user_id",user.id)
+.eq("role","admin")
+.maybeSingle()
+.then(({data})=>{
+setIsAdmin(!!data)
+})
+
+},[user])
+
+useEffect(()=>{
+
+supabase
+.from("profiles")
+.select("id,full_name")
+.then(({data})=>{
+setWorkers(data ?? [])
+})
+
+},[])
+
+async function loadItems(){
+
+const {data} = await supabase
+.from("projects")
+.select("*")
+
+if(!data) return
+
+setItems(
+data.map(p=>({
+
+id:p.id,
+title:p.name,
+address:p.address ?? "",
+date:p.datum_planerat?.slice(0,10),
+project_number:p.project_number,
+project_type:p.project_type,
+worker_id:p.worker_id
+
+}))
+)
 
 }
 
-function tableFromType(type: EntryType) {
+useEffect(()=>{
+loadItems()
+},[])
 
-  switch (type) {
+const monthStart = startOfMonth(currentMonth)
+const monthEnd = endOfMonth(currentMonth)
 
-    case "tidx":
-      return "tidx_entries";
+const days = eachDayOfInterval({
+start:monthStart,
+end:monthEnd
+})
 
-    case "egna":
-      return "egna_entries";
+const itemsByDate = useMemo(()=>{
 
-    case "project":
-      return "projects";
+const map = new Map<string,PlanningItem[]>()
 
-    case "optimal":
-      return "optimal_entries";
+items.forEach(i=>{
+const arr = map.get(i.date) ?? []
+arr.push(i)
+map.set(i.date,arr)
+})
 
-    case "tmm":
-      return "tmm_entries";
+return map
 
-  }
+},[items])
+
+const selectedItems = useMemo(()=>{
+
+if(!selectedDay) return []
+
+const key = format(selectedDay,"yyyy-MM-dd")
+
+return itemsByDate.get(key) ?? []
+
+},[selectedDay,itemsByDate])
+
+if(isAdmin===null) return null
+if(!isAdmin) return <Navigate to="/" replace />
+
+async function saveEdit(){
+
+if(!editing) return
+
+await supabase
+.from("projects")
+.update({
+
+name:form.name,
+address:form.address,
+project_number:form.project_number,
+project_type:form.project_type,
+worker_id:form.worker_id,
+datum_planerat:form.date
+
+})
+.eq("id",editing.id)
+
+await loadItems()
+setEditing(null)
 
 }
 
-export default function PlanningPage() {
+async function createJob(){
 
-  const { user } = useAuth();
+await supabase
+.from("projects")
+.insert({
 
-  const [items, setItems] = useState<PlanningItem[]>([]);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+name:form.name,
+address:form.address,
+project_number:form.project_number,
+project_type:form.project_type,
+worker_id:form.worker_id,
+datum_planerat:form.date
 
-  const [editing, setEditing] = useState<PlanningItem | null>(null);
-  const [creating, setCreating] = useState(false);
+})
 
-  const [form, setForm] = useState({
-    name: "",
-    address: "",
-    date: "",
-    project_number: ""
-  });
+await loadItems()
+setCreating(false)
 
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+}
 
-  useEffect(() => {
+function workerName(id?:string){
 
-    if (!user) return;
+const w = workers.find(w=>w.id===id)
 
-    supabase.
-    from("user_roles").
-    select("role").
-    eq("user_id", user.id).
-    eq("role", "admin").
-    maybeSingle().
-    then(({ data }) => {
-      setIsAdmin(!!data);
-    });
+return w?.full_name ?? ""
 
-  }, [user]);
+}
 
-  async function loadItems() {
+return(
 
-    const [
+<div className="space-y-8 pb-32">
 
-    tidxRes,
-    egnaRes,
-    projRes,
-    optimalRes,
-    tmmRes] =
-
-    await Promise.all([
-
-    supabase.
-    from("tidx_entries").
-    select("id,omrade,address,datum_planerat,status"),
-
-    supabase.
-    from("egna_entries").
-    select("id,address,datum_planerat"),
-
-    supabase.
-    from("projects").
-    select("id,name,address,datum_planerat,status,project_number"),
-
-    supabase.
-    from("optimal_entries").
-    select("id,name,datum_start,status"),
-
-    supabase.
-    from("tmm_entries").
-    select("id,address,beskrivning,datum,status")]
-
-    );
-
-    const result: PlanningItem[] = [];
-
-    tidxRes.data?.forEach((r) => {
-      if (!r.datum_planerat) return;
-      result.push({
-        id: r.id,
-        type: "tidx",
-        title: r.omrade,
-        address: r.address ?? "",
-        date: r.datum_planerat.slice(0, 10),
-        status: r.status
-      });
-    });
-
-    egnaRes.data?.forEach((r) => {
-      if (!r.datum_planerat) return;
-      result.push({
-        id: r.id,
-        type: "egna",
-        title: r.address,
-        address: r.address,
-        date: r.datum_planerat.slice(0, 10),
-        status: "pending"
-      });
-    });
-
-    projRes.data?.forEach((r) => {
-      if (!r.datum_planerat) return;
-      result.push({
-        id: r.id,
-        type: "project",
-        title: r.name,
-        address: r.address ?? "",
-        date: r.datum_planerat.slice(0, 10),
-        status: r.status,
-        project_number: r.project_number
-      });
-    });
-
-    optimalRes.data?.forEach((r) => {
-      if (!r.datum_start) return;
-      result.push({
-        id: r.id,
-        type: "optimal",
-        title: r.name,
-        address: "",
-        date: r.datum_start.slice(0, 10),
-        status: r.status
-      });
-    });
-
-    tmmRes.data?.forEach((r) => {
-      if (!r.datum) return;
-      result.push({
-        id: r.id,
-        type: "tmm",
-        title: r.beskrivning,
-        address: r.address ?? "",
-        date: r.datum.slice(0, 10),
-        status: r.status
-      });
-    });
-
-    setItems(result);
-
-  }
-
-  useEffect(() => {
-    loadItems();
-  }, []);
-
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-
-  const days = eachDayOfInterval({
-    start: monthStart,
-    end: monthEnd
-  });
-
-  const itemsByDate = useMemo(() => {
-
-    const map = new Map<string, PlanningItem[]>();
-
-    items.forEach((i) => {
-      const arr = map.get(i.date) ?? [];
-      arr.push(i);
-      map.set(i.date, arr);
-    });
-
-    return map;
-
-  }, [items]);
-
-  const selectedItems = useMemo(() => {
-
-    if (!selectedDay) return [];
-
-    const key = format(selectedDay, "yyyy-MM-dd");
-
-    return itemsByDate.get(key) ?? [];
-
-  }, [selectedDay, itemsByDate]);
-
-  if (isAdmin === null) return null;
-  if (!isAdmin) return <Navigate to="/" replace />;
-
-  async function saveEdit() {
-
-    if (!editing) return;
-
-    await supabase.
-    from(tableFromType(editing.type)).
-    update({
-      name: form.name,
-      address: form.address,
-      project_number: form.project_number,
-      datum_planerat: form.date
-    }).
-    eq("id", editing.id);
-
-    await loadItems();
-    setEditing(null);
-
-  }
-
-  async function createJob() {
-
-    await supabase.
-    from("projects").
-    insert({
-      name: form.name,
-      address: form.address,
-      project_number: form.project_number,
-      datum_planerat: form.date
-    });
-
-    await loadItems();
-    setCreating(false);
-
-  }
-
-  return (
-
-    <div className="space-y-6 pb-32">
+{/* HEADER */}
 
 <div className="flex justify-between items-center">
 
 <div className="flex items-center gap-3">
 
-<CalendarDays className="w-7 h-7 text-emerald-400" />
+<CalendarDays className="w-7 h-7 text-emerald-400"/>
 
 <h1 className="text-3xl font-semibold">
-Planering
+
+Projektplanering
+
 </h1>
 
 </div>
 
-<div className="flex items-center gap-3">
+<div className="flex items-center gap-2">
 
 <Button
-            variant="ghost"
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-            
+variant="ghost"
+onClick={()=>setCurrentMonth(subMonths(currentMonth,1))}
+>
 ←
 </Button>
 
-<h2 className="text-lg font-medium">
-{format(currentMonth, "MMMM yyyy", { locale: sv })}
+<h2 className="text-lg font-medium w-32 text-center">
+
+{format(currentMonth,"MMMM yyyy",{locale:sv})}
+
 </h2>
 
 <Button
-            variant="ghost"
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-            
+variant="ghost"
+onClick={()=>setCurrentMonth(addMonths(currentMonth,1))}
+>
 →
 </Button>
 
 <Button
-            className="bg-emerald-500 hover:bg-emerald-600"
-            onClick={() => {
+className="bg-emerald-500 hover:bg-emerald-600 ml-3"
+onClick={()=>{
 
-              setCreating(true);
+setCreating(true)
 
-              setForm({
-                name: "",
-                address: "",
-                date: format(new Date(), "yyyy-MM-dd"),
-                project_number: ""
-              });
+setForm({
+name:"",
+address:"",
+date:format(new Date(),"yyyy-MM-dd"),
+project_number:"",
+project_type:"",
+worker_id:""
+})
 
-            }}>
-            
+}}
+>
 
 Nytt uppdrag
 
@@ -357,164 +274,249 @@ Nytt uppdrag
 
 </div>
 
-<div className="grid grid-cols-7 gap-3 text-center text-sm text-white/40">
+{/* WEEKDAYS */}
 
-{["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"].map((d) =>
-        <div key={d}>{d}</div>
-        )}
+<div className="grid grid-cols-7 text-center text-xs text-white/40">
+
+{["Mån","Tis","Ons","Tor","Fre","Lör","Sön"].map(d=>
+<div key={d}>{d}</div>
+)}
 
 </div>
 
-<div className="grid grid-cols-7 gap-3 text-destructive-foreground bg-transparent">
+{/* CALENDAR */}
 
-{days.map((day) => {
+<div className="grid grid-cols-7 gap-3">
 
-          const key = format(day, "yyyy-MM-dd");
-          const dayItems = itemsByDate.get(key) ?? [];
+{days.map(day=>{
 
-          return (
+const key = format(day,"yyyy-MM-dd")
+const dayItems = itemsByDate.get(key) ?? []
 
-            <Card
-              key={key}
-              onClick={() => setSelectedDay(day)}
-              className={`p-3 h-28 cursor-pointer border border-white/5 hover:border-emerald-500/40 transition
-${isToday(day) ? "bg-emerald-500/10 border-emerald-500/40" : "bg-[#071226]"}`}>
-              
+return(
 
-<div className="text-sm mb-2 font-medium">
+<Card
+key={key}
+onClick={()=>setSelectedDay(day)}
+className={`p-3 h-28 cursor-pointer border border-white/5 hover:border-emerald-500/40 transition
+${isToday(day) ? "bg-emerald-500/10 border-emerald-500/40" : "bg-[#071226]"}`}
+>
+
+<div className="text-sm font-medium mb-1">
+
 {day.getDate()}
+
 </div>
 
 <div className="space-y-1">
 
-{dayItems.slice(0, 3).map((item) =>
+{dayItems.slice(0,2).map(item=>
 
-                <div
-                  key={item.id}
-                  className="flex items-center gap-2 text-xs truncate">
-                  
+<div
+key={item.id}
+className="text-[11px] truncate"
+>
 
-<div className={`w-2 h-2 rounded-full ${color(item.type)}`} />
-
-<span className="truncate">{item.title}</span>
-
-</div>
-
-                )}
-
-{dayItems.length > 3 &&
-
-                <div className="text-xs text-white/40">
-
-+{dayItems.length - 3} fler
-
-</div>
-
-                }
-
-</div>
-
-</Card>);
-
-
-
-        })}
-
-</div>
-
-{selectedDay &&
-
-      <Card className="bg-[#071226] border border-white/5 p-5">
-
-<h2 className="text-lg font-semibold mb-4">
-
-{format(selectedDay, "EEEE d MMMM yyyy", { locale: sv })}
-
-</h2>
-
-<div className="space-y-3">
-
-{selectedItems.map((item) =>
-
-          <div
-            key={item.id}
-            onClick={() => {
-
-              setEditing(item);
-
-              setForm({
-                name: item.title,
-                address: item.address,
-                date: item.date,
-                project_number: item.project_number ?? ""
-              });
-
-            }}
-            className="p-4 rounded-xl border border-white/5 hover:border-emerald-500/40 cursor-pointer">
-            
-
-<p className="font-medium">
 {item.title}
-</p>
-
-<p className="text-xs text-white/50">
-{item.address}
-</p>
 
 </div>
 
-          )}
+)}
+
+{dayItems.length > 2 &&
+
+<div className="text-[10px] text-white/40">
+
++{dayItems.length-2}
+
+</div>
+
+}
 
 </div>
 
 </Card>
 
-      }
+)
 
-{editing &&
+})}
 
-      <Dialog open onOpenChange={() => setEditing(null)}>
+</div>
+
+{/* SELECTED DAY */}
+
+{selectedDay &&
+
+<Card className="bg-[#071226] border border-white/5 p-6">
+
+<h2 className="text-lg font-semibold mb-4">
+
+{format(selectedDay,"EEEE d MMMM yyyy",{locale:sv})}
+
+</h2>
+
+<div className="space-y-3">
+
+{selectedItems.map(item=>
+
+<div
+key={item.id}
+onClick={()=>{
+
+setEditing(item)
+
+setForm({
+
+name:item.title,
+address:item.address,
+date:item.date,
+project_number:item.project_number ?? "",
+project_type:item.project_type ?? "",
+worker_id:item.worker_id ?? ""
+
+})
+
+}}
+className="p-4 rounded-xl border border-white/5 hover:border-emerald-500/40 cursor-pointer"
+>
+
+<div className="flex justify-between items-center">
+
+<p className="font-medium">
+
+{item.title}
+
+</p>
+
+<div className="flex gap-2 text-[10px]">
+
+{item.project_type &&
+
+<span className="px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded">
+
+{item.project_type}
+
+</span>
+
+}
+
+{item.worker_id &&
+
+<span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded">
+
+{workerName(item.worker_id)}
+
+</span>
+
+}
+
+</div>
+
+</div>
+
+<p className="text-xs text-white/50">
+
+{item.address}
+
+</p>
+
+</div>
+
+)}
+
+</div>
+
+</Card>
+
+}
+
+{/* DIALOG */}
+
+{(editing || creating) &&
+
+<Dialog open onOpenChange={()=>{
+
+setEditing(null)
+setCreating(false)
+
+}}>
 
 <DialogContent className="space-y-4">
 
 <DialogHeader>
 
 <DialogTitle>
-Redigera uppdrag
+
+{editing ? "Redigera uppdrag" : "Nytt uppdrag"}
+
 </DialogTitle>
 
 </DialogHeader>
 
 <Input
-            placeholder="Namn"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          
+placeholder="Namn"
+value={form.name}
+onChange={e=>setForm({...form,name:e.target.value})}
+/>
 
 <Input
-            placeholder="Adress"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })} />
-          
+placeholder="Adress"
+value={form.address}
+onChange={e=>setForm({...form,address:e.target.value})}
+/>
 
 <Input
-            placeholder="Projektnummer"
-            value={form.project_number}
-            onChange={(e) => setForm({ ...form, project_number: e.target.value })} />
-          
+placeholder="Projektnummer"
+value={form.project_number}
+onChange={e=>setForm({...form,project_number:e.target.value})}
+/>
+
+<select
+value={form.project_type}
+onChange={e=>setForm({...form,project_type:e.target.value})}
+className="w-full p-2 rounded-md bg-black border border-white/10"
+>
+
+<option value="">Projekttyp</option>
+<option value="egna">Egna</option>
+<option value="tidx">Tidx</option>
+<option value="optimal">Optimal</option>
+<option value="tmm">TMM</option>
+
+</select>
+
+<select
+value={form.worker_id}
+onChange={e=>setForm({...form,worker_id:e.target.value})}
+className="w-full p-2 rounded-md bg-black border border-white/10"
+>
+
+<option value="">Arbetare</option>
+
+{workers.map(w=>
+
+<option key={w.id} value={w.id}>
+
+{w.full_name}
+
+</option>
+
+)}
+
+</select>
 
 <Input
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })} />
-          
+type="date"
+value={form.date}
+onChange={e=>setForm({...form,date:e.target.value})}
+/>
 
 <Button
-            className="bg-emerald-500 hover:bg-emerald-600"
-            onClick={saveEdit}>
-            
+className="bg-emerald-500 hover:bg-emerald-600"
+onClick={editing ? saveEdit : createJob}
+>
 
-Spara ändringar
+{editing ? "Spara ändringar" : "Skapa uppdrag"}
 
 </Button>
 
@@ -522,63 +524,10 @@ Spara ändringar
 
 </Dialog>
 
-      }
+}
 
-{creating &&
+</div>
 
-      <Dialog open onOpenChange={() => setCreating(false)}>
-
-<DialogContent className="space-y-4">
-
-<DialogHeader>
-
-<DialogTitle>
-Nytt uppdrag
-</DialogTitle>
-
-</DialogHeader>
-
-<Input
-            placeholder="Namn"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          
-
-<Input
-            placeholder="Adress"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })} />
-          
-
-<Input
-            placeholder="Projektnummer"
-            value={form.project_number}
-            onChange={(e) => setForm({ ...form, project_number: e.target.value })} />
-          
-
-<Input
-            type="date"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })} />
-          
-
-<Button
-            className="bg-emerald-500 hover:bg-emerald-600"
-            onClick={createJob}>
-            
-
-Skapa uppdrag
-
-</Button>
-
-</DialogContent>
-
-</Dialog>
-
-      }
-
-</div>);
-
-
+)
 
 }
