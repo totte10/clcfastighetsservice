@@ -1,77 +1,87 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/AppSidebar"
-import { NotificationBell } from "@/components/NotificationBell"
-import BottomNav from "@/components/BottomNav"
+<header className="
+h-[64px]
+flex
+items-center
+justify-between
+px-4 md:px-6
+sticky
+top-0
+z-50
+border-b
+border-white/5
+bg-gradient-to-b
+from-[#0b1220]/90
+to-[#0b1220]/40
+backdrop-blur-2xl
+shadow-[0_10px_40px_rgba(0,0,0,0.6)]
+">
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+{/* Sidebar button */}
 
-  return (
+<div className="md:hidden">
 
-    <SidebarProvider>
+<SidebarTrigger className="
+text-white/60
+hover:text-white
+transition
+"/>
 
-      <div className="min-h-[100dvh] flex w-full bg-[#020617]">
-
-        {/* Desktop Sidebar */}
-        <div className="hidden md:block">
-          <AppSidebar />
-        </div>
-
-        <div className="flex-1 flex flex-col min-w-0">
-
-          {/* Topbar */}
-
-          <header className="h-[64px] flex items-center justify-between px-4 md:px-6 border-b border-white/5 bg-black/30 backdrop-blur-xl sticky top-0 z-50">
-
-            {/* Left - Sidebar trigger */}
-
-            <div className="md:hidden">
-              <SidebarTrigger className="text-white/60 hover:text-white transition-colors" />
-            </div>
-
-            {/* Center - Logo */}
-
-            <div className="flex-1 flex justify-center md:justify-start">
-
-              <img
-                src="/logo.png"
-                className="h-9 w-9 rounded-xl object-contain"
-              />
-
-            </div>
-
-            {/* Right - Notifications */}
-
-            <div className="flex items-center">
-
-              <NotificationBell />
-
-            </div>
-
-          </header>
+</div>
 
 
-          {/* Page content */}
+{/* Logo center */}
 
-          <main className="flex-1 overflow-y-auto max-w-md mx-auto w-full px-4 md:px-8 pt-6 pb-[120px]">
+<div className="flex-1 flex justify-center md:justify-start">
 
-            {children}
+<div className="
+relative
+flex
+items-center
+justify-center
+">
 
-          </main>
+<img
+src="/apple-touch-icon.png"
+className="
+h-10
+w-10
+object-contain
+rounded-xl
+drop-shadow-[0_0_12px_rgba(59,130,246,0.8)]
+"
+/>
+
+<div className="
+absolute
+inset-0
+rounded-xl
+bg-blue-500/20
+blur-xl
+opacity-40
+"/>
+
+</div>
+
+</div>
 
 
-          {/* Bottom navigation mobile */}
+{/* Notifications */}
 
-          <div className="md:hidden">
+<div className="relative">
 
-            <BottomNav />
+<NotificationBell />
 
-          </div>
+<span className="
+absolute
+- top-1
+- right-1
+w-2.5
+h-2.5
+bg-emerald-400
+rounded-full
+animate-pulse
+"/>
 
-        </div>
+</div>
 
-      </div>
-
-    </SidebarProvider>
-
-  )
-}
+</header>
