@@ -4,16 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
-import { Play, Square, Check } from "lucide-react";
+import { Play, Square, Check, RotateCcw } from "lucide-react";
 
 export default function JobDetails() {
 
   const { id } = useParams();
 
   const [job, setJob] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+
+  const [deponi, setDeponi] = useState("");
+  const [comment, setComment] = useState("");
+  const [image, setImage] = useState<any>(null);
 
 
 
@@ -21,26 +25,15 @@ export default function JobDetails() {
 
     if (!id) return;
 
-    setLoading(true);
-
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("projects")
       .select("*")
       .eq("id", id)
       .maybeSingle();
 
-    if (error) {
-      console.error("Error loading job:", error);
-      setLoading(false);
-      return;
-    }
-
     setJob(data);
-    setLoading(false);
 
   }
-
-
 
   useEffect(() => {
     loadJob();
@@ -48,42 +41,50 @@ export default function JobDetails() {
 
 
 
-  async function startTimeTracking() {
+  async function startTime() {
 
     if (!id) return;
 
-    const start = new Date().toISOString();
-
     setRunning(true);
 
-    const { error } = await supabase
-      .from("user_time_entries")
-      .insert({
-        project_id: id,
-        start_time: start
-      });
-
-    if (error) console.error(error);
+    await supabase.from("user_time_entries").insert({
+      project_id: id,
+      start_time: new Date().toISOString()
+    });
 
   }
 
 
 
-  async function stopTimeTracking() {
+  async function stopTime() {
 
     if (!id) return;
 
-    const end = new Date().toISOString();
-
     setRunning(false);
 
-    const { error } = await supabase
+    await supabase
       .from("user_time_entries")
-      .update({ end_time: end })
+      .update({
+        end_time: new Date().toISOString(),
+        deponi: deponi,
+        comment: comment
+      })
       .eq("project_id", id)
       .is("end_time", null);
 
-    if (error) console.error(error);
+  }
+
+
+
+  async function uploadImage() {
+
+    if (!image || !id) return;
+
+    const filePath = `${id}/${Date.now()}_${image.name}`;
+
+    await supabase.storage
+      .from("job-images")
+      .upload(filePath, image);
 
   }
 
@@ -91,56 +92,37 @@ export default function JobDetails() {
 
   async function markDone() {
 
-    if (!id) return;
+    await uploadImage();
 
-    const { error } = await supabase
+    await supabase
       .from("projects")
       .update({ status: "done" })
       .eq("id", id);
 
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    loadJob();
-
   }
 
 
 
-  async function uploadPhoto(e: any) {
+  async function undoJob() {
 
-    if (!id) return;
-
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const filePath = `${id}/${Date.now()}_${file.name}`;
-
-    const { error } = await supabase.storage
-      .from("job-images")
-      .upload(filePath, file);
-
-    if (error) console.error(error);
+    await supabase
+      .from("projects")
+      .update({ status: "pending" })
+      .eq("id", id);
 
   }
 
 
-
-  if (loading) {
-    return <p className="p-4">Laddar uppdrag...</p>;
-  }
 
   if (!job) {
-    return <p className="p-4">Uppdrag hittades inte.</p>;
+    return <p className="p-6">Laddar uppdrag...</p>;
   }
 
 
 
   return (
 
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
 
       {/* JOB INFO */}
 
@@ -150,44 +132,48 @@ export default function JobDetails() {
           <CardTitle>{job.name}</CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-2">
+        <CardContent>
 
           <p className="text-sm text-muted-foreground">
             {job.address}
           </p>
 
-          <p className="text-sm">
-            Status: {job.status}
-          </p>
-
         </CardContent>
 
       </Card>
 
 
 
-      {/* TIME TRACKING */}
+      {/* TIME */}
 
       <Card>
 
         <CardHeader>
-          <CardTitle>Tidrapport</CardTitle>
+          <CardTitle>Tidsregistrering</CardTitle>
         </CardHeader>
 
         <CardContent className="flex gap-3">
 
           {!running && (
-            <Button onClick={startTimeTracking} className="gap-2">
+
+            <Button onClick={startTime} className="gap-2">
+
               <Play size={16} />
-              Starta tid
+              Starta
+
             </Button>
+
           )}
 
           {running && (
-            <Button onClick={stopTimeTracking} className="gap-2">
+
+            <Button onClick={stopTime} className="gap-2">
+
               <Square size={16} />
-              Stoppa tid
+              Stoppa
+
             </Button>
+
           )}
 
         </CardContent>
@@ -196,20 +182,54 @@ export default function JobDetails() {
 
 
 
-      {/* IMAGE UPLOAD */}
+      {/* DEPONI */}
 
       <Card>
 
         <CardHeader>
-          <CardTitle>Bilder</CardTitle>
+          <CardTitle>Deponi</CardTitle>
         </CardHeader>
 
         <CardContent>
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={uploadPhoto}
+          <select
+            value={deponi}
+            onChange={(e) => setDeponi(e.target.value)}
+            className="w-full p-2 rounded-md bg-background border"
+          >
+
+            <option value="">Välj deponi</option>
+
+            {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+
+              <option key={n} value={n}>
+                Deponi {n}
+              </option>
+
+            ))}
+
+          </select>
+
+        </CardContent>
+
+      </Card>
+
+
+
+      {/* COMMENT */}
+
+      <Card>
+
+        <CardHeader>
+          <CardTitle>Kommentar</CardTitle>
+        </CardHeader>
+
+        <CardContent>
+
+          <Input
+            placeholder="Skriv kommentar..."
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
           />
 
         </CardContent>
@@ -218,17 +238,55 @@ export default function JobDetails() {
 
 
 
-      {/* COMPLETE JOB */}
+      {/* IMAGE */}
 
-      <Button
-        onClick={markDone}
-        className="w-full gap-2"
-      >
+      <Card>
 
-        <Check size={16} />
-        Markera klart
+        <CardHeader>
+          <CardTitle>Lägg till bild</CardTitle>
+        </CardHeader>
 
-      </Button>
+        <CardContent>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImage(e.target.files?.[0])}
+          />
+
+        </CardContent>
+
+      </Card>
+
+
+
+      {/* ACTIONS */}
+
+      <div className="flex gap-3">
+
+        <Button
+          className="flex-1 gap-2"
+          onClick={markDone}
+        >
+
+          <Check size={16}/>
+          Klar
+
+        </Button>
+
+
+        <Button
+          variant="outline"
+          className="flex-1 gap-2"
+          onClick={undoJob}
+        >
+
+          <RotateCcw size={16}/>
+          Ångra
+
+        </Button>
+
+      </div>
 
     </div>
 
