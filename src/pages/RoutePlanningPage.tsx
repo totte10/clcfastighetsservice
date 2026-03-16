@@ -1,66 +1,64 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect, useCallback } from "react"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 
-import { Route, Loader2, ExternalLink, Navigation } from "lucide-react";
+import { Route, Loader2, ExternalLink, Navigation } from "lucide-react"
 
-import { format } from "date-fns";
-import { sv } from "date-fns/locale";
+import { format } from "date-fns"
+import { sv } from "date-fns/locale"
 
 import {
   GoogleMap,
   Marker,
   DirectionsRenderer,
   useLoadScript
-} from "@react-google-maps/api";
+} from "@react-google-maps/api"
 
 interface JobPoint {
-  id: string;
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-  status: string;
-  type: string;
+  id: string
+  name: string
+  address: string
+  lat: number
+  lng: number
+  status: string
+  type: string
 }
 
 export default function RoutePlanningPage() {
 
-  const { user } = useAuth();
+  const { user } = useAuth()
 
-  const [jobs,setJobs] = useState<JobPoint[]>([]);
-  const [optimizedJobs,setOptimizedJobs] = useState<JobPoint[]>([]);
-  const [loading,setLoading] = useState(true);
+  const [jobs,setJobs] = useState<JobPoint[]>([])
+  const [optimizedJobs,setOptimizedJobs] = useState<JobPoint[]>([])
+  const [loading,setLoading] = useState(true)
 
-  const [directions,setDirections] = useState<any>(null);
+  const [directions,setDirections] = useState<any>(null)
 
-  const [avoidHighways,setAvoidHighways] = useState(true);
-
-  const todayStr = format(new Date(),"yyyy-MM-dd");
+  const [avoidHighways,setAvoidHighways] = useState(true)
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
-  });
+  })
 
   const loadJobs = useCallback(async () => {
 
-    if(!user) return;
+    if(!user) return
 
-    setLoading(true);
+    setLoading(true)
 
     const { data } = await supabase
       .from("projects")
-      .select("id,name,address,lat,lng,status,datum_planerat");
+      .select("id,name,address,lat,lng,status")
 
-    const points:JobPoint[] = [];
+    const points:JobPoint[] = []
 
-    (data ?? []).forEach(r => {
+    ;(data ?? []).forEach(r => {
 
       if(r.lat && r.lng){
 
@@ -72,42 +70,41 @@ export default function RoutePlanningPage() {
           lng:r.lng,
           status:r.status === "done" ? "done" : "pending",
           type:"project"
-        });
+        })
 
       }
 
-    });
+    })
 
-    setJobs(points);
+    setJobs(points)
+    setLoading(false)
 
-    setLoading(false);
-
-  },[user,todayStr]);
-
-  useEffect(()=>{
-    loadJobs();
-  },[loadJobs]);
+  },[user])
 
   useEffect(()=>{
+    loadJobs()
+  },[loadJobs])
 
-    if(!isLoaded) return;
-    if(jobs.length < 2) return;
+  useEffect(()=>{
 
-    const directionsService = new google.maps.DirectionsService();
+    if(!isLoaded) return
+    if(jobs.length < 2) return
+
+    const directionsService = new google.maps.DirectionsService()
 
     const origin = {
       lat: jobs[0].lat,
       lng: jobs[0].lng
-    };
+    }
 
     const destination = {
       lat: jobs[jobs.length-1].lat,
       lng: jobs[jobs.length-1].lng
-    };
+    }
 
     const waypoints = jobs.slice(1,-1).map(j=>({
       location:{lat:j.lat,lng:j.lng}
-    }));
+    }))
 
     directionsService.route({
 
@@ -121,50 +118,52 @@ export default function RoutePlanningPage() {
     },
     (result,status)=>{
 
-      if(status==="OK"){
+      if(status==="OK" && result){
 
-        setDirections(result);
+        setDirections(result)
 
-        const order = result.routes[0].waypoint_order;
+        const order = result.routes[0].waypoint_order
 
         const optimized = [
           jobs[0],
           ...order.map((i:number)=>jobs[i+1]),
           jobs[jobs.length-1]
-        ];
+        ]
 
-        setOptimizedJobs(optimized);
+        setOptimizedJobs(optimized)
 
       }
 
-    });
+    })
 
-  },[jobs,avoidHighways,isLoaded]);
+  },[jobs,avoidHighways,isLoaded])
 
   const openNavigation = (job:JobPoint)=>{
 
     window.open(
       `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`,
       "_blank"
-    );
+    )
 
-  };
+  }
 
   const startFullRoute = () => {
 
-    if(optimizedJobs.length === 0) return;
+    if(optimizedJobs.length === 0) return
 
     const path = optimizedJobs
       .map(j => `${j.lat},${j.lng}`)
-      .join("/");
+      .join("/")
 
-    window.open(`https://www.google.com/maps/dir/${path}`,"_blank");
+    window.open(`https://www.google.com/maps/dir/${path}`,"_blank")
 
-  };
+  }
 
-  const center = jobs.length
-    ? {lat:jobs[0].lat,lng:jobs[0].lng}
-    : {lat:57.7089,lng:11.9746};
+  const routeJobs = optimizedJobs.length ? optimizedJobs : jobs
+
+  const center = routeJobs.length
+    ? {lat:routeJobs[0].lat,lng:routeJobs[0].lng}
+    : {lat:57.7089,lng:11.9746}
 
   return (
 
@@ -196,7 +195,7 @@ export default function RoutePlanningPage() {
 
           </div>
 
-          {optimizedJobs.length > 1 && (
+          {routeJobs.length > 1 && (
 
             <Button
               size="sm"
@@ -222,6 +221,7 @@ export default function RoutePlanningPage() {
       ) : (
 
         <>
+
           {isLoaded && (
 
             <div className="h-[400px] w-full rounded-xl overflow-hidden border">
@@ -235,12 +235,12 @@ export default function RoutePlanningPage() {
                 }}
               >
 
-                {(optimizedJobs.length ? optimizedJobs : jobs).map((job,index)=>{
+                {routeJobs.map((job,index)=>{
 
                   const color =
                     job.status==="done"
                       ? "#22c55e"
-                      : "#ef4444";
+                      : "#ef4444"
 
                   return(
 
@@ -261,7 +261,7 @@ export default function RoutePlanningPage() {
                       }}
                     />
 
-                  );
+                  )
 
                 })}
 
@@ -277,12 +277,12 @@ export default function RoutePlanningPage() {
 
           <div className="grid gap-3">
 
-            {(optimizedJobs.length ? optimizedJobs : jobs).map((job,index)=>{
+            {routeJobs.map((job,index)=>{
 
               const statusColor =
                 job.status==="done"
                   ? "text-success"
-                  : "text-destructive";
+                  : "text-destructive"
 
               return(
 
@@ -306,11 +306,7 @@ export default function RoutePlanningPage() {
                         variant="outline"
                         className={`text-[10px] mt-1 ${statusColor}`}
                       >
-
-                        {job.status==="done"
-                          ?"Klar"
-                          :"Ej klar"}
-
+                        {job.status==="done" ? "Klar" : "Ej klar"}
                       </Badge>
 
                     </div>
@@ -321,29 +317,6 @@ export default function RoutePlanningPage() {
                       className="gap-1.5 text-xs"
                       onClick={()=>openNavigation(job)}
                     >
-
                       <ExternalLink className="h-3 w-3"/>
-
                       Navigera
-
-                    </Button>
-
-                  </CardContent>
-
-                </Card>
-
-              );
-
-            })}
-
-          </div>
-
-        </>
-
-      )}
-
-    </div>
-
-  );
-
-}
+                   
