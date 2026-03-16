@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 
 interface MapJob {
@@ -21,23 +20,23 @@ export function DashboardWorkerMap({ jobs }: DashboardWorkerMapProps) {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
   });
 
-  const validJobs = useMemo(
-    () => jobs.filter(j => j.lat && j.lng && !isNaN(j.lat) && !isNaN(j.lng)),
-    [jobs]
+  const validJobs = jobs.filter(
+    j => j.lat && j.lng && !isNaN(j.lat) && !isNaN(j.lng)
   );
 
-  const center = validJobs.length > 0
-    ? { lat: validJobs[0].lat, lng: validJobs[0].lng }
-    : { lat: 57.7089, lng: 11.9746 };
-
   if (!isLoaded || validJobs.length === 0) return null;
+
+  const center = {
+    lat: validJobs[0].lat,
+    lng: validJobs[0].lng
+  };
 
   return (
 
     <div className="h-[320px] w-full rounded-2xl overflow-hidden">
 
       <GoogleMap
-        zoom={12}
+        zoom={11}
         center={center}
         mapContainerStyle={{
           width: "100%",
@@ -59,5 +58,27 @@ export function DashboardWorkerMap({ jobs }: DashboardWorkerMapProps) {
               ? "#f59e0b"
               : "#ef4444";
 
-          const icon = {
-            path: google.maps.SymbolPath.CIRCLE
+          return (
+            <Marker
+              key={job.id}
+              position={{ lat: job.lat, lng: job.lng }}
+              icon={{
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2
+              }}
+              title={`${job.name} - ${job.address}`}
+            />
+          );
+
+        })}
+
+      </GoogleMap>
+
+    </div>
+
+  );
+}
