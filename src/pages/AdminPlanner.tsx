@@ -1,43 +1,30 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { GoogleMap, Marker, DirectionsRenderer, useLoadScript } from "@react-google-maps/api";
 
-import "leaflet/dist/leaflet.css";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-
-interface Job {
-  id: string;
-  name: string;
-  address: string;
-  lat?: number;
-  lng?: number;
-  status: string;
-}
+import { Button } from "@/components/ui/button";
 
 export default function AdminPlanner() {
 
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [route, setRoute] = useState<any>(null);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
+  });
 
   async function loadJobs() {
 
     const { data } = await supabase
       .from("projects")
-      .select("*");
+      .select("*")
+      .neq("status", "done");
 
-    if (!data) return;
-
-    const formatted = data.map((j: any) => ({
-      id: j.id,
-      name: j.name,
-      address: j.address,
-      lat: j.lat,
-      lng: j.lng,
-      status: j.status
-    }));
-
-    setJobs(formatted);
+    if (data) setJobs(data);
 
   }
 
@@ -45,117 +32,146 @@ export default function AdminPlanner() {
     loadJobs();
   }, []);
 
-  const jobsWithCoords = jobs.filter(j => j.lat && j.lng);
+  async function buildRoute(job:any) {
+
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition((pos) => {
+
+      const origin = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
+      };
+
+      const destination = {
+        lat: job.lat,
+        lng: job.lng
+      };
+
+      const directionsService = new google.maps.DirectionsService();
+
+      directionsService.route(
+        {
+          origin,
+          destination,
+          travelMode: google.maps.TravelMode.DRIVING
+        },
+        (result, status) => {
+          if (status === "OK") {
+            setRoute(result);
+          }
+        }
+      );
+
+    });
+
+  }
+
+  if (!isLoaded) return <p>Laddar karta...</p>;
 
   return (
 
-    <div className="space-y-6">
-
-      {/* HEADER */}
-
-      <div>
-        <h1 className="text-2xl font-semibold">
-          Planering
-        </h1>
-
-        <p className="text-sm text-muted-foreground">
-          Planera uppdrag och rutter
-        </p>
-      </div>
-
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
 
       {/* MAP */}
 
-      <Card>
+      <div className="md:col-span-2">
 
-        <CardHeader>
-          <CardTitle>Karta</CardTitle>
-        </CardHeader>
+        <GoogleMap
+          zoom={11}
+          center={{ lat: 59.3293, lng: 18.0686 }}
+          mapContainerStyle={{ width: "100%", height: "600px" }}
+        >
 
-        <CardContent>
+          {jobs.map(job => (
 
-          <MapContainer
-            center={[59.3293, 18.0686]}
-            zoom={11}
-            style={{ height: "400px", width: "100%" }}
-          >
-
-            <TileLayer
-              attribution='&copy; OpenStreetMap'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            <Marker
+              key={job.id}
+              position={{ lat: job.lat, lng: job.lng }}
+              onClick={() => {
+                setSelectedJob(job)
+                buildRoute(job)
+              }}
             />
 
-            {jobsWithCoords.map(job => (
+          ))}
 
-              <Marker key={job.id} position={[job.lat!, job.lng!]}>
+          {route && (
+            <DirectionsRenderer directions={route}/>
+          )}
 
-                <Popup>
+        </GoogleMap>
 
-                  <strong>{job.name}</strong>
-
-                  <p>{job.address}</p>
-
-                  <p>Status: {job.status}</p>
-
-                </Popup>
-
-              </Marker>
-
-            ))}
-
-          </MapContainer>
-
-        </CardContent>
-
-      </Card>
-
+      </div>
 
       {/* JOB LIST */}
 
-      <Card>
+      <div className="space-y-3">
 
-        <CardHeader>
-          <CardTitle>Alla uppdrag</CardTitle>
-        </CardHeader>
+        <Card>
 
-        <CardContent>
+          <CardHeader>
+            <CardTitle>Uppdrag</CardTitle>
+          </CardHeader>
 
-          <div className="space-y-2">
+          <CardContent className="space-y-2">
 
             {jobs.map(job => (
 
               <div
                 key={job.id}
-                className="flex justify-between items-center p-3 rounded-lg bg-muted/50"
+                className="p-3 rounded-lg border cursor-pointer"
+                onClick={()=>{
+                  setSelectedJob(job)
+                  buildRoute(job)
+                }}
               >
 
-                <div>
+                <p className="font-medium">
+                  {job.name}
+                </p>
 
-                  <p className="font-medium">
-                    {job.name}
-                  </p>
-
-                  <p className="text-xs text-muted-foreground">
-                    {job.address}
-                  </p>
-
-                </div>
-
-                <span className="text-xs bg-primary/10 px-2 py-1 rounded">
-
-                  {job.status}
-
-                </span>
+                <p className="text-xs text-muted-foreground">
+                  {job.address}
+                </p>
 
               </div>
 
             ))}
 
-          </div>
+          </CardContent>
 
-        </CardContent>
+        </Card>
 
-      </Card>
+        {selectedJob && (
+
+          <Card>
+
+            <CardHeader>
+              <CardTitle>{selectedJob.name}</CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-3">
+
+              <Button
+                className="w-full"
+                onClick={()=>{
+                  window.open(
+                    `https://www.google.com/maps/dir/?api=1&destination=${selectedJob.lat},${selectedJob.lng}`,
+                    "_blank"
+                  )
+                }}
+              >
+                Start navigation
+              </Button>
+
+            </CardContent>
+
+          </Card>
+
+        )}
+
+      </div>
 
     </div>
 
