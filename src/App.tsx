@@ -1,4 +1,3 @@
-import AdminDashboard from "@/pages/AdminDashboard";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import AreasPage from "@/pages/AreasPage";
 import TimePage from "@/pages/TimePage";
 import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
 import AdminPage from "@/pages/AdminPage";
+import AdminDashboard from "@/pages/AdminDashboard";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import ProjectsPage from "@/pages/ProjectsPage";
@@ -31,7 +31,6 @@ import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
-
 
 
 /*
@@ -102,6 +101,7 @@ function ProtectedRoutes() {
         {/* Admin */}
 
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
 
         {/* Fallback */}
 
@@ -114,7 +114,6 @@ function ProtectedRoutes() {
   );
 
 }
-
 
 
 /*
@@ -151,7 +150,6 @@ function AppRoutes() {
   );
 
 }
-
 
 
 /*
