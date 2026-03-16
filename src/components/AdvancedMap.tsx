@@ -33,12 +33,17 @@ export default function AdvancedMap({jobs,directions}:Props){
           width:"100%",
           height:"100%"
         }}
+        options={{
+          fullscreenControl:false,
+          streetViewControl:false,
+          mapTypeControl:true
+        }}
       >
 
-        {jobs.map((job,index)=>{
+        {jobs.length > 0 && jobs.map((job,index)=>{
 
           const color =
-            job.status==="done"
+            job.status === "done"
               ? "#22c55e"
               : "#ef4444"
 
@@ -46,7 +51,10 @@ export default function AdvancedMap({jobs,directions}:Props){
 
             <Marker
               key={job.id}
-              position={{lat:job.lat,lng:job.lng}}
+              position={{
+                lat:Number(job.lat),
+                lng:Number(job.lng)
+              }}
               label={{
                 text:String(index+1),
                 color:"#fff"
@@ -66,7 +74,12 @@ export default function AdvancedMap({jobs,directions}:Props){
         })}
 
         {directions && (
-          <DirectionsRenderer directions={directions}/>
+          <DirectionsRenderer
+            directions={directions}
+            options={{
+              suppressMarkers:true
+            }}
+          />
         )}
 
       </GoogleMap>
