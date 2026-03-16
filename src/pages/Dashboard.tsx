@@ -23,6 +23,7 @@ interface Job {
   lat?: number;
   lng?: number;
   source: string;
+  type?: string;
 }
 
 type FilterType = "all" | "pending" | "in-progress" | "done";
