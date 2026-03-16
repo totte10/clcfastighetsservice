@@ -1,7 +1,5 @@
-import { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 
 interface MapJob {
   id: string;
@@ -18,71 +16,48 @@ interface DashboardWorkerMapProps {
 }
 
 export function DashboardWorkerMap({ jobs }: DashboardWorkerMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
 
-  const validJobs = jobs.filter(j => j.lat && j.lng && !isNaN(j.lat) && !isNaN(j.lng));
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
+  });
 
-  useEffect(() => {
-    if (!mapRef.current || validJobs.length === 0) return;
+  const validJobs = useMemo(
+    () => jobs.filter(j => j.lat && j.lng && !isNaN(j.lat) && !isNaN(j.lng)),
+    [jobs]
+  );
 
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
-      mapInstanceRef.current = null;
-    }
+  const center = validJobs.length > 0
+    ? { lat: validJobs[0].lat, lng: validJobs[0].lng }
+    : { lat: 57.7089, lng: 11.9746 };
 
-    const center: L.LatLngExpression = [validJobs[0].lat, validJobs[0].lng];
-    const map = L.map(mapRef.current).setView(center, 12);
-    mapInstanceRef.current = map;
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap",
-    }).addTo(map);
-
-    const group = L.featureGroup();
-
-    validJobs.forEach((job) => {
-      const color = job.status === "done" ? "#22c55e" : job.status === "in-progress" ? "#f59e0b" : "#ef4444";
-      const icon = L.divIcon({
-        className: "",
-        html: `<div style="
-          width: 24px; height: 24px; border-radius: 50% 50% 50% 0;
-          background: ${color}; transform: rotate(-45deg);
-          border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        "></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 24],
-        popupAnchor: [0, -24],
-      });
-
-      const typeMap: Record<string, string> = {
-        tidx: "/tidx", egna: "/egna", tmm: "/tmm", optimal: "/optimal", project: "/projects",
-      };
-      const statusLabel = job.status === "done" ? "Klar" : job.status === "in-progress" ? "Påbörjad" : "Ej påbörjad";
-
-      L.marker([job.lat, job.lng], { icon })
-        .bindPopup(`
-          <strong>${job.name}</strong><br/>
-          <span style="font-size:12px">${job.address}</span><br/>
-          <span style="font-size:11px; color:${color}">${statusLabel}</span>
-        `)
-        .addTo(group);
-    });
-
-    group.addTo(map);
-    if (validJobs.length > 1) map.fitBounds(group.getBounds().pad(0.15));
-    setTimeout(() => map.invalidateSize(), 100);
-
-    return () => { map.remove(); mapInstanceRef.current = null; };
-  }, [validJobs]);
-
-  if (validJobs.length === 0) return null;
+  if (!isLoaded || validJobs.length === 0) return null;
 
   return (
-    <div
-      ref={mapRef}
-      className="h-[320px] w-full rounded-2xl overflow-hidden"
-      style={{ filter: "brightness(0.85) contrast(1.1) saturate(0.8)" }}
-    />
-  );
-}
+
+    <div className="h-[320px] w-full rounded-2xl overflow-hidden">
+
+      <GoogleMap
+        zoom={12}
+        center={center}
+        mapContainerStyle={{
+          width: "100%",
+          height: "100%"
+        }}
+        options={{
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false
+        }}
+      >
+
+        {validJobs.map(job => {
+
+          const color =
+            job.status === "done"
+              ? "#22c55e"
+              : job.status === "in-progress"
+              ? "#f59e0b"
+              : "#ef4444";
+
+          const icon = {
+            path: google.maps.SymbolPath.CIRCLE
