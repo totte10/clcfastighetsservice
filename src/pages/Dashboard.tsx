@@ -316,7 +316,7 @@ export default function Dashboard() {
       {/* ─── MAP ─── */}
       {mapJobs.length > 0 && (
         <div className="glass-card overflow-hidden p-0">
-          <DashboardWorkerMap jobs={mapJobs} />
+          <DashboardWorkerMap jobs={mapJobs as any} />
         </div>
       )}
 
