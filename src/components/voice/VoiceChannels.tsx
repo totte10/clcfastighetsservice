@@ -46,7 +46,7 @@ export function VoiceChannels() {
       )
       .subscribe()
 
-    return ()=> supabase.removeChannel(channel)
+    return ()=> { supabase.removeChannel(channel) }
 
   },[])
 
