@@ -14,6 +14,7 @@ import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminPlanner from "@/pages/AdminPlanner";
+import JobDetails from "@/pages/JobDetails";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import ProjectsPage from "@/pages/ProjectsPage";
@@ -104,6 +105,10 @@ function ProtectedRoutes() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-planner" element={<AdminPlanner />} />
+
+        {/* Job details */}
+
+        <Route path="/job/:id" element={<JobDetails />} />
 
         {/* Fallback */}
 
