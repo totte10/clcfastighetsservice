@@ -1,0 +1,78 @@
+import {
+  GoogleMap,
+  Marker,
+  DirectionsRenderer
+} from "@react-google-maps/api"
+
+interface Job {
+  id:string
+  lat:number
+  lng:number
+  status:string
+}
+
+interface Props{
+  jobs:Job[]
+  directions:any
+}
+
+export default function AdvancedMap({jobs,directions}:Props){
+
+  const center = jobs.length
+    ? {lat:jobs[0].lat,lng:jobs[0].lng}
+    : {lat:57.7089,lng:11.9746}
+
+  return(
+
+    <div className="h-[400px] w-full rounded-xl overflow-hidden border">
+
+      <GoogleMap
+        zoom={11}
+        center={center}
+        mapContainerStyle={{
+          width:"100%",
+          height:"100%"
+        }}
+      >
+
+        {jobs.map((job,index)=>{
+
+          const color =
+            job.status==="done"
+              ? "#22c55e"
+              : "#ef4444"
+
+          return(
+
+            <Marker
+              key={job.id}
+              position={{lat:job.lat,lng:job.lng}}
+              label={{
+                text:String(index+1),
+                color:"#fff"
+              }}
+              icon={{
+                path:google.maps.SymbolPath.CIRCLE,
+                scale:12,
+                fillColor:color,
+                fillOpacity:1,
+                strokeColor:"#fff",
+                strokeWeight:2
+              }}
+            />
+
+          )
+
+        })}
+
+        {directions && (
+          <DirectionsRenderer directions={directions}/>
+        )}
+
+      </GoogleMap>
+
+    </div>
+
+  )
+
+}
