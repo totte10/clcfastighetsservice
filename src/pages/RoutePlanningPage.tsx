@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 
-import { Route, Navigation, MapPin, Loader2, ExternalLink } from "lucide-react";
+import { Route, Loader2, ExternalLink } from "lucide-react";
 
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
@@ -31,75 +31,13 @@ interface JobPoint {
   order?: number;
 }
 
-function optimizeRoute(points: JobPoint[]): JobPoint[] {
-  if (points.length <= 2) return points.map((p, i) => ({ ...p, order: i + 1 }));
-
-  const visited = new Set<number>();
-  const result: JobPoint[] = [];
-
-  let current = 0;
-  visited.add(0);
-  result.push({ ...points[0], order: 1 });
-
-  while (visited.size < points.length) {
-    let nearest = -1;
-    let minDist = Infinity;
-
-    for (let i = 0; i < points.length; i++) {
-      if (visited.has(i)) continue;
-
-      const d = haversine(
-        points[current].lat,
-        points[current].lng,
-        points[i].lat,
-        points[i].lng
-      );
-
-      if (d < minDist) {
-        minDist = d;
-        nearest = i;
-      }
-    }
-
-    if (nearest === -1) break;
-
-    visited.add(nearest);
-    current = nearest;
-
-    result.push({
-      ...points[nearest],
-      order: result.length + 1
-    });
-  }
-
-  return result;
-}
-
-function haversine(lat1:number, lon1:number, lat2:number, lon2:number) {
-  const R = 6371;
-
-  const dLat = (lat2-lat1)*Math.PI/180;
-  const dLon = (lon2-lon1)*Math.PI/180;
-
-  const a =
-    Math.sin(dLat/2)**2 +
-    Math.cos(lat1*Math.PI/180) *
-    Math.cos(lat2*Math.PI/180) *
-    Math.sin(dLon/2)**2;
-
-  return R * 2 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
 export default function RoutePlanningPage() {
 
   const { user } = useAuth();
 
   const [jobs,setJobs] = useState<JobPoint[]>([]);
-  const [optimizedJobs,setOptimizedJobs] = useState<JobPoint[]>([]);
   const [loading,setLoading] = useState(true);
-
   const [directions,setDirections] = useState<any>(null);
-
   const [avoidHighways,setAvoidHighways] = useState(true);
 
   const todayStr = format(new Date(),"yyyy-MM-dd");
@@ -130,7 +68,7 @@ export default function RoutePlanningPage() {
           address:r.address,
           lat:r.lat,
           lng:r.lng,
-          status:r.status,
+          status:r.status === "done" ? "done" : "pending",
           type:"project"
         });
 
@@ -139,11 +77,6 @@ export default function RoutePlanningPage() {
     });
 
     setJobs(points);
-
-    const opt = optimizeRoute(points);
-
-    setOptimizedJobs(opt);
-
     setLoading(false);
 
   },[user,todayStr]);
@@ -155,32 +88,31 @@ export default function RoutePlanningPage() {
   useEffect(()=>{
 
     if(!isLoaded) return;
-
-    if(optimizedJobs.length < 2) return;
+    if(jobs.length < 2) return;
 
     const directionsService = new google.maps.DirectionsService();
 
     const origin = {
-      lat: optimizedJobs[0].lat,
-      lng: optimizedJobs[0].lng
+      lat: jobs[0].lat,
+      lng: jobs[0].lng
     };
 
     const destination = {
-      lat: optimizedJobs[optimizedJobs.length-1].lat,
-      lng: optimizedJobs[optimizedJobs.length-1].lng
+      lat: jobs[jobs.length-1].lat,
+      lng: jobs[jobs.length-1].lng
     };
 
-    const waypoints = optimizedJobs
-      .slice(1,-1)
-      .map(j => ({
-        location:{lat:j.lat,lng:j.lng}
-      }));
+    const waypoints = jobs.slice(1,-1).map(j=>({
+      location:{lat:j.lat,lng:j.lng}
+    }));
 
     directionsService.route({
 
       origin,
       destination,
       waypoints,
+
+      optimizeWaypoints:true, // ⭐ Google AI route optimization
 
       travelMode: google.maps.TravelMode.DRIVING,
 
@@ -197,7 +129,7 @@ export default function RoutePlanningPage() {
 
     });
 
-  },[optimizedJobs,avoidHighways,isLoaded]);
+  },[jobs,avoidHighways,isLoaded]);
 
   const openNavigation = (job:JobPoint)=>{
 
@@ -208,8 +140,8 @@ export default function RoutePlanningPage() {
 
   };
 
-  const center = optimizedJobs.length
-    ? {lat:optimizedJobs[0].lat,lng:optimizedJobs[0].lng}
+  const center = jobs.length
+    ? {lat:jobs[0].lat,lng:jobs[0].lng}
     : {lat:57.7089,lng:11.9746};
 
   return (
@@ -226,21 +158,17 @@ export default function RoutePlanningPage() {
 
         </h1>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
 
-          <div className="flex items-center gap-2">
+          <Switch
+            id="avoid-hw"
+            checked={avoidHighways}
+            onCheckedChange={setAvoidHighways}
+          />
 
-            <Switch
-              id="avoid-hw"
-              checked={avoidHighways}
-              onCheckedChange={setAvoidHighways}
-            />
-
-            <Label htmlFor="avoid-hw" className="text-xs">
-              Undvik motorvägar
-            </Label>
-
-          </div>
+          <Label htmlFor="avoid-hw" className="text-xs">
+            Undvik motorvägar
+          </Label>
 
         </div>
 
@@ -272,13 +200,11 @@ export default function RoutePlanningPage() {
 
               >
 
-                {optimizedJobs.map(job=>{
+                {jobs.map((job,index)=>{
 
                   const color =
                     job.status==="done"
                       ? "#22c55e"
-                      : job.status==="in-progress"
-                      ? "#f59e0b"
                       : "#ef4444";
 
                   return(
@@ -290,7 +216,7 @@ export default function RoutePlanningPage() {
                       position={{lat:job.lat,lng:job.lng}}
 
                       label={{
-                        text:String(job.order),
+                        text:String(index+1),
                         color:"#fff"
                       }}
 
@@ -325,13 +251,11 @@ export default function RoutePlanningPage() {
 
           <div className="grid gap-3">
 
-            {optimizedJobs.map(job=>{
+            {jobs.map((job,index)=>{
 
               const statusColor =
                 job.status==="done"
                   ? "text-success"
-                  : job.status==="in-progress"
-                  ? "text-warning"
                   : "text-destructive";
 
               return(
@@ -341,7 +265,7 @@ export default function RoutePlanningPage() {
                   <CardContent className="p-4 flex items-center gap-4">
 
                     <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
-                      {job.order}
+                      {index+1}
                     </div>
 
                     <div className="flex-1">
@@ -359,9 +283,7 @@ export default function RoutePlanningPage() {
 
                         {job.status==="done"
                           ?"Klar"
-                          :job.status==="in-progress"
-                          ?"Påbörjad"
-                          :"Ej påbörjad"}
+                          :"Ej klar"}
 
                       </Badge>
 
