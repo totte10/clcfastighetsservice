@@ -18,10 +18,20 @@ interface Props{
 
 export default function AdvancedMap({jobs,directions}:Props){
 
+  /* ---------- SAFETY CHECKS ---------- */
+
+  if(!jobs) return null
+  if(typeof window === "undefined") return null
+  if(!(window as any).google) return null
+
+
+  /* ---------- MAP CENTER ---------- */
+
   const center =
     jobs.length > 0
       ? {lat:Number(jobs[0].lat),lng:Number(jobs[0].lng)}
       : {lat:57.7089,lng:11.9746}
+
 
   return(
 
@@ -41,7 +51,9 @@ export default function AdvancedMap({jobs,directions}:Props){
         }}
       >
 
-        {jobs?.map((job,index)=>{
+        {/* MARKERS */}
+
+        {jobs.map((job,index)=>{
 
           if(!job.lat || !job.lng) return null
 
@@ -62,11 +74,21 @@ export default function AdvancedMap({jobs,directions}:Props){
                 text:String(index+1),
                 color:"#fff"
               }}
+              icon={{
+                path:google.maps.SymbolPath.CIRCLE,
+                scale:12,
+                fillColor:color,
+                fillOpacity:1,
+                strokeColor:"#fff",
+                strokeWeight:2
+              }}
             />
 
           )
 
         })}
+
+        {/* ROUTE */}
 
         {directions && (
           <DirectionsRenderer
