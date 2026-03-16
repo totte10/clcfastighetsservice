@@ -41,7 +41,8 @@ export default function RoutePlanningPage() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
   })
 
-  /* ---------------- LOAD JOBS ---------------- */
+
+  /* LOAD JOBS FROM ALL TABLES */
 
   const loadJobs = useCallback(async () => {
 
@@ -49,20 +50,42 @@ export default function RoutePlanningPage() {
 
     setLoading(true)
 
-    const { data } = await supabase
-      .from("projects")
-      .select("id,name,address,lat,lng,status")
+    const [projects,tidx,egna,tmm,optimal] = await Promise.all([
+
+      supabase
+        .from("projects")
+        .select("id,name,address,lat,lng,status"),
+
+      supabase
+        .from("tidx_entries")
+        .select("id,omrade,address,lat,lng,status"),
+
+      supabase
+        .from("egna_entries")
+        .select("id,address,lat,lng,blow_status,sweep_status"),
+
+      supabase
+        .from("tmm_entries")
+        .select("id,beskrivning,address,lat,lng,status"),
+
+      supabase
+        .from("optimal_entries")
+        .select("id,name,address,lat,lng,status")
+
+    ])
 
     const points:JobPoint[] = []
 
-    ;(data ?? []).forEach(r => {
+    /* PROJECTS */
+
+    ;(projects.data ?? []).forEach(r => {
 
       if(r.lat && r.lng){
 
         points.push({
           id:r.id,
-          name:r.name,
-          address:r.address,
+          name:r.name || "Projekt",
+          address:r.address || "",
           lat:r.lat,
           lng:r.lng,
           status:r.status === "done" ? "done" : "pending",
@@ -73,17 +96,107 @@ export default function RoutePlanningPage() {
 
     })
 
+
+    /* TIDX */
+
+    ;(tidx.data ?? []).forEach(r => {
+
+      if(r.lat && r.lng){
+
+        points.push({
+          id:`tidx-${r.id}`,
+          name:r.omrade || "TIDX",
+          address:r.address || "",
+          lat:r.lat,
+          lng:r.lng,
+          status:r.status === "done" ? "done" : "pending",
+          type:"tidx"
+        })
+
+      }
+
+    })
+
+
+    /* EGNA */
+
+    ;(egna.data ?? []).forEach(r => {
+
+      if(r.lat && r.lng){
+
+        const done =
+          r.blow_status === "done" &&
+          r.sweep_status === "done"
+
+        points.push({
+          id:`egna-${r.id}`,
+          name:"Egna område",
+          address:r.address || "",
+          lat:r.lat,
+          lng:r.lng,
+          status: done ? "done" : "pending",
+          type:"egna"
+        })
+
+      }
+
+    })
+
+
+    /* TMM */
+
+    ;(tmm.data ?? []).forEach(r => {
+
+      if(r.lat && r.lng){
+
+        points.push({
+          id:`tmm-${r.id}`,
+          name:r.beskrivning || "TMM",
+          address:r.address || "",
+          lat:r.lat,
+          lng:r.lng,
+          status:r.status === "done" ? "done" : "pending",
+          type:"tmm"
+        })
+
+      }
+
+    })
+
+
+    /* OPTIMAL */
+
+    ;(optimal.data ?? []).forEach(r => {
+
+      if(r.lat && r.lng){
+
+        points.push({
+          id:`optimal-${r.id}`,
+          name:r.name || "Optimal",
+          address:r.address || "",
+          lat:r.lat,
+          lng:r.lng,
+          status:r.status === "done" ? "done" : "pending",
+          type:"optimal"
+        })
+
+      }
+
+    })
+
+
     setJobs(points)
     setLoading(false)
 
   },[user])
+
 
   useEffect(()=>{
     loadJobs()
   },[loadJobs])
 
 
-  /* ---------------- ROUTE OPTIMIZATION ---------------- */
+  /* ROUTE OPTIMIZATION */
 
   useEffect(()=>{
 
@@ -139,30 +252,7 @@ export default function RoutePlanningPage() {
   },[jobs,avoidHighways,isLoaded])
 
 
-  /* ---------------- JOB ACTIONS ---------------- */
-
-  const startJob = async (job:JobPoint) => {
-
-    await supabase
-      .from("projects")
-      .update({ status:"in_progress" })
-      .eq("id",job.id)
-
-    loadJobs()
-
-  }
-
-  const finishJob = async (job:JobPoint) => {
-
-    await supabase
-      .from("projects")
-      .update({ status:"done" })
-      .eq("id",job.id)
-
-    loadJobs()
-
-  }
-
+  /* ACTIONS */
 
   const openNavigation = (job:JobPoint)=>{
 
@@ -185,13 +275,13 @@ export default function RoutePlanningPage() {
 
   }
 
+
   const routeJobs = optimizedJobs.length ? optimizedJobs : jobs
+
 
   return (
 
     <div className="space-y-6">
-
-      {/* HEADER */}
 
       <div className="flex items-center justify-between flex-wrap gap-4">
 
@@ -234,8 +324,6 @@ export default function RoutePlanningPage() {
       </div>
 
 
-      {/* LOADING */}
-
       {loading ? (
 
         <div className="flex justify-center p-12">
@@ -246,18 +334,9 @@ export default function RoutePlanningPage() {
 
         <>
 
-          {/* MAP */}
-
           {isLoaded && (
-
-            <AdvancedMap
-              jobs={routeJobs}
-              directions={directions}
-            />
-
+            <AdvancedMap jobs={routeJobs} directions={directions}/>
           )}
-
-          {/* JOB LIST */}
 
           <div className="grid gap-3">
 
@@ -296,40 +375,13 @@ export default function RoutePlanningPage() {
 
                     </div>
 
-                    <div className="flex gap-2">
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={()=>openNavigation(job)}
-                      >
-                        <ExternalLink className="h-3 w-3"/>
-                      </Button>
-
-                      {!isDone && (
-
-                        <Button
-                          size="sm"
-                          onClick={()=>startJob(job)}
-                        >
-                          Start
-                        </Button>
-
-                      )}
-
-                      {!isDone && (
-
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={()=>finishJob(job)}
-                        >
-                          <Check className="h-4 w-4"/>
-                        </Button>
-
-                      )}
-
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={()=>openNavigation(job)}
+                    >
+                      <ExternalLink className="h-3 w-3"/>
+                    </Button>
 
                   </CardContent>
 
