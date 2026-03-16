@@ -13,12 +13,9 @@ import { Route, Loader2, ExternalLink, Navigation } from "lucide-react"
 import { format } from "date-fns"
 import { sv } from "date-fns/locale"
 
-import {
-  GoogleMap,
-  Marker,
-  DirectionsRenderer,
-  useLoadScript
-} from "@react-google-maps/api"
+import { useLoadScript } from "@react-google-maps/api"
+
+import AdvancedMap from "@/components/AdvancedMap"
 
 interface JobPoint {
   id: string
@@ -37,9 +34,7 @@ export default function RoutePlanningPage() {
   const [jobs,setJobs] = useState<JobPoint[]>([])
   const [optimizedJobs,setOptimizedJobs] = useState<JobPoint[]>([])
   const [loading,setLoading] = useState(true)
-
   const [directions,setDirections] = useState<any>(null)
-
   const [avoidHighways,setAvoidHighways] = useState(true)
 
   const { isLoaded } = useLoadScript({
@@ -77,6 +72,7 @@ export default function RoutePlanningPage() {
     })
 
     setJobs(points)
+
     setLoading(false)
 
   },[user])
@@ -84,6 +80,7 @@ export default function RoutePlanningPage() {
   useEffect(()=>{
     loadJobs()
   },[loadJobs])
+
 
   useEffect(()=>{
 
@@ -138,6 +135,7 @@ export default function RoutePlanningPage() {
 
   },[jobs,avoidHighways,isLoaded])
 
+
   const openNavigation = (job:JobPoint)=>{
 
     window.open(
@@ -146,6 +144,7 @@ export default function RoutePlanningPage() {
     )
 
   }
+
 
   const startFullRoute = () => {
 
@@ -159,11 +158,9 @@ export default function RoutePlanningPage() {
 
   }
 
+
   const routeJobs = optimizedJobs.length ? optimizedJobs : jobs
 
-  const center = routeJobs.length
-    ? {lat:routeJobs[0].lat,lng:routeJobs[0].lng}
-    : {lat:57.7089,lng:11.9746}
 
   return (
 
@@ -172,11 +169,8 @@ export default function RoutePlanningPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
 
         <h1 className="text-2xl font-bold flex items-center gap-2">
-
           <Route className="h-6 w-6 text-primary"/>
-
           Ruttplanering – {format(new Date(),"d MMMM",{locale:sv})}
-
         </h1>
 
         <div className="flex items-center gap-4">
@@ -212,6 +206,7 @@ export default function RoutePlanningPage() {
 
       </div>
 
+
       {loading ? (
 
         <div className="flex justify-center p-12">
@@ -224,54 +219,10 @@ export default function RoutePlanningPage() {
 
           {isLoaded && (
 
-            <div className="h-[400px] w-full rounded-xl overflow-hidden border">
-
-              <GoogleMap
-                zoom={11}
-                center={center}
-                mapContainerStyle={{
-                  width:"100%",
-                  height:"100%"
-                }}
-              >
-
-                {routeJobs.map((job,index)=>{
-
-                  const color =
-                    job.status==="done"
-                      ? "#22c55e"
-                      : "#ef4444"
-
-                  return(
-
-                    <Marker
-                      key={job.id}
-                      position={{lat:job.lat,lng:job.lng}}
-                      label={{
-                        text:String(index+1),
-                        color:"#fff"
-                      }}
-                      icon={{
-                        path:google.maps.SymbolPath.CIRCLE,
-                        scale:12,
-                        fillColor:color,
-                        fillOpacity:1,
-                        strokeColor:"#fff",
-                        strokeWeight:2
-                      }}
-                    />
-
-                  )
-
-                })}
-
-                {directions && (
-                  <DirectionsRenderer directions={directions}/>
-                )}
-
-              </GoogleMap>
-
-            </div>
+            <AdvancedMap
+              jobs={routeJobs}
+              directions={directions}
+            />
 
           )}
 
@@ -319,4 +270,24 @@ export default function RoutePlanningPage() {
                     >
                       <ExternalLink className="h-3 w-3"/>
                       Navigera
-                   
+                    </Button>
+
+                  </CardContent>
+
+                </Card>
+
+              )
+
+            })}
+
+          </div>
+
+        </>
+
+      )}
+
+    </div>
+
+  )
+
+}
