@@ -18,8 +18,6 @@ DirectionsRenderer,
 useLoadScript
 } from "@react-google-maps/api"
 
-
-
 interface Job{
 id:string
 name:string
@@ -27,11 +25,9 @@ address:string
 lat:number
 lng:number
 status:string
+date?:string
 type:string
-date?:string | null
 }
-
-
 
 export default function RoutePlanningPage(){
 
@@ -40,7 +36,6 @@ const { user } = useAuth()
 const [jobs,setJobs] = useState<Job[]>([])
 const [optimized,setOptimized] = useState<Job[]>([])
 const [directions,setDirections] = useState<any>(null)
-
 const [loading,setLoading] = useState(true)
 
 const [selectedDate,setSelectedDate] = useState(
@@ -51,9 +46,7 @@ const { isLoaded } = useLoadScript({
 googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
 })
 
-
-
-/* LOAD ALL JOB TYPES */
+/* LOAD JOBS */
 
 const loadJobs = useCallback(async()=>{
 
@@ -61,169 +54,50 @@ if(!user) return
 
 setLoading(true)
 
-const [projects,tidx,egna,tmm,optimal] = await Promise.all([
-
-supabase
+const { data } = await supabase
 .from("projects")
-.select("id,name,address,lat,lng,status,datum_planerat"),
-
-supabase
-.from("tidx_entries")
-.select("id,omrade,address,lat,lng,status,datum_planerat"),
-
-supabase
-.from("egna_entries")
-.select("id,address,lat,lng,blow_status,sweep_status,datum_planerat"),
-
-supabase
-.from("tmm_entries")
-.select("id,beskrivning,address,lat,lng,status,datum"),
-
-supabase
-.from("optimal_entries")
-.select("id,name,address,lat,lng,status,datum_start")
-
-])
+.select("id,name,address,lat,lng,status,datum_planerat")
 
 const points:Job[] = []
 
-/* PROJECTS */
-
-projects.data?.forEach(r=>{
+;(data ?? []).forEach(r=>{
 
 if(!r.lat || !r.lng) return
 
+const d = r.datum_planerat?.slice(0,10)
+
+if(d !== selectedDate) return
+
 points.push({
-id:`project-${r.id}`,
+id:r.id,
 name:r.name || "Projekt",
 address:r.address || "",
 lat:r.lat,
 lng:r.lng,
-status:r.status || "pending",
+status:r.status === "done" ? "done":"pending",
 type:"project",
-date:r.datum_planerat?.slice(0,10) || null
+date:d
 })
 
 })
 
-
-/* TIDX */
-
-tidx.data?.forEach(r=>{
-
-if(!r.lat || !r.lng) return
-
-points.push({
-id:`tidx-${r.id}`,
-name:r.omrade || "TIDX",
-address:r.address || "",
-lat:r.lat,
-lng:r.lng,
-status:r.status || "pending",
-type:"tidx",
-date:r.datum_planerat?.slice(0,10) || null
-})
-
-})
-
-
-/* EGNA */
-
-egna.data?.forEach(r=>{
-
-if(!r.lat || !r.lng) return
-
-const done =
-r.blow_status==="done" &&
-r.sweep_status==="done"
-
-points.push({
-id:`egna-${r.id}`,
-name:"Egna område",
-address:r.address || "",
-lat:r.lat,
-lng:r.lng,
-status:done?"done":"pending",
-type:"egna",
-date:r.datum_planerat?.slice(0,10) || null
-})
-
-})
-
-
-/* TMM */
-
-tmm.data?.forEach(r=>{
-
-if(!r.lat || !r.lng) return
-
-points.push({
-id:`tmm-${r.id}`,
-name:r.beskrivning || "TMM",
-address:r.address || "",
-lat:r.lat,
-lng:r.lng,
-status:r.status || "pending",
-type:"tmm",
-date:r.datum?.slice(0,10) || null
-})
-
-})
-
-
-/* OPTIMAL */
-
-optimal.data?.forEach(r=>{
-
-if(!r.lat || !r.lng) return
-
-points.push({
-id:`optimal-${r.id}`,
-name:r.name || "Optimal",
-address:r.address || "",
-lat:r.lat,
-lng:r.lng,
-status:r.status || "pending",
-type:"optimal",
-date:r.datum_start?.slice(0,10) || null
-})
-
-})
-
-
-/* FILTER BY DATE */
-
-const filtered = points.filter(j=>{
-
-if(!j.date) return true
-
-return j.date === selectedDate
-
-})
-
-
-setJobs(filtered)
-
+setJobs(points)
 setLoading(false)
 
 },[user,selectedDate])
-
-
 
 useEffect(()=>{
 loadJobs()
 },[loadJobs])
 
-
-
-/* GOOGLE ROUTE OPTIMIZER */
+/* ROUTE OPTIMIZATION */
 
 useEffect(()=>{
 
 if(!isLoaded) return
 if(jobs.length < 2) return
 
-const service = new google.maps.DirectionsService()
+const directionsService = new google.maps.DirectionsService()
 
 const origin = {
 lat:jobs[0].lat,
@@ -239,7 +113,7 @@ const waypoints = jobs.slice(1,-1).map(j=>({
 location:{lat:j.lat,lng:j.lng}
 }))
 
-service.route({
+directionsService.route({
 
 origin,
 destination,
@@ -270,11 +144,7 @@ setOptimized(optimizedRoute)
 
 },[jobs,isLoaded])
 
-
-
 const routeJobs = optimized.length ? optimized : jobs
-
-
 
 const openNavigation = (job:Job)=>{
 
@@ -285,44 +155,18 @@ window.open(
 
 }
 
-
-
-/* MARKER COLOR PER TYPE */
-
-const getColor = (type:string)=>{
-
-if(type==="project") return "#3b82f6"
-if(type==="tidx") return "#f97316"
-if(type==="egna") return "#a855f7"
-if(type==="tmm") return "#eab308"
-if(type==="optimal") return "#22c55e"
-
-return "#ef4444"
-
-}
-
-
-
 const center = routeJobs.length
 ? {lat:routeJobs[0].lat,lng:routeJobs[0].lng}
 : {lat:57.7089,lng:11.9746}
-
-
 
 return(
 
 <div className="space-y-6">
 
-
 <h1 className="text-2xl font-bold flex items-center gap-2">
-
 <Route className="h-6 w-6"/>
-
 Ruttplanering – {format(new Date(selectedDate),"d MMMM",{locale:sv})}
-
 </h1>
-
-
 
 {/* DATE SELECTOR */}
 
@@ -331,7 +175,6 @@ Ruttplanering – {format(new Date(selectedDate),"d MMMM",{locale:sv})}
 {Array.from({length:7}).map((_,i)=>{
 
 const d = new Date()
-
 d.setDate(d.getDate()+i)
 
 const iso = format(d,"yyyy-MM-dd")
@@ -355,18 +198,13 @@ ${iso===selectedDate?"bg-primary text-white":""}`}
 
 </div>
 
-
-
 {loading ? (
 
 <div className="flex justify-center p-10">
-
 <Loader2 className="animate-spin"/>
-
 </div>
 
-):(
-
+):( 
 
 <>
 
@@ -380,8 +218,105 @@ center={center}
 mapContainerStyle={{width:"100%",height:"100%"}}
 >
 
-{routeJobs.map((job,index)=>(
+{routeJobs.map((job,index)=>{
+
+const color =
+job.status==="done"
+? "#22c55e"
+: "#ef4444"
+
+return(
 
 <Marker
 key={job.id}
-position
+position={{lat:job.lat,lng:job.lng}}
+label={{
+text:String(index+1),
+color:"#fff"
+}}
+icon={{
+path:google.maps.SymbolPath.CIRCLE,
+scale:12,
+fillColor:color,
+fillOpacity:1,
+strokeColor:"#fff",
+strokeWeight:2
+}}
+/>
+
+)
+
+})}
+
+{directions && (
+<DirectionsRenderer directions={directions}/>
+)}
+
+</GoogleMap>
+
+</div>
+
+)}
+
+<div className="grid gap-3">
+
+{routeJobs.map((job,index)=>{
+
+const done = job.status==="done"
+
+return(
+
+<Card key={job.id}>
+
+<CardContent className="p-4 flex items-center gap-4">
+
+<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+{index+1}
+</div>
+
+<div className="flex-1">
+
+<p className="font-medium text-sm">
+{job.name}
+</p>
+
+<p className="text-xs text-muted-foreground">
+{job.address}
+</p>
+
+<Badge variant="outline" className="text-[10px] mt-1">
+{done?"Klar":"Ej klar"}
+</Badge>
+
+</div>
+
+<Button
+size="sm"
+onClick={()=>openNavigation(job)}
+className="gap-2"
+>
+
+<Navigation className="h-4 w-4"/>
+Navigera
+
+</Button>
+
+</CardContent>
+
+</Card>
+
+)
+
+})}
+
+</div>
+
+</>
+
+)}
+
+</div>
+
+)
+
+}
