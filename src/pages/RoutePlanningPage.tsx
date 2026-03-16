@@ -17,6 +17,7 @@ import { useLoadScript } from "@react-google-maps/api"
 
 import AdvancedMap from "@/components/AdvancedMap"
 
+
 interface JobPoint {
   id: string
   name: string
@@ -25,10 +26,26 @@ interface JobPoint {
   lng: number
   status: string
   type: string
-  date?: string
+  date?: string | null
 }
 
-export default function RoutePlanningPage() {
+
+/* SAFE DATE FUNCTION */
+
+function safeDate(date?: string | null){
+
+  if(!date) return null
+
+  const d = new Date(date)
+
+  if(isNaN(d.getTime())) return null
+
+  return d
+
+}
+
+
+export default function RoutePlanningPage(){
 
   const { user } = useAuth()
 
@@ -42,7 +59,8 @@ export default function RoutePlanningPage() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
   })
 
-  /* LOAD JOBS */
+
+  /* LOAD JOBS FROM ALL TABLES */
 
   const loadJobs = useCallback(async () => {
 
@@ -71,6 +89,7 @@ export default function RoutePlanningPage() {
 
     const points:JobPoint[] = []
 
+
     /* PROJECTS */
 
     projects.data?.forEach(r => {
@@ -90,6 +109,7 @@ export default function RoutePlanningPage() {
 
     })
 
+
     /* TIDX */
 
     tidx.data?.forEach(r => {
@@ -108,6 +128,7 @@ export default function RoutePlanningPage() {
       })
 
     })
+
 
     /* EGNA */
 
@@ -132,6 +153,7 @@ export default function RoutePlanningPage() {
 
     })
 
+
     /* TMM */
 
     tmm.data?.forEach(r => {
@@ -150,6 +172,7 @@ export default function RoutePlanningPage() {
       })
 
     })
+
 
     /* OPTIMAL */
 
@@ -170,6 +193,7 @@ export default function RoutePlanningPage() {
 
     })
 
+
     setJobs(points)
     setLoading(false)
 
@@ -181,7 +205,8 @@ export default function RoutePlanningPage() {
   },[loadJobs])
 
 
-  /* ROUTE OPTIMIZATION */
+
+  /* GOOGLE ROUTE OPTIMIZATION */
 
   useEffect(()=>{
 
@@ -250,19 +275,6 @@ export default function RoutePlanningPage() {
   }
 
 
-  const getTypeColor = (type:string)=>{
-
-    if(type==="project") return "bg-blue-500"
-    if(type==="tidx") return "bg-orange-500"
-    if(type==="egna") return "bg-purple-500"
-    if(type==="tmm") return "bg-yellow-500"
-    if(type==="optimal") return "bg-green-500"
-
-    return "bg-gray-500"
-
-  }
-
-
   return (
 
     <div className="space-y-6">
@@ -297,13 +309,13 @@ export default function RoutePlanningPage() {
 
               const isDone = job.status === "done"
 
+              const d = safeDate(job.date)
+
               return(
 
                 <Card key={job.id}>
 
                   <CardContent className="p-4 flex items-center gap-4">
-
-                    <div className={`w-3 h-10 rounded ${getTypeColor(job.type)}`} />
 
                     <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
                       {index+1}
@@ -319,10 +331,10 @@ export default function RoutePlanningPage() {
                         {job.address}
                       </p>
 
-                      {job.date && (
+                      {d && (
 
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(job.date),"d MMM",{locale:sv})}
+                          {format(d,"d MMM",{locale:sv})}
                         </p>
 
                       )}
