@@ -6,7 +6,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-import { Route, Loader2, Navigation } from "lucide-react"
+import {
+Route,
+Loader2,
+Navigation,
+CloudRain,
+Wind,
+Thermometer
+} from "lucide-react"
 
 import { format } from "date-fns"
 import { sv } from "date-fns/locale"
@@ -15,6 +22,7 @@ import {
 GoogleMap,
 Marker,
 DirectionsRenderer,
+TrafficLayer,
 useLoadScript
 } from "@react-google-maps/api"
 
@@ -29,6 +37,12 @@ date?:string
 type:string
 }
 
+interface Weather{
+temp:number
+rain:number
+wind:number
+}
+
 export default function RoutePlanningPage(){
 
 const { user } = useAuth()
@@ -38,6 +52,8 @@ const [optimized,setOptimized] = useState<Job[]>([])
 const [directions,setDirections] = useState<any>(null)
 const [loading,setLoading] = useState(true)
 
+const [weather,setWeather] = useState<Weather | null>(null)
+
 const [selectedDate,setSelectedDate] = useState(
 format(new Date(),"yyyy-MM-dd")
 )
@@ -45,6 +61,7 @@ format(new Date(),"yyyy-MM-dd")
 const { isLoaded } = useLoadScript({
 googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
 })
+
 
 /* LOAD JOBS */
 
@@ -72,8 +89,8 @@ points.push({
 id:r.id,
 name:r.name || "Projekt",
 address:r.address || "",
-lat:r.lat,
-lng:r.lng,
+lat:Number(r.lat),
+lng:Number(r.lng),
 status:r.status === "done" ? "done":"pending",
 type:"project",
 date:d
@@ -86,9 +103,42 @@ setLoading(false)
 
 },[user,selectedDate])
 
+
 useEffect(()=>{
 loadJobs()
 },[loadJobs])
+
+
+/* WEATHER */
+
+const loadWeather = async()=>{
+
+try{
+
+const res = await fetch(
+"https://api.open-meteo.com/v1/forecast?latitude=57.7089&longitude=11.9746&current=temperature_2m,precipitation,wind_speed_10m"
+)
+
+const data = await res.json()
+
+if(!data?.current) return
+
+setWeather({
+temp:data.current.temperature_2m,
+rain:data.current.precipitation,
+wind:data.current.wind_speed_10m
+})
+
+}catch{
+console.log("Weather error")
+}
+
+}
+
+useEffect(()=>{
+loadWeather()
+},[])
+
 
 /* ROUTE OPTIMIZATION */
 
@@ -96,8 +146,10 @@ useEffect(()=>{
 
 if(!isLoaded) return
 if(jobs.length < 2) return
+if(!window.google) return
 
-const directionsService = new google.maps.DirectionsService()
+const directionsService =
+new window.google.maps.DirectionsService()
 
 const origin = {
 lat:jobs[0].lat,
@@ -119,7 +171,7 @@ origin,
 destination,
 waypoints,
 optimizeWaypoints:true,
-travelMode:google.maps.TravelMode.DRIVING
+travelMode:window.google.maps.TravelMode.DRIVING
 
 },
 (result,status)=>{
@@ -144,7 +196,11 @@ setOptimized(optimizedRoute)
 
 },[jobs,isLoaded])
 
+
 const routeJobs = optimized.length ? optimized : jobs
+
+
+/* NAVIGATION */
 
 const openNavigation = (job:Job)=>{
 
@@ -155,9 +211,21 @@ window.open(
 
 }
 
+
+/* MAP CENTER */
+
 const center = routeJobs.length
 ? {lat:routeJobs[0].lat,lng:routeJobs[0].lng}
 : {lat:57.7089,lng:11.9746}
+
+
+/* SLIP RISK */
+
+const slipRisk =
+weather &&
+weather.temp <= 0 &&
+weather.rain > 0
+
 
 return(
 
@@ -167,6 +235,76 @@ return(
 <Route className="h-6 w-6"/>
 Ruttplanering – {format(new Date(selectedDate),"d MMMM",{locale:sv})}
 </h1>
+
+
+{/* WEATHER */}
+
+{weather && (
+
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+<Card>
+<CardContent className="p-4 flex items-center gap-3">
+<Thermometer className="w-5 h-5 text-orange-500"/>
+<div>
+<p className="text-xs text-muted-foreground">
+Temperatur
+</p>
+<p className="font-semibold">
+{weather.temp}°C
+</p>
+</div>
+</CardContent>
+</Card>
+
+<Card>
+<CardContent className="p-4 flex items-center gap-3">
+<CloudRain className="w-5 h-5 text-blue-500"/>
+<div>
+<p className="text-xs text-muted-foreground">
+Nederbörd
+</p>
+<p className="font-semibold">
+{weather.rain} mm
+</p>
+</div>
+</CardContent>
+</Card>
+
+<Card>
+<CardContent className="p-4 flex items-center gap-3">
+<Wind className="w-5 h-5 text-gray-500"/>
+<div>
+<p className="text-xs text-muted-foreground">
+Vind
+</p>
+<p className="font-semibold">
+{weather.wind} m/s
+</p>
+</div>
+</CardContent>
+</Card>
+
+<Card>
+<CardContent className="p-4 flex items-center">
+
+{slipRisk ? (
+<Badge variant="destructive">
+Halkrisk
+</Badge>
+) : (
+<Badge variant="outline">
+Normal drift
+</Badge>
+)}
+
+</CardContent>
+</Card>
+
+</div>
+
+)}
+
 
 {/* DATE SELECTOR */}
 
@@ -198,6 +336,9 @@ ${iso===selectedDate?"bg-primary text-white":""}`}
 
 </div>
 
+
+{/* MAP */}
+
 {loading ? (
 
 <div className="flex justify-center p-10">
@@ -206,11 +347,9 @@ ${iso===selectedDate?"bg-primary text-white":""}`}
 
 ):( 
 
-<>
+isLoaded && (
 
-{isLoaded && (
-
-<div className="h-[400px] w-full rounded-xl overflow-hidden border">
+<div className="h-[420px] w-full rounded-xl overflow-hidden border">
 
 <GoogleMap
 zoom={11}
@@ -218,12 +357,9 @@ center={center}
 mapContainerStyle={{width:"100%",height:"100%"}}
 >
 
-{routeJobs.map((job,index)=>{
+<TrafficLayer />
 
-const color =
-job.status==="done"
-? "#22c55e"
-: "#ef4444"
+{routeJobs.map((job,index)=>{
 
 return(
 
@@ -233,14 +369,6 @@ position={{lat:job.lat,lng:job.lng}}
 label={{
 text:String(index+1),
 color:"#fff"
-}}
-icon={{
-path:google.maps.SymbolPath.CIRCLE,
-scale:12,
-fillColor:color,
-fillOpacity:1,
-strokeColor:"#fff",
-strokeWeight:2
 }}
 />
 
@@ -256,7 +384,12 @@ strokeWeight:2
 
 </div>
 
+)
+
 )}
+
+
+{/* JOB LIST */}
 
 <div className="grid gap-3">
 
@@ -310,10 +443,6 @@ Navigera
 })}
 
 </div>
-
-</>
-
-)}
 
 </div>
 
