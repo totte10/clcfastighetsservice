@@ -18,9 +18,10 @@ interface Props{
 
 export default function AdvancedMap({jobs,directions}:Props){
 
-  const center = jobs.length
-    ? {lat:jobs[0].lat,lng:jobs[0].lng}
-    : {lat:57.7089,lng:11.9746}
+  const center =
+    jobs.length > 0
+      ? {lat:Number(jobs[0].lat),lng:Number(jobs[0].lng)}
+      : {lat:57.7089,lng:11.9746}
 
   return(
 
@@ -40,7 +41,9 @@ export default function AdvancedMap({jobs,directions}:Props){
         }}
       >
 
-        {jobs.length > 0 && jobs.map((job,index)=>{
+        {jobs?.map((job,index)=>{
+
+          if(!job.lat || !job.lng) return null
 
           const color =
             job.status === "done"
@@ -58,14 +61,6 @@ export default function AdvancedMap({jobs,directions}:Props){
               label={{
                 text:String(index+1),
                 color:"#fff"
-              }}
-              icon={{
-                path:google.maps.SymbolPath.CIRCLE,
-                scale:12,
-                fillColor:color,
-                fillOpacity:1,
-                strokeColor:"#fff",
-                strokeWeight:2
               }}
             />
 
