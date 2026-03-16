@@ -18,18 +18,9 @@ interface Props{
 
 export default function AdvancedMap({jobs,directions}:Props){
 
-  if(!jobs || jobs.length === 0){
-    return (
-      <div className="h-[400px] w-full rounded-xl border flex items-center justify-center text-sm text-muted-foreground">
-        Inga uppdrag med position
-      </div>
-    )
-  }
-
-  const center = {
-    lat:Number(jobs[0].lat),
-    lng:Number(jobs[0].lng)
-  }
+  const center = jobs.length
+    ? {lat:jobs[0].lat,lng:jobs[0].lng}
+    : {lat:57.7089,lng:11.9746}
 
   return(
 
@@ -49,9 +40,12 @@ export default function AdvancedMap({jobs,directions}:Props){
         }}
       >
 
-        {jobs.map((job,index)=>{
+        {jobs.length > 0 && jobs.map((job,index)=>{
 
-          if(!job.lat || !job.lng) return null
+          const color =
+            job.status === "done"
+              ? "#22c55e"
+              : "#ef4444"
 
           return(
 
@@ -64,6 +58,14 @@ export default function AdvancedMap({jobs,directions}:Props){
               label={{
                 text:String(index+1),
                 color:"#fff"
+              }}
+              icon={{
+                path:google.maps.SymbolPath.CIRCLE,
+                scale:12,
+                fillColor:color,
+                fillOpacity:1,
+                strokeColor:"#fff",
+                strokeWeight:2
               }}
             />
 
