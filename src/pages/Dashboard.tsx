@@ -10,7 +10,6 @@ import {
   MapPin,
   Navigation,
   Loader2,
-  CloudSnow,
   CloudRain,
   Wind,
   Thermometer
@@ -19,9 +18,12 @@ import {
 import { format } from "date-fns"
 import { sv } from "date-fns/locale"
 
-import { useLoadScript } from "@react-google-maps/api"
-
-import AdvancedMap from "@/components/AdvancedMap"
+import {
+  GoogleMap,
+  Marker,
+  TrafficLayer,
+  useLoadScript
+} from "@react-google-maps/api"
 
 interface Job{
   id:string
@@ -76,8 +78,6 @@ export default function Dashboard(){
 
     const list:Job[] = []
 
-    /* PROJECTS */
-
     ;(projects.data ?? []).forEach(r=>{
 
       if(!r.lat || !r.lng) return
@@ -94,8 +94,6 @@ export default function Dashboard(){
 
     })
 
-    /* TIDX */
-
     ;(tidx.data ?? []).forEach(r=>{
 
       if(!r.lat || !r.lng) return
@@ -111,8 +109,6 @@ export default function Dashboard(){
       })
 
     })
-
-    /* EGNA */
 
     ;(egna.data ?? []).forEach(r=>{
 
@@ -135,7 +131,6 @@ export default function Dashboard(){
     })
 
     setJobs(list)
-
     setLoading(false)
 
   },[user])
@@ -172,7 +167,6 @@ export default function Dashboard(){
 
   }
 
-
   useEffect(()=>{
     loadWeather()
   },[])
@@ -188,6 +182,14 @@ export default function Dashboard(){
     )
 
   }
+
+
+  /* ---------------- MAP CENTER ---------------- */
+
+  const center =
+    jobs.length > 0
+      ? {lat:jobs[0].lat,lng:jobs[0].lng}
+      : {lat:57.7089,lng:11.9746}
 
 
   /* ---------------- RISK ---------------- */
@@ -213,7 +215,11 @@ export default function Dashboard(){
         </h1>
 
         <p className="text-sm text-muted-foreground">
-          {format(new Date(),"EEEE d MMMM",{locale:sv})}
+          {format(
+            new Date(Date.now() + 2 * 60 * 60 * 1000),
+            "EEEE d MMMM HH:mm",
+            {locale:sv}
+          )}
         </p>
 
       </div>
@@ -226,94 +232,64 @@ export default function Dashboard(){
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
           <Card>
-
             <CardContent className="p-4 flex items-center gap-3">
-
               <Thermometer className="w-5 h-5 text-orange-500"/>
-
               <div>
-
                 <p className="text-xs text-muted-foreground">
                   Temperatur
                 </p>
-
                 <p className="font-semibold">
                   {weather.temp}°C
                 </p>
-
               </div>
-
             </CardContent>
-
           </Card>
 
 
           <Card>
-
             <CardContent className="p-4 flex items-center gap-3">
-
               <CloudRain className="w-5 h-5 text-blue-500"/>
-
               <div>
-
                 <p className="text-xs text-muted-foreground">
                   Nederbörd
                 </p>
-
                 <p className="font-semibold">
                   {weather.rain} mm
                 </p>
-
               </div>
-
             </CardContent>
-
           </Card>
 
 
           <Card>
-
             <CardContent className="p-4 flex items-center gap-3">
-
               <Wind className="w-5 h-5 text-gray-500"/>
-
               <div>
-
                 <p className="text-xs text-muted-foreground">
                   Vind
                 </p>
-
                 <p className="font-semibold">
                   {weather.wind} m/s
                 </p>
-
               </div>
-
             </CardContent>
-
           </Card>
 
 
           <Card>
-
             <CardContent className="p-4 flex items-center">
 
               {slipRisk ? (
-
                 <Badge variant="destructive">
                   Halkrisk
                 </Badge>
-
               ) : (
-
                 <Badge variant="outline">
                   Normal drift
                 </Badge>
-
               )}
 
             </CardContent>
-
           </Card>
 
         </div>
@@ -332,10 +308,61 @@ export default function Dashboard(){
       ) : (
 
         isLoaded && (
-          <AdvancedMap
-            jobs={jobs}
-            directions={null}
-          />
+
+          <div className="h-[420px] w-full rounded-xl overflow-hidden border">
+
+            <GoogleMap
+              zoom={11}
+              center={center}
+              mapContainerStyle={{
+                width:"100%",
+                height:"100%"
+              }}
+              options={{
+                fullscreenControl:false,
+                streetViewControl:false,
+                mapTypeControl:true
+              }}
+            >
+
+              {/* TRAFFIC LAYER */}
+
+              <TrafficLayer />
+
+              {jobs.map((job,index)=>{
+
+                const color =
+                  job.status === "done"
+                    ? "#22c55e"
+                    : "#ef4444"
+
+                return(
+
+                  <Marker
+                    key={job.id}
+                    position={{lat:job.lat,lng:job.lng}}
+                    label={{
+                      text:String(index+1),
+                      color:"#fff"
+                    }}
+                    icon={{
+                      path:google.maps.SymbolPath.CIRCLE,
+                      scale:12,
+                      fillColor:color,
+                      fillOpacity:1,
+                      strokeColor:"#fff",
+                      strokeWeight:2
+                    }}
+                  />
+
+                )
+
+              })}
+
+            </GoogleMap>
+
+          </div>
+
         )
 
       )}
