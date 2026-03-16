@@ -1,293 +1,317 @@
-import { useState, useEffect, useCallback } from "react"
-import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/hooks/useAuth"
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import {
+  CalendarDays,
+  Play,
+  Check,
+  Timer,
+  MapPin,
+} from "lucide-react";
 
-import { MapPin, Navigation, Loader2, CloudSnow, CloudRain, Wind } from "lucide-react"
-
-import { format } from "date-fns"
-import { sv } from "date-fns/locale"
-
-import { useLoadScript } from "@react-google-maps/api"
-
-import AdvancedMap from "@/components/AdvancedMap"
+import { format, addDays, getISOWeek } from "date-fns";
+import { sv } from "date-fns/locale";
 
 interface Job {
-  id:string
-  name:string
-  address:string
-  lat:number
-  lng:number
-  status:string
+  id: string;
+  name: string;
+  address: string;
+  date: string;
+  status: string;
+  lat?: number;
+  lng?: number;
+  source: string;
+  type?: string;
 }
 
-interface Weather {
-  temp:number
-  snow:number
-  rain:number
-  wind:number
-}
+type FilterType = "all" | "pending" | "in-progress" | "done";
 
-export default function Dashboard(){
+export default function Dashboard() {
 
-  const { user } = useAuth()
+  const navigate = useNavigate();
 
-  const [jobs,setJobs] = useState<Job[]>([])
-  const [loading,setLoading] = useState(true)
+  const { user, profile } = useAuth();
 
-  const [weather,setWeather] = useState<Weather | null>(null)
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [weeklyHours, setWeeklyHours] = useState(0);
+  const [filter, setFilter] = useState<FilterType>("all");
 
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
-  })
+  const today = format(new Date(), "yyyy-MM-dd");
 
-  /* ---------------- LOAD JOBS ---------------- */
+  /* LOAD JOBS */
 
-  const loadJobs = useCallback(async ()=>{
+  const loadJobs = useCallback(async () => {
 
-    if(!user) return
+    const [projects, tidx, egna, tmm, optimal] = await Promise.all([
+      supabase.from("projects").select("*"),
+      supabase.from("tidx_entries").select("*"),
+      supabase.from("egna_entries").select("*"),
+      supabase.from("tmm_entries").select("*"),
+      supabase.from("optimal_entries").select("*"),
+    ]);
 
-    setLoading(true)
+    const result: Job[] = [];
 
-    const { data } = await supabase
-      .from("projects")
-      .select("id,name,address,lat,lng,status")
+    projects.data?.forEach((p: any) => {
+      if (!p.datum_planerat) return;
 
-    const points:Job[] = []
+      result.push({
+        id: `project-${p.id}`,
+        name: p.name,
+        address: p.address,
+        status: p.status || "pending",
+        date: p.datum_planerat.slice(0, 10),
+        lat: p.lat,
+        lng: p.lng,
+        source: "project",
+      });
+    });
 
-    ;(data ?? []).forEach(r => {
+    tidx.data?.forEach((t: any) => {
+      if (!t.datum_planerat) return;
 
-      if(r.lat && r.lng){
+      result.push({
+        id: `tidx-${t.id}`,
+        name: t.omrade || t.address,
+        address: t.address,
+        status: t.status || "pending",
+        date: t.datum_planerat.slice(0, 10),
+        lat: t.lat,
+        lng: t.lng,
+        source: "tidx",
+      });
+    });
 
-        points.push({
-          id:r.id,
-          name:r.name,
-          address:r.address,
-          lat:r.lat,
-          lng:r.lng,
-          status:r.status
-        })
+    egna.data?.forEach((e: any) => {
+      if (!e.datum_planerat) return;
 
-      }
+      result.push({
+        id: `egna-${e.id}`,
+        name: e.address,
+        address: e.address,
+        status: "pending",
+        date: e.datum_planerat.slice(0, 10),
+        lat: e.lat,
+        lng: e.lng,
+        source: "egna",
+      });
+    });
 
-    })
+    tmm.data?.forEach((t: any) => {
+      if (!t.datum) return;
 
-    setJobs(points)
-    setLoading(false)
+      result.push({
+        id: `tmm-${t.id}`,
+        name: t.beskrivning || t.address,
+        address: t.address,
+        status: t.status || "pending",
+        date: t.datum.slice(0, 10),
+        lat: t.lat,
+        lng: t.lng,
+        source: "tmm",
+      });
+    });
 
-  },[user])
+    optimal.data?.forEach((o: any) => {
+      if (!o.datum_start) return;
 
-  useEffect(()=>{
-    loadJobs()
-  },[loadJobs])
+      result.push({
+        id: `optimal-${o.id}`,
+        name: o.name,
+        address: o.address,
+        status: o.status || "pending",
+        date: o.datum_start.slice(0, 10),
+        lat: o.lat,
+        lng: o.lng,
+        source: "optimal",
+      });
+    });
 
+    setJobs(result);
 
-  /* ---------------- WEATHER ---------------- */
+  }, []);
 
-  const loadWeather = async () => {
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
 
-    try{
+  /* HOURS */
 
-      const res = await fetch(
-        "https://api.open-meteo.com/v1/forecast?latitude=57.7089&longitude=11.9746&current=temperature_2m,precipitation,wind_speed_10m"
-      )
+  useEffect(() => {
 
-      const data = await res.json()
+    async function loadHours() {
 
-      setWeather({
-        temp:data.current.temperature_2m,
-        snow:data.current.precipitation,
-        rain:data.current.precipitation,
-        wind:data.current.wind_speed_10m
-      })
+      const { data } = await supabase
+        .from("user_time_entries")
+        .select("hours");
 
-    }catch(e){
+      const total =
+        (data ?? []).reduce(
+          (s: any, r: any) => s + (Number(r.hours) || 0),
+          0
+        );
 
-      console.log("Weather error")
+      setWeeklyHours(total);
 
     }
 
-  }
+    loadHours();
 
-  useEffect(()=>{
-    loadWeather()
-  },[])
+  }, []);
 
-  /* ---------------- NAVIGATION ---------------- */
+  /* TODAY JOBS */
 
-  const openNavigation = (job:Job)=>{
+  const todayJobs = jobs.filter((j) => j.date === today);
 
-    window.open(
-      `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`,
-      "_blank"
-    )
+  const done = todayJobs.filter((j) => j.status === "done").length;
+  const started = todayJobs.filter((j) => j.status === "in-progress").length;
 
-  }
+  const progress =
+    todayJobs.length > 0
+      ? Math.round((done / todayJobs.length) * 100)
+      : 0;
 
-  /* ---------------- UI ---------------- */
+  const filteredJobs =
+    filter === "all"
+      ? todayJobs
+      : todayJobs.filter((j) => j.status === filter);
 
-  return(
+  /* ROUTE SORT */
 
-    <div className="space-y-6">
+  const mapJobs = useMemo(() => {
 
-      {/* HEADER */}
+    const jobsWithCoords = todayJobs.filter((j) => j.lat && j.lng);
+
+    if (jobsWithCoords.length <= 1) return jobsWithCoords;
+
+    const sorted = [jobsWithCoords[0]];
+    const visited = new Set([jobsWithCoords[0].id]);
+
+    while (sorted.length < jobsWithCoords.length) {
+
+      const current = sorted[sorted.length - 1];
+
+      let nearest: any = null;
+      let shortest = Infinity;
+
+      for (const j of jobsWithCoords) {
+
+        if (visited.has(j.id)) continue;
+
+        const dx = current.lat! - j.lat!;
+        const dy = current.lng! - j.lng!;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < shortest) {
+          shortest = dist;
+          nearest = j;
+        }
+
+      }
+
+      if (nearest) {
+        visited.add(nearest.id);
+        sorted.push(nearest);
+      } else {
+        break;
+      }
+
+    }
+
+    return sorted;
+
+  }, [todayJobs]);
+
+  const firstName =
+    profile?.fullName?.split(" ")[0] || "där";
+
+  const statusDot = (status: string) => {
+    if (status === "done") return "bg-emerald-400";
+    if (status === "in-progress") return "bg-amber-400";
+    return "bg-white/20";
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === "done") return "Klar";
+    if (status === "in-progress") return "Pågående";
+    return "Planerad";
+  };
+
+  return (
+
+    <div className="space-y-5">
 
       <div>
 
         <h1 className="text-2xl font-bold">
-          Operations Center
+          Hej {firstName} 👋
         </h1>
 
         <p className="text-sm text-muted-foreground">
-          {format(new Date(),"EEEE d MMMM",{locale:sv})}
+          {format(new Date(), "EEEE d MMMM", { locale: sv })}
         </p>
 
       </div>
 
 
-      {/* WEATHER */}
-
-      {weather && (
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <CloudSnow className="w-5 h-5 text-blue-500"/>
-              <div>
-                <p className="text-xs text-muted-foreground">Temperatur</p>
-                <p className="font-semibold">{weather.temp}°C</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <CloudRain className="w-5 h-5 text-blue-400"/>
-              <div>
-                <p className="text-xs text-muted-foreground">Nederbörd</p>
-                <p className="font-semibold">{weather.rain} mm</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Wind className="w-5 h-5 text-gray-400"/>
-              <div>
-                <p className="text-xs text-muted-foreground">Vind</p>
-                <p className="font-semibold">{weather.wind} m/s</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-
-              {weather.temp <= 0 && weather.rain > 0 ? (
-
-                <Badge variant="destructive">
-                  Halkrisk
-                </Badge>
-
-              ) : (
-
-                <Badge variant="outline">
-                  Normal drift
-                </Badge>
-
-              )}
-
-            </CardContent>
-          </Card>
-
-        </div>
-
-      )}
-
-
       {/* MAP */}
 
-      {loading ? (
-
-        <div className="flex justify-center p-12">
-          <Loader2 className="animate-spin"/>
+      {mapJobs.length > 0 && (
+        <div className="glass-card overflow-hidden p-0">
+          <DashboardWorkerMap jobs={mapJobs as any} />
         </div>
-
-      ) : (
-
-        isLoaded && (
-
-          <AdvancedMap
-            jobs={jobs}
-            directions={null}
-          />
-
-        )
-
       )}
 
 
       {/* JOB LIST */}
 
-      <div className="grid gap-3">
+      <div className="space-y-2">
 
-        {jobs.map(job => {
+        {(filter === "all" ? mapJobs : filteredJobs).map((job) => (
 
-          const isDone = job.status === "done"
+          <div
+            key={job.id}
+            onClick={() => navigate(`/job/${job.id}`)}
+            className="glass-card p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition"
+          >
 
-          return(
+            <div className={`w-2.5 h-2.5 rounded-full ${statusDot(job.status)}`} />
 
-            <Card key={job.id}>
+            <div className="flex-1 min-w-0">
 
-              <CardContent className="p-4 flex items-center gap-4">
+              <p className="text-sm font-medium truncate">
+                {job.name}
+              </p>
 
-                <MapPin className="w-4 h-4 text-muted-foreground"/>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
 
-                <div className="flex-1">
+                <MapPin size={11} />
 
-                  <p className="font-medium text-sm">
-                    {job.name}
-                  </p>
+                <span className="truncate">
+                  {job.address}
+                </span>
 
-                  <p className="text-xs text-muted-foreground">
-                    {job.address}
-                  </p>
+              </p>
 
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] mt-1 ${
-                      isDone ? "text-green-500" : "text-red-500"
-                    }`}
-                  >
-                    {isDone ? "Klar" : "Ej klar"}
-                  </Badge>
+            </div>
 
-                </div>
+            <span className="text-[10px] px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.06] text-white/50">
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={()=>openNavigation(job)}
-                >
-                  <Navigation className="w-4 h-4"/>
-                </Button>
+              {statusLabel(job.status)}
 
-              </CardContent>
+            </span>
 
-            </Card>
+          </div>
 
-          )
-
-        })}
+        ))}
 
       </div>
 
     </div>
 
-  )
+  );
 
 }
