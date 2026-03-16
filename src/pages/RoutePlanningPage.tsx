@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 
-import { Route, Loader2, ExternalLink, Navigation, Check } from "lucide-react"
+import { Route, Loader2, ExternalLink, Navigation } from "lucide-react"
 
 import { format } from "date-fns"
 import { sv } from "date-fns/locale"
@@ -25,6 +25,7 @@ interface JobPoint {
   lng: number
   status: string
   type: string
+  date?: string
 }
 
 export default function RoutePlanningPage() {
@@ -41,8 +42,7 @@ export default function RoutePlanningPage() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
   })
 
-
-  /* LOAD JOBS FROM ALL TABLES */
+  /* LOAD JOBS */
 
   const loadJobs = useCallback(async () => {
 
@@ -52,25 +52,20 @@ export default function RoutePlanningPage() {
 
     const [projects,tidx,egna,tmm,optimal] = await Promise.all([
 
-      supabase
-        .from("projects")
-        .select("id,name,address,lat,lng,status"),
+      supabase.from("projects")
+      .select("id,name,address,lat,lng,status,datum_planerat"),
 
-      supabase
-        .from("tidx_entries")
-        .select("id,omrade,address,lat,lng,status"),
+      supabase.from("tidx_entries")
+      .select("id,omrade,address,lat,lng,status,datum_planerat"),
 
-      supabase
-        .from("egna_entries")
-        .select("id,address,lat,lng,blow_status,sweep_status"),
+      supabase.from("egna_entries")
+      .select("id,address,lat,lng,blow_status,sweep_status,datum_planerat"),
 
-      supabase
-        .from("tmm_entries")
-        .select("id,beskrivning,address,lat,lng,status"),
+      supabase.from("tmm_entries")
+      .select("id,beskrivning,address,lat,lng,status,datum"),
 
-      supabase
-        .from("optimal_entries")
-        .select("id,name,address,lat,lng,status")
+      supabase.from("optimal_entries")
+      .select("id,name,address,lat,lng,status,datum_start")
 
     ])
 
@@ -78,112 +73,102 @@ export default function RoutePlanningPage() {
 
     /* PROJECTS */
 
-    ;(projects.data ?? []).forEach(r => {
+    projects.data?.forEach(r => {
 
-      if(r.lat && r.lng){
+      if(!r.lat || !r.lng) return
 
-        points.push({
-          id:r.id,
-          name:r.name || "Projekt",
-          address:r.address || "",
-          lat:r.lat,
-          lng:r.lng,
-          status:r.status === "done" ? "done" : "pending",
-          type:"project"
-        })
-
-      }
+      points.push({
+        id:r.id,
+        name:r.name || "Projekt",
+        address:r.address || "",
+        lat:r.lat,
+        lng:r.lng,
+        status:r.status === "done" ? "done" : "pending",
+        type:"project",
+        date:r.datum_planerat
+      })
 
     })
-
 
     /* TIDX */
 
-    ;(tidx.data ?? []).forEach(r => {
+    tidx.data?.forEach(r => {
 
-      if(r.lat && r.lng){
+      if(!r.lat || !r.lng) return
 
-        points.push({
-          id:`tidx-${r.id}`,
-          name:r.omrade || "TIDX",
-          address:r.address || "",
-          lat:r.lat,
-          lng:r.lng,
-          status:r.status === "done" ? "done" : "pending",
-          type:"tidx"
-        })
-
-      }
+      points.push({
+        id:`tidx-${r.id}`,
+        name:r.omrade || "TIDX",
+        address:r.address || "",
+        lat:r.lat,
+        lng:r.lng,
+        status:r.status === "done" ? "done" : "pending",
+        type:"tidx",
+        date:r.datum_planerat
+      })
 
     })
-
 
     /* EGNA */
 
-    ;(egna.data ?? []).forEach(r => {
+    egna.data?.forEach(r => {
 
-      if(r.lat && r.lng){
+      if(!r.lat || !r.lng) return
 
-        const done =
-          r.blow_status === "done" &&
-          r.sweep_status === "done"
+      const done =
+        r.blow_status === "done" &&
+        r.sweep_status === "done"
 
-        points.push({
-          id:`egna-${r.id}`,
-          name:"Egna område",
-          address:r.address || "",
-          lat:r.lat,
-          lng:r.lng,
-          status: done ? "done" : "pending",
-          type:"egna"
-        })
-
-      }
+      points.push({
+        id:`egna-${r.id}`,
+        name:"Egna område",
+        address:r.address || "",
+        lat:r.lat,
+        lng:r.lng,
+        status: done ? "done" : "pending",
+        type:"egna",
+        date:r.datum_planerat
+      })
 
     })
-
 
     /* TMM */
 
-    ;(tmm.data ?? []).forEach(r => {
+    tmm.data?.forEach(r => {
 
-      if(r.lat && r.lng){
+      if(!r.lat || !r.lng) return
 
-        points.push({
-          id:`tmm-${r.id}`,
-          name:r.beskrivning || "TMM",
-          address:r.address || "",
-          lat:r.lat,
-          lng:r.lng,
-          status:r.status === "done" ? "done" : "pending",
-          type:"tmm"
-        })
-
-      }
+      points.push({
+        id:`tmm-${r.id}`,
+        name:r.beskrivning || "TMM",
+        address:r.address || "",
+        lat:r.lat,
+        lng:r.lng,
+        status:r.status === "done" ? "done" : "pending",
+        type:"tmm",
+        date:r.datum
+      })
 
     })
-
 
     /* OPTIMAL */
 
-    ;(optimal.data ?? []).forEach(r => {
+    optimal.data?.forEach(r => {
 
-      if(r.lat && r.lng){
+      if(!r.lat || !r.lng) return
 
-        points.push({
-          id:`optimal-${r.id}`,
-          name:r.name || "Optimal",
-          address:r.address || "",
-          lat:r.lat,
-          lng:r.lng,
-          status:r.status === "done" ? "done" : "pending",
-          type:"optimal"
-        })
-
-      }
+      points.push({
+        id:`optimal-${r.id}`,
+        name:r.name || "Optimal",
+        address:r.address || "",
+        lat:r.lat,
+        lng:r.lng,
+        status:r.status === "done" ? "done" : "pending",
+        type:"optimal",
+        date:r.datum_start
+      })
 
     })
-
 
     setJobs(points)
     setLoading(false)
@@ -252,7 +237,8 @@ export default function RoutePlanningPage() {
   },[jobs,avoidHighways,isLoaded])
 
 
-  /* ACTIONS */
+  const routeJobs = optimizedJobs.length ? optimizedJobs : jobs
+
 
   const openNavigation = (job:JobPoint)=>{
 
@@ -263,20 +249,18 @@ export default function RoutePlanningPage() {
 
   }
 
-  const startFullRoute = () => {
 
-    if(optimizedJobs.length === 0) return
+  const getTypeColor = (type:string)=>{
 
-    const path = optimizedJobs
-      .map(j => `${j.lat},${j.lng}`)
-      .join("/")
+    if(type==="project") return "bg-blue-500"
+    if(type==="tidx") return "bg-orange-500"
+    if(type==="egna") return "bg-purple-500"
+    if(type==="tmm") return "bg-yellow-500"
+    if(type==="optimal") return "bg-green-500"
 
-    window.open(`https://www.google.com/maps/dir/${path}`,"_blank")
+    return "bg-gray-500"
 
   }
-
-
-  const routeJobs = optimizedJobs.length ? optimizedJobs : jobs
 
 
   return (
@@ -289,37 +273,6 @@ export default function RoutePlanningPage() {
           <Route className="h-6 w-6 text-primary"/>
           Ruttplanering – {format(new Date(),"d MMMM",{locale:sv})}
         </h1>
-
-        <div className="flex items-center gap-4">
-
-          <div className="flex items-center gap-2">
-
-            <Switch
-              id="avoid-hw"
-              checked={avoidHighways}
-              onCheckedChange={setAvoidHighways}
-            />
-
-            <Label htmlFor="avoid-hw" className="text-xs">
-              Undvik motorvägar
-            </Label>
-
-          </div>
-
-          {routeJobs.length > 1 && (
-
-            <Button
-              size="sm"
-              onClick={startFullRoute}
-              className="gap-2"
-            >
-              <Navigation className="h-4 w-4"/>
-              Starta rutt
-            </Button>
-
-          )}
-
-        </div>
 
       </div>
 
@@ -350,6 +303,8 @@ export default function RoutePlanningPage() {
 
                   <CardContent className="p-4 flex items-center gap-4">
 
+                    <div className={`w-3 h-10 rounded ${getTypeColor(job.type)}`} />
+
                     <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
                       {index+1}
                     </div>
@@ -363,6 +318,14 @@ export default function RoutePlanningPage() {
                       <p className="text-xs text-muted-foreground">
                         {job.address}
                       </p>
+
+                      {job.date && (
+
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(job.date),"d MMM",{locale:sv})}
+                        </p>
+
+                      )}
 
                       <Badge
                         variant="outline"
