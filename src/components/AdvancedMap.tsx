@@ -18,20 +18,18 @@ interface Props{
 
 export default function AdvancedMap({jobs,directions}:Props){
 
-  /* ---------- SAFETY CHECKS ---------- */
+  if(!jobs || jobs.length === 0){
+    return (
+      <div className="h-[400px] w-full rounded-xl border flex items-center justify-center text-sm text-muted-foreground">
+        Inga uppdrag med position
+      </div>
+    )
+  }
 
-  if(!jobs) return null
-  if(typeof window === "undefined") return null
-  if(!(window as any).google) return null
-
-
-  /* ---------- MAP CENTER ---------- */
-
-  const center =
-    jobs.length > 0
-      ? {lat:Number(jobs[0].lat),lng:Number(jobs[0].lng)}
-      : {lat:57.7089,lng:11.9746}
-
+  const center = {
+    lat:Number(jobs[0].lat),
+    lng:Number(jobs[0].lng)
+  }
 
   return(
 
@@ -51,16 +49,9 @@ export default function AdvancedMap({jobs,directions}:Props){
         }}
       >
 
-        {/* MARKERS */}
-
         {jobs.map((job,index)=>{
 
           if(!job.lat || !job.lng) return null
-
-          const color =
-            job.status === "done"
-              ? "#22c55e"
-              : "#ef4444"
 
           return(
 
@@ -74,21 +65,11 @@ export default function AdvancedMap({jobs,directions}:Props){
                 text:String(index+1),
                 color:"#fff"
               }}
-              icon={{
-                path:google.maps.SymbolPath.CIRCLE,
-                scale:12,
-                fillColor:color,
-                fillOpacity:1,
-                strokeColor:"#fff",
-                strokeWeight:2
-              }}
             />
 
           )
 
         })}
-
-        {/* ROUTE */}
 
         {directions && (
           <DirectionsRenderer
