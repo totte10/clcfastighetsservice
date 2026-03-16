@@ -1,248 +1,256 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { DashboardWorkerMap } from "@/components/DashboardWorkerMap";
+import { useState, useEffect, useMemo, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/hooks/useAuth"
+import { DashboardWorkerMap } from "@/components/DashboardWorkerMap"
 
-import {
-  CalendarDays,
-  Play,
-  Check,
-  Timer,
-  MapPin,
-} from "lucide-react";
+import { MapPin } from "lucide-react"
 
-import { format, addDays, getISOWeek } from "date-fns";
-import { sv } from "date-fns/locale";
+import { format } from "date-fns"
+import { sv } from "date-fns/locale"
 
-interface Job {
-  id: string;
-  name: string;
-  address: string;
-  date: string;
-  status: string;
-  lat?: number;
-  lng?: number;
-  source: string;
-  type?: string;
+interface Job{
+  id:string
+  name:string
+  address:string
+  date:string
+  status:string
+  lat?:number
+  lng?:number
+  source:string
 }
 
-type FilterType = "all" | "pending" | "in-progress" | "done";
+type FilterType = "all" | "pending" | "in-progress" | "done"
 
-export default function Dashboard() {
+export default function Dashboard(){
 
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-  const { user, profile } = useAuth();
+  const { user, profile } = useAuth()
 
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [weeklyHours, setWeeklyHours] = useState(0);
-  const [filter, setFilter] = useState<FilterType>("all");
+  const [jobs,setJobs] = useState<Job[]>([])
+  const [filter,setFilter] = useState<FilterType>("all")
 
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = format(new Date(),"yyyy-MM-dd")
 
   /* LOAD JOBS */
 
-  const loadJobs = useCallback(async () => {
+  const loadJobs = useCallback(async()=>{
 
-    const [projects, tidx, egna, tmm, optimal] = await Promise.all([
-      supabase.from("projects").select("*"),
-      supabase.from("tidx_entries").select("*"),
-      supabase.from("egna_entries").select("*"),
-      supabase.from("tmm_entries").select("*"),
-      supabase.from("optimal_entries").select("*"),
-    ]);
+    try{
 
-    const result: Job[] = [];
+      const [projects,tidx,egna,tmm,optimal] = await Promise.all([
 
-    projects.data?.forEach((p: any) => {
-      if (!p.datum_planerat) return;
+        supabase.from("projects").select("*"),
+        supabase.from("tidx_entries").select("*"),
+        supabase.from("egna_entries").select("*"),
+        supabase.from("tmm_entries").select("*"),
+        supabase.from("optimal_entries").select("*")
 
-      result.push({
-        id: `project-${p.id}`,
-        name: p.name,
-        address: p.address,
-        status: p.status || "pending",
-        date: p.datum_planerat.slice(0, 10),
-        lat: p.lat,
-        lng: p.lng,
-        source: "project",
-      });
-    });
+      ])
 
-    tidx.data?.forEach((t: any) => {
-      if (!t.datum_planerat) return;
+      const result:Job[] = []
 
-      result.push({
-        id: `tidx-${t.id}`,
-        name: t.omrade || t.address,
-        address: t.address,
-        status: t.status || "pending",
-        date: t.datum_planerat.slice(0, 10),
-        lat: t.lat,
-        lng: t.lng,
-        source: "tidx",
-      });
-    });
+      /* PROJECTS */
 
-    egna.data?.forEach((e: any) => {
-      if (!e.datum_planerat) return;
+      projects.data?.forEach((p:any)=>{
 
-      result.push({
-        id: `egna-${e.id}`,
-        name: e.address,
-        address: e.address,
-        status: "pending",
-        date: e.datum_planerat.slice(0, 10),
-        lat: e.lat,
-        lng: e.lng,
-        source: "egna",
-      });
-    });
+        if(!p.datum_planerat) return
 
-    tmm.data?.forEach((t: any) => {
-      if (!t.datum) return;
+        result.push({
+          id:`project-${p.id}`,
+          name:p.name || "Projekt",
+          address:p.address || "",
+          status:p.status || "pending",
+          date:p.datum_planerat.slice(0,10),
+          lat:p.lat,
+          lng:p.lng,
+          source:"project"
+        })
 
-      result.push({
-        id: `tmm-${t.id}`,
-        name: t.beskrivning || t.address,
-        address: t.address,
-        status: t.status || "pending",
-        date: t.datum.slice(0, 10),
-        lat: t.lat,
-        lng: t.lng,
-        source: "tmm",
-      });
-    });
+      })
 
-    optimal.data?.forEach((o: any) => {
-      if (!o.datum_start) return;
+      /* TIDX */
 
-      result.push({
-        id: `optimal-${o.id}`,
-        name: o.name,
-        address: o.address,
-        status: o.status || "pending",
-        date: o.datum_start.slice(0, 10),
-        lat: o.lat,
-        lng: o.lng,
-        source: "optimal",
-      });
-    });
+      tidx.data?.forEach((t:any)=>{
 
-    setJobs(result);
+        if(!t.datum_planerat) return
 
-  }, []);
+        result.push({
+          id:`tidx-${t.id}`,
+          name:t.omrade || t.address,
+          address:t.address || "",
+          status:t.status || "pending",
+          date:t.datum_planerat.slice(0,10),
+          lat:t.lat,
+          lng:t.lng,
+          source:"tidx"
+        })
 
-  useEffect(() => {
-    loadJobs();
-  }, [loadJobs]);
+      })
 
-  /* HOURS */
+      /* EGNA */
 
-  useEffect(() => {
+      egna.data?.forEach((e:any)=>{
 
-    async function loadHours() {
+        if(!e.datum_planerat) return
 
-      const { data } = await supabase
-        .from("user_time_entries")
-        .select("hours");
+        result.push({
+          id:`egna-${e.id}`,
+          name:e.address || "Egna område",
+          address:e.address || "",
+          status:"pending",
+          date:e.datum_planerat.slice(0,10),
+          lat:e.lat,
+          lng:e.lng,
+          source:"egna"
+        })
 
-      const total =
-        (data ?? []).reduce(
-          (s: any, r: any) => s + (Number(r.hours) || 0),
-          0
-        );
+      })
 
-      setWeeklyHours(total);
+      /* TMM */
+
+      tmm.data?.forEach((t:any)=>{
+
+        if(!t.datum) return
+
+        result.push({
+          id:`tmm-${t.id}`,
+          name:t.beskrivning || t.address,
+          address:t.address || "",
+          status:t.status || "pending",
+          date:t.datum.slice(0,10),
+          lat:t.lat,
+          lng:t.lng,
+          source:"tmm"
+        })
+
+      })
+
+      /* OPTIMAL */
+
+      optimal.data?.forEach((o:any)=>{
+
+        if(!o.datum_start) return
+
+        result.push({
+          id:`optimal-${o.id}`,
+          name:o.name || "Optimal",
+          address:o.address || "",
+          status:o.status || "pending",
+          date:o.datum_start.slice(0,10),
+          lat:o.lat,
+          lng:o.lng,
+          source:"optimal"
+        })
+
+      })
+
+      setJobs(result)
+
+    }catch(e){
+
+      console.log("Load jobs error",e)
 
     }
 
-    loadHours();
+  },[])
 
-  }, []);
+  useEffect(()=>{
+    loadJobs()
+  },[loadJobs])
 
   /* TODAY JOBS */
 
-  const todayJobs = jobs.filter((j) => j.date === today);
+  const todayJobs = useMemo(()=>{
 
-  const done = todayJobs.filter((j) => j.status === "done").length;
-  const started = todayJobs.filter((j) => j.status === "in-progress").length;
+    return jobs.filter(j=>j.date === today)
 
-  const progress =
-    todayJobs.length > 0
-      ? Math.round((done / todayJobs.length) * 100)
-      : 0;
+  },[jobs,today])
 
-  const filteredJobs =
-    filter === "all"
-      ? todayJobs
-      : todayJobs.filter((j) => j.status === filter);
+  /* FILTER */
 
-  /* ROUTE SORT */
+  const filteredJobs = useMemo(()=>{
 
-  const mapJobs = useMemo(() => {
+    if(filter === "all") return todayJobs
 
-    const jobsWithCoords = todayJobs.filter((j) => j.lat && j.lng);
+    return todayJobs.filter(j=>j.status === filter)
 
-    if (jobsWithCoords.length <= 1) return jobsWithCoords;
+  },[todayJobs,filter])
 
-    const sorted = [jobsWithCoords[0]];
-    const visited = new Set([jobsWithCoords[0].id]);
+  /* ROUTE SORT (simple nearest) */
 
-    while (sorted.length < jobsWithCoords.length) {
+  const mapJobs = useMemo(()=>{
 
-      const current = sorted[sorted.length - 1];
+    const withCoords = todayJobs.filter(j=>j.lat && j.lng)
 
-      let nearest: any = null;
-      let shortest = Infinity;
+    if(withCoords.length <= 1) return withCoords
 
-      for (const j of jobsWithCoords) {
+    const sorted = [withCoords[0]]
+    const visited = new Set([withCoords[0].id])
 
-        if (visited.has(j.id)) continue;
+    while(sorted.length < withCoords.length){
 
-        const dx = current.lat! - j.lat!;
-        const dy = current.lng! - j.lng!;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+      const current = sorted[sorted.length - 1]
 
-        if (dist < shortest) {
-          shortest = dist;
-          nearest = j;
+      let nearest:any = null
+      let shortest = Infinity
+
+      for(const j of withCoords){
+
+        if(visited.has(j.id)) continue
+
+        const dx = current.lat! - j.lat!
+        const dy = current.lng! - j.lng!
+
+        const dist = Math.sqrt(dx*dx + dy*dy)
+
+        if(dist < shortest){
+          shortest = dist
+          nearest = j
         }
 
       }
 
-      if (nearest) {
-        visited.add(nearest.id);
-        sorted.push(nearest);
-      } else {
-        break;
+      if(nearest){
+        visited.add(nearest.id)
+        sorted.push(nearest)
+      }else{
+        break
       }
 
     }
 
-    return sorted;
+    return sorted
 
-  }, [todayJobs]);
+  },[todayJobs])
 
   const firstName =
-    profile?.fullName?.split(" ")[0] || "där";
+    profile?.fullName?.split(" ")[0] || "där"
 
-  const statusDot = (status: string) => {
-    if (status === "done") return "bg-emerald-400";
-    if (status === "in-progress") return "bg-amber-400";
-    return "bg-white/20";
-  };
+  const statusDot = (status:string)=>{
 
-  const statusLabel = (status: string) => {
-    if (status === "done") return "Klar";
-    if (status === "in-progress") return "Pågående";
-    return "Planerad";
-  };
+    if(status === "done") return "bg-emerald-400"
+    if(status === "in-progress") return "bg-amber-400"
 
-  return (
+    return "bg-white/20"
+
+  }
+
+  const statusLabel = (status:string)=>{
+
+    if(status === "done") return "Klar"
+    if(status === "in-progress") return "Pågående"
+
+    return "Planerad"
+
+  }
+
+  return(
 
     <div className="space-y-5">
+
+      {/* HEADER */}
 
       <div>
 
@@ -251,34 +259,40 @@ export default function Dashboard() {
         </h1>
 
         <p className="text-sm text-muted-foreground">
-          {format(new Date(), "EEEE d MMMM", { locale: sv })}
+          {format(new Date(),"EEEE d MMMM",{locale:sv})}
         </p>
 
       </div>
 
-
       {/* MAP */}
 
       {mapJobs.length > 0 && (
-        <div className="glass-card overflow-hidden p-0">
-          <DashboardWorkerMap jobs={mapJobs as any} />
-        </div>
-      )}
 
+        <div className="glass-card overflow-hidden p-0">
+
+          <DashboardWorkerMap
+            jobs={mapJobs as any}
+          />
+
+        </div>
+
+      )}
 
       {/* JOB LIST */}
 
       <div className="space-y-2">
 
-        {(filter === "all" ? mapJobs : filteredJobs).map((job) => (
+        {(filter === "all" ? mapJobs : filteredJobs).map(job=>(
 
           <div
             key={job.id}
-            onClick={() => navigate(`/job/${job.id}`)}
+            onClick={()=>navigate(`/job/${job.id}`)}
             className="glass-card p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition"
           >
 
-            <div className={`w-2.5 h-2.5 rounded-full ${statusDot(job.status)}`} />
+            <div
+              className={`w-2.5 h-2.5 rounded-full ${statusDot(job.status)}`}
+            />
 
             <div className="flex-1 min-w-0">
 
@@ -288,7 +302,7 @@ export default function Dashboard() {
 
               <p className="text-xs text-muted-foreground flex items-center gap-1">
 
-                <MapPin size={11} />
+                <MapPin size={11}/>
 
                 <span className="truncate">
                   {job.address}
@@ -312,6 +326,6 @@ export default function Dashboard() {
 
     </div>
 
-  );
+  )
 
 }
