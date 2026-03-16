@@ -13,6 +13,7 @@ import TimePage from "@/pages/TimePage";
 import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
 import AdminPage from "@/pages/AdminPage";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminPlanner from "@/pages/AdminPlanner";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import ProjectsPage from "@/pages/ProjectsPage";
@@ -102,6 +103,7 @@ function ProtectedRoutes() {
 
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin-planner" element={<AdminPlanner />} />
 
         {/* Fallback */}
 
