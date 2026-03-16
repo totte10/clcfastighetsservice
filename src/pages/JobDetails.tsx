@@ -12,83 +12,137 @@ export default function JobDetails() {
   const { id } = useParams();
 
   const [job, setJob] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
-  const [startTime, setStartTime] = useState<any>(null);
+
+
 
   async function loadJob() {
 
-    const { data } = await supabase
+    if (!id) return;
+
+    setLoading(true);
+
+    const { data, error } = await supabase
       .from("projects")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading job:", error);
+      setLoading(false);
+      return;
+    }
 
     setJob(data);
+    setLoading(false);
 
   }
+
+
 
   useEffect(() => {
     loadJob();
-  }, []);
+  }, [id]);
+
+
 
   async function startTimeTracking() {
 
+    if (!id) return;
+
     const start = new Date().toISOString();
 
-    setStartTime(start);
     setRunning(true);
 
-    await supabase.from("user_time_entries").insert({
-      project_id: id,
-      start_time: start
-    });
+    const { error } = await supabase
+      .from("user_time_entries")
+      .insert({
+        project_id: id,
+        start_time: start
+      });
+
+    if (error) console.error(error);
 
   }
 
+
+
   async function stopTimeTracking() {
+
+    if (!id) return;
 
     const end = new Date().toISOString();
 
     setRunning(false);
 
-    await supabase
+    const { error } = await supabase
       .from("user_time_entries")
       .update({ end_time: end })
       .eq("project_id", id)
       .is("end_time", null);
 
+    if (error) console.error(error);
+
   }
+
+
 
   async function markDone() {
 
-    await supabase
+    if (!id) return;
+
+    const { error } = await supabase
       .from("projects")
       .update({ status: "done" })
       .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
 
     loadJob();
 
   }
 
+
+
   async function uploadPhoto(e: any) {
 
-    const file = e.target.files[0];
+    if (!id) return;
 
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const filePath = `${id}/${Date.now()}_${file.name}`;
 
-    await supabase.storage
+    const { error } = await supabase.storage
       .from("job-images")
       .upload(filePath, file);
 
+    if (error) console.error(error);
+
   }
 
-  if (!job) return <p className="p-4">Loading...</p>;
+
+
+  if (loading) {
+    return <p className="p-4">Laddar uppdrag...</p>;
+  }
+
+  if (!job) {
+    return <p className="p-4">Uppdrag hittades inte.</p>;
+  }
+
+
 
   return (
 
     <div className="space-y-6">
+
+      {/* JOB INFO */}
 
       <Card>
 
@@ -111,6 +165,7 @@ export default function JobDetails() {
       </Card>
 
 
+
       {/* TIME TRACKING */}
 
       <Card>
@@ -121,34 +176,27 @@ export default function JobDetails() {
 
         <CardContent className="flex gap-3">
 
-          {!running &&
-
+          {!running && (
             <Button onClick={startTimeTracking} className="gap-2">
-
               <Play size={16} />
               Starta tid
-
             </Button>
+          )}
 
-          }
-
-          {running &&
-
+          {running && (
             <Button onClick={stopTimeTracking} className="gap-2">
-
               <Square size={16} />
               Stoppa tid
-
             </Button>
-
-          }
+          )}
 
         </CardContent>
 
       </Card>
 
 
-      {/* UPLOAD IMAGE */}
+
+      {/* IMAGE UPLOAD */}
 
       <Card>
 
@@ -169,7 +217,8 @@ export default function JobDetails() {
       </Card>
 
 
-      {/* MARK DONE */}
+
+      {/* COMPLETE JOB */}
 
       <Button
         onClick={markDone}
