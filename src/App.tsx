@@ -11,17 +11,23 @@ import Dashboard from "@/pages/Dashboard";
 import AreasPage from "@/pages/AreasPage";
 import TimePage from "@/pages/TimePage";
 import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
+
 import AdminPage from "@/pages/AdminPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminPlanner from "@/pages/AdminPlanner";
+
 import JobDetails from "@/pages/JobDetails";
+
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import ProjectsPage from "@/pages/ProjectsPage";
+
 import ChatPage from "@/pages/ChatPage";
 import PlanningPage from "@/pages/PlanningPage";
+
 import OptimalPage from "@/pages/OptimalPage";
 import TmmPage from "@/pages/TmmPage";
+
 import LoginPage from "@/pages/LoginPage";
 import MissingCoordinatesPage from "@/pages/MissingCoordinatesPage";
 import PayrollPage from "@/pages/PayrollPage";
@@ -35,9 +41,9 @@ import { Loader2 } from "lucide-react";
 const queryClient = new QueryClient();
 
 
-/*
-  Protected app routes
-*/
+/* ─────────────────────────────────────────────
+   Protected routes (requires login)
+───────────────────────────────────────────── */
 
 function ProtectedRoutes() {
 
@@ -73,7 +79,11 @@ function ProtectedRoutes() {
         {/* Projects */}
 
         <Route path="/projects" element={<ProjectsPage />} />
+
+        {/* Planning */}
+
         <Route path="/planning" element={<PlanningPage />} />
+        <Route path="/planner" element={<AdminPlanner />} />
 
         {/* Areas */}
 
@@ -104,7 +114,6 @@ function ProtectedRoutes() {
 
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/admin-planner" element={<AdminPlanner />} />
 
         {/* Job details */}
 
@@ -123,9 +132,9 @@ function ProtectedRoutes() {
 }
 
 
-/*
-  Public routes
-*/
+/* ─────────────────────────────────────────────
+   Public routes
+───────────────────────────────────────────── */
 
 function AppRoutes() {
 
@@ -159,9 +168,9 @@ function AppRoutes() {
 }
 
 
-/*
-  Root App
-*/
+/* ─────────────────────────────────────────────
+   Root App
+───────────────────────────────────────────── */
 
 export default function App() {
 
