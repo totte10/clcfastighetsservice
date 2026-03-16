@@ -16,23 +16,23 @@ import { useLoadScript } from "@react-google-maps/api"
 import AdvancedMap from "@/components/AdvancedMap"
 
 interface Job {
-  id:string
-  name:string
-  address:string
-  lat:number
-  lng:number
-  status:string
-  type:string
-  date?:string
+  id: string
+  name: string
+  address: string
+  lat: number
+  lng: number
+  status: string
+  type: string
+  date?: string | null
 }
 
 interface Weather {
-  temp:number
-  rain:number
-  wind:number
+  temp: number
+  rain: number
+  wind: number
 }
 
-export default function Dashboard(){
+export default function Dashboard() {
 
   const { user } = useAuth()
 
@@ -46,93 +46,107 @@ export default function Dashboard(){
 
   /* ---------------- LOAD JOBS ---------------- */
 
-  const loadJobs = useCallback(async ()=>{
+  const loadJobs = useCallback(async () => {
 
     if(!user) return
 
     setLoading(true)
 
-    const [projects,tidx,egna] = await Promise.all([
+    try{
 
-      supabase.from("projects")
-      .select("id,name,address,lat,lng,status,datum_planerat"),
+      const [projects,tidx,egna] = await Promise.all([
 
-      supabase.from("tidx_entries")
-      .select("id,omrade,address,lat,lng,status,datum_planerat"),
+        supabase
+          .from("projects")
+          .select("id,name,address,lat,lng,status,datum_planerat"),
 
-      supabase.from("egna_entries")
-      .select("id,address,lat,lng,datum_planerat,blow_status,sweep_status")
+        supabase
+          .from("tidx_entries")
+          .select("id,omrade,address,lat,lng,status,datum_planerat"),
 
-    ])
+        supabase
+          .from("egna_entries")
+          .select("id,address,lat,lng,datum_planerat,blow_status,sweep_status")
 
-    const points:Job[] = []
+      ])
 
-    /* PROJECTS */
+      const points:Job[] = []
 
-    ;(projects.data ?? []).forEach(r => {
+      /* PROJECTS */
 
-      if(r.lat && r.lng){
+      projects.data?.forEach(r => {
 
-        points.push({
-          id:r.id,
-          name:r.name,
-          address:r.address,
-          lat:r.lat,
-          lng:r.lng,
-          status:r.status ?? "pending",
-          type:"project",
-          date:r.datum_planerat
-        })
+        if(r.lat !== null && r.lng !== null){
 
-      }
+          points.push({
+            id:r.id,
+            name:r.name ?? "Projekt",
+            address:r.address ?? "",
+            lat:r.lat,
+            lng:r.lng,
+            status:r.status ?? "pending",
+            type:"project",
+            date:r.datum_planerat
+          })
 
-    })
+        }
 
-    /* TIDX */
+      })
 
-    ;(tidx.data ?? []).forEach(r => {
+      /* TIDX */
 
-      if(r.lat && r.lng){
+      tidx.data?.forEach(r => {
 
-        points.push({
-          id:r.id,
-          name:r.omrade ?? "Tidx",
-          address:r.address,
-          lat:r.lat,
-          lng:r.lng,
-          status:r.status ?? "pending",
-          type:"tidx",
-          date:r.datum_planerat
-        })
+        if(r.lat !== null && r.lng !== null){
 
-      }
+          points.push({
+            id:r.id,
+            name:r.omrade ?? "Tidx",
+            address:r.address ?? "",
+            lat:r.lat,
+            lng:r.lng,
+            status:r.status ?? "pending",
+            type:"tidx",
+            date:r.datum_planerat
+          })
 
-    })
+        }
 
-    /* EGNA */
+      })
 
-    ;(egna.data ?? []).forEach(r => {
+      /* EGNA */
 
-      if(r.lat && r.lng){
+      egna.data?.forEach(r => {
 
-        const done = r.blow_status === "done" && r.sweep_status === "done"
+        if(r.lat !== null && r.lng !== null){
 
-        points.push({
-          id:r.id,
-          name:"Egna område",
-          address:r.address,
-          lat:r.lat,
-          lng:r.lng,
-          status:done ? "done" : "pending",
-          type:"egna",
-          date:r.datum_planerat
-        })
+          const done =
+            r.blow_status === "done" &&
+            r.sweep_status === "done"
 
-      }
+          points.push({
+            id:r.id,
+            name:"Egna område",
+            address:r.address ?? "",
+            lat:r.lat,
+            lng:r.lng,
+            status:done ? "done" : "pending",
+            type:"egna",
+            date:r.datum_planerat
+          })
 
-    })
+        }
 
-    setJobs(points)
+      })
+
+      setJobs(points)
+
+    }catch(err){
+
+      console.error("Load jobs error:",err)
+
+    }
+
     setLoading(false)
 
   },[user])
@@ -154,17 +168,17 @@ export default function Dashboard(){
 
       const data = await res.json()
 
-      if(!data?.current) return
+      if(!data || !data.current) return
 
       setWeather({
-        temp:data.current.temperature_2m,
-        rain:data.current.precipitation,
-        wind:data.current.wind_speed_10m
+        temp:data.current.temperature_2m ?? 0,
+        rain:data.current.precipitation ?? 0,
+        wind:data.current.wind_speed_10m ?? 0
       })
 
-    }catch{
+    }catch(err){
 
-      console.log("Weather error")
+      console.log("Weather error",err)
 
     }
 
@@ -177,12 +191,27 @@ export default function Dashboard(){
 
   /* ---------------- NAVIGATION ---------------- */
 
-  const openNavigation = (job:Job)=>{
+  const openNavigation = (job:Job) => {
 
     window.open(
       `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`,
       "_blank"
     )
+
+  }
+
+
+  /* ---------------- DATE SAFE ---------------- */
+
+  const safeDate = (date?:string | null) => {
+
+    if(!date) return null
+
+    const parsed = Date.parse(date)
+
+    if(isNaN(parsed)) return null
+
+    return format(new Date(parsed),"d MMM",{locale:sv})
 
   }
 
@@ -293,10 +322,10 @@ export default function Dashboard(){
                     {job.address}
                   </p>
 
-                  {job.date && (
+                  {safeDate(job.date) && (
 
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      {format(new Date(job.date),"d MMM")}
+                      {safeDate(job.date)}
                     </p>
 
                   )}
