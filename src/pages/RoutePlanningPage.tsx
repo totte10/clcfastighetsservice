@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 
-import { Route, Loader2, ExternalLink, Navigation } from "lucide-react"
+import { Route, Loader2, ExternalLink, Navigation, Check } from "lucide-react"
 
 import { format } from "date-fns"
 import { sv } from "date-fns/locale"
@@ -41,6 +41,8 @@ export default function RoutePlanningPage() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
   })
 
+  /* ---------------- LOAD JOBS ---------------- */
+
   const loadJobs = useCallback(async () => {
 
     if(!user) return
@@ -72,7 +74,6 @@ export default function RoutePlanningPage() {
     })
 
     setJobs(points)
-
     setLoading(false)
 
   },[user])
@@ -81,6 +82,8 @@ export default function RoutePlanningPage() {
     loadJobs()
   },[loadJobs])
 
+
+  /* ---------------- ROUTE OPTIMIZATION ---------------- */
 
   useEffect(()=>{
 
@@ -136,6 +139,31 @@ export default function RoutePlanningPage() {
   },[jobs,avoidHighways,isLoaded])
 
 
+  /* ---------------- JOB ACTIONS ---------------- */
+
+  const startJob = async (job:JobPoint) => {
+
+    await supabase
+      .from("projects")
+      .update({ status:"in_progress" })
+      .eq("id",job.id)
+
+    loadJobs()
+
+  }
+
+  const finishJob = async (job:JobPoint) => {
+
+    await supabase
+      .from("projects")
+      .update({ status:"done" })
+      .eq("id",job.id)
+
+    loadJobs()
+
+  }
+
+
   const openNavigation = (job:JobPoint)=>{
 
     window.open(
@@ -144,7 +172,6 @@ export default function RoutePlanningPage() {
     )
 
   }
-
 
   const startFullRoute = () => {
 
@@ -158,13 +185,13 @@ export default function RoutePlanningPage() {
 
   }
 
-
   const routeJobs = optimizedJobs.length ? optimizedJobs : jobs
-
 
   return (
 
     <div className="space-y-6">
+
+      {/* HEADER */}
 
       <div className="flex items-center justify-between flex-wrap gap-4">
 
@@ -207,6 +234,8 @@ export default function RoutePlanningPage() {
       </div>
 
 
+      {/* LOADING */}
+
       {loading ? (
 
         <div className="flex justify-center p-12">
@@ -217,6 +246,8 @@ export default function RoutePlanningPage() {
 
         <>
 
+          {/* MAP */}
+
           {isLoaded && (
 
             <AdvancedMap
@@ -226,14 +257,13 @@ export default function RoutePlanningPage() {
 
           )}
 
+          {/* JOB LIST */}
+
           <div className="grid gap-3">
 
             {routeJobs.map((job,index)=>{
 
-              const statusColor =
-                job.status==="done"
-                  ? "text-success"
-                  : "text-destructive"
+              const isDone = job.status === "done"
 
               return(
 
@@ -247,7 +277,9 @@ export default function RoutePlanningPage() {
 
                     <div className="flex-1">
 
-                      <p className="font-medium text-sm">{job.name}</p>
+                      <p className="font-medium text-sm">
+                        {job.name}
+                      </p>
 
                       <p className="text-xs text-muted-foreground">
                         {job.address}
@@ -255,22 +287,49 @@ export default function RoutePlanningPage() {
 
                       <Badge
                         variant="outline"
-                        className={`text-[10px] mt-1 ${statusColor}`}
+                        className={`text-[10px] mt-1 ${
+                          isDone ? "text-green-500" : "text-red-500"
+                        }`}
                       >
-                        {job.status==="done" ? "Klar" : "Ej klar"}
+                        {isDone ? "Klar" : "Ej klar"}
                       </Badge>
 
                     </div>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 text-xs"
-                      onClick={()=>openNavigation(job)}
-                    >
-                      <ExternalLink className="h-3 w-3"/>
-                      Navigera
-                    </Button>
+                    <div className="flex gap-2">
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={()=>openNavigation(job)}
+                      >
+                        <ExternalLink className="h-3 w-3"/>
+                      </Button>
+
+                      {!isDone && (
+
+                        <Button
+                          size="sm"
+                          onClick={()=>startJob(job)}
+                        >
+                          Start
+                        </Button>
+
+                      )}
+
+                      {!isDone && (
+
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={()=>finishJob(job)}
+                        >
+                          <Check className="h-4 w-4"/>
+                        </Button>
+
+                      )}
+
+                    </div>
 
                   </CardContent>
 
