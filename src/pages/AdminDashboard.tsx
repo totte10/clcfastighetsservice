@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ClipboardList, Plus, Map } from "lucide-react";
+import { ClipboardList, Map, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminDashboard() {
@@ -26,43 +26,49 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
+        {/* PLANERING */}
+
         <Card
           className="cursor-pointer hover:scale-[1.02] transition"
-          onClick={() => navigate("/create-job")}
+          onClick={() => navigate("/planning")}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Plus size={18}/>
-              Skapa uppdrag
+              <LayoutDashboard size={18}/>
+              Uppdragsplanering
             </CardTitle>
           </CardHeader>
 
           <CardContent className="text-sm text-muted-foreground">
-            Lägg till nya uppdrag
+            Planera uppdrag och scheman
           </CardContent>
         </Card>
 
 
+        {/* ROUTE PLANNER */}
+
         <Card
           className="cursor-pointer hover:scale-[1.02] transition"
-          onClick={() => navigate("/planner")}
+          onClick={() => navigate("/admin-planner")}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Map size={18}/>
-              Planera rutter
+              Ruttplanering
             </CardTitle>
           </CardHeader>
 
           <CardContent className="text-sm text-muted-foreground">
-            Flytta uppdrag och planera körning
+            Se alla uppdrag på karta
           </CardContent>
         </Card>
 
 
+        {/* TIME REPORTS */}
+
         <Card
           className="cursor-pointer hover:scale-[1.02] transition"
-          onClick={() => navigate("/time-reports")}
+          onClick={() => navigate("/time/reports")}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -72,7 +78,7 @@ export default function AdminDashboard() {
           </CardHeader>
 
           <CardContent className="text-sm text-muted-foreground">
-            Exportera till PDF och Fortnox
+            Hantera och exportera tider
           </CardContent>
         </Card>
 
