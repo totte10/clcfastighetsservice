@@ -47,7 +47,6 @@ export default function Dashboard(){
 
   const [jobs,setJobs] = useState<Job[]>([])
   const [loading,setLoading] = useState(true)
-
   const [weather,setWeather] = useState<Weather | null>(null)
 
   const { isLoaded } = useLoadScript({
@@ -55,7 +54,7 @@ export default function Dashboard(){
   })
 
 
-  /* ---------------- LOAD JOBS ---------------- */
+  /* LOAD JOBS */
 
   const loadJobs = useCallback(async()=>{
 
@@ -141,7 +140,7 @@ export default function Dashboard(){
   },[loadJobs])
 
 
-  /* ---------------- WEATHER ---------------- */
+  /* WEATHER */
 
   const loadWeather = async()=>{
 
@@ -172,7 +171,7 @@ export default function Dashboard(){
   },[])
 
 
-  /* ---------------- NAVIGATION ---------------- */
+  /* NAVIGATION */
 
   const openNavigation = (job:Job)=>{
 
@@ -184,7 +183,7 @@ export default function Dashboard(){
   }
 
 
-  /* ---------------- MAP CENTER ---------------- */
+  /* MAP CENTER */
 
   const center =
     jobs.length > 0
@@ -192,15 +191,13 @@ export default function Dashboard(){
       : {lat:57.7089,lng:11.9746}
 
 
-  /* ---------------- RISK ---------------- */
+  /* SLIP RISK */
 
   const slipRisk =
     weather &&
     weather.temp <= 0 &&
     weather.rain > 0
 
-
-  /* ---------------- UI ---------------- */
 
   return(
 
@@ -238,13 +235,10 @@ export default function Dashboard(){
                 <p className="text-xs text-muted-foreground">
                   Temperatur
                 </p>
-                <p className="font-semibold">
-                  {weather.temp}°C
-                </p>
+                <p className="font-semibold">{weather.temp}°C</p>
               </div>
             </CardContent>
           </Card>
-
 
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
@@ -253,13 +247,10 @@ export default function Dashboard(){
                 <p className="text-xs text-muted-foreground">
                   Nederbörd
                 </p>
-                <p className="font-semibold">
-                  {weather.rain} mm
-                </p>
+                <p className="font-semibold">{weather.rain} mm</p>
               </div>
             </CardContent>
           </Card>
-
 
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
@@ -268,27 +259,18 @@ export default function Dashboard(){
                 <p className="text-xs text-muted-foreground">
                   Vind
                 </p>
-                <p className="font-semibold">
-                  {weather.wind} m/s
-                </p>
+                <p className="font-semibold">{weather.wind} m/s</p>
               </div>
             </CardContent>
           </Card>
 
-
           <Card>
             <CardContent className="p-4 flex items-center">
-
               {slipRisk ? (
-                <Badge variant="destructive">
-                  Halkrisk
-                </Badge>
+                <Badge variant="destructive">Halkrisk</Badge>
               ) : (
-                <Badge variant="outline">
-                  Normal drift
-                </Badge>
+                <Badge variant="outline">Normal drift</Badge>
               )}
-
             </CardContent>
           </Card>
 
@@ -325,39 +307,20 @@ export default function Dashboard(){
               }}
             >
 
-              {/* TRAFFIC LAYER */}
-
               <TrafficLayer />
 
-              {jobs.map((job,index)=>{
+              {jobs.map((job,index)=>(
 
-                const color =
-                  job.status === "done"
-                    ? "#22c55e"
-                    : "#ef4444"
+                <Marker
+                  key={job.id}
+                  position={{lat:job.lat,lng:job.lng}}
+                  label={{
+                    text:String(index+1),
+                    color:"#fff"
+                  }}
+                />
 
-                return(
-
-                  <Marker
-                    key={job.id}
-                    position={{lat:job.lat,lng:job.lng}}
-                    label={{
-                      text:String(index+1),
-                      color:"#fff"
-                    }}
-                    icon={{
-                      path:google.maps.SymbolPath.CIRCLE,
-                      scale:12,
-                      fillColor:color,
-                      fillOpacity:1,
-                      strokeColor:"#fff",
-                      strokeWeight:2
-                    }}
-                  />
-
-                )
-
-              })}
+              ))}
 
             </GoogleMap>
 
@@ -386,9 +349,7 @@ export default function Dashboard(){
 
                 <div className="flex-1">
 
-                  <p className="font-medium text-sm">
-                    {job.name}
-                  </p>
+                  <p className="font-medium text-sm">{job.name}</p>
 
                   <p className="text-xs text-muted-foreground">
                     {job.address}
