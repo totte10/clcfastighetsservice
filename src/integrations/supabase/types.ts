@@ -652,6 +652,33 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_locations: {
+        Row: {
+          id: string
+          lat: number | null
+          lng: number | null
+          project_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          project_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          project_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
