@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 
-import { Route, Loader2, ExternalLink } from "lucide-react";
+import { Route, Loader2, ExternalLink, Navigation } from "lucide-react";
 
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
@@ -28,7 +28,6 @@ interface JobPoint {
   lng: number;
   status: string;
   type: string;
-  order?: number;
 }
 
 export default function RoutePlanningPage() {
@@ -36,8 +35,11 @@ export default function RoutePlanningPage() {
   const { user } = useAuth();
 
   const [jobs,setJobs] = useState<JobPoint[]>([]);
+  const [optimizedJobs,setOptimizedJobs] = useState<JobPoint[]>([]);
   const [loading,setLoading] = useState(true);
+
   const [directions,setDirections] = useState<any>(null);
+
   const [avoidHighways,setAvoidHighways] = useState(true);
 
   const todayStr = format(new Date(),"yyyy-MM-dd");
@@ -60,7 +62,7 @@ export default function RoutePlanningPage() {
 
     (data ?? []).forEach(r => {
 
-      if(r.lat && r.lng && (r.datum_planerat || "").startsWith(todayStr)){
+      if(r.lat && r.lng){
 
         points.push({
           id:r.id,
@@ -77,6 +79,7 @@ export default function RoutePlanningPage() {
     });
 
     setJobs(points);
+
     setLoading(false);
 
   },[user,todayStr]);
@@ -111,11 +114,8 @@ export default function RoutePlanningPage() {
       origin,
       destination,
       waypoints,
-
-      optimizeWaypoints:true, // ⭐ Google AI route optimization
-
+      optimizeWaypoints:true,
       travelMode: google.maps.TravelMode.DRIVING,
-
       avoidHighways: avoidHighways
 
     },
@@ -124,6 +124,16 @@ export default function RoutePlanningPage() {
       if(status==="OK"){
 
         setDirections(result);
+
+        const order = result.routes[0].waypoint_order;
+
+        const optimized = [
+          jobs[0],
+          ...order.map((i:number)=>jobs[i+1]),
+          jobs[jobs.length-1]
+        ];
+
+        setOptimizedJobs(optimized);
 
       }
 
@@ -137,6 +147,18 @@ export default function RoutePlanningPage() {
       `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`,
       "_blank"
     );
+
+  };
+
+  const startFullRoute = () => {
+
+    if(optimizedJobs.length === 0) return;
+
+    const path = optimizedJobs
+      .map(j => `${j.lat},${j.lng}`)
+      .join("/");
+
+    window.open(`https://www.google.com/maps/dir/${path}`,"_blank");
 
   };
 
@@ -158,17 +180,34 @@ export default function RoutePlanningPage() {
 
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
 
-          <Switch
-            id="avoid-hw"
-            checked={avoidHighways}
-            onCheckedChange={setAvoidHighways}
-          />
+          <div className="flex items-center gap-2">
 
-          <Label htmlFor="avoid-hw" className="text-xs">
-            Undvik motorvägar
-          </Label>
+            <Switch
+              id="avoid-hw"
+              checked={avoidHighways}
+              onCheckedChange={setAvoidHighways}
+            />
+
+            <Label htmlFor="avoid-hw" className="text-xs">
+              Undvik motorvägar
+            </Label>
+
+          </div>
+
+          {optimizedJobs.length > 1 && (
+
+            <Button
+              size="sm"
+              onClick={startFullRoute}
+              className="gap-2"
+            >
+              <Navigation className="h-4 w-4"/>
+              Starta rutt
+            </Button>
+
+          )}
 
         </div>
 
@@ -188,19 +227,15 @@ export default function RoutePlanningPage() {
             <div className="h-[400px] w-full rounded-xl overflow-hidden border">
 
               <GoogleMap
-
                 zoom={11}
-
                 center={center}
-
                 mapContainerStyle={{
                   width:"100%",
                   height:"100%"
                 }}
-
               >
 
-                {jobs.map((job,index)=>{
+                {(optimizedJobs.length ? optimizedJobs : jobs).map((job,index)=>{
 
                   const color =
                     job.status==="done"
@@ -210,16 +245,12 @@ export default function RoutePlanningPage() {
                   return(
 
                     <Marker
-
                       key={job.id}
-
                       position={{lat:job.lat,lng:job.lng}}
-
                       label={{
                         text:String(index+1),
                         color:"#fff"
                       }}
-
                       icon={{
                         path:google.maps.SymbolPath.CIRCLE,
                         scale:12,
@@ -228,7 +259,6 @@ export default function RoutePlanningPage() {
                         strokeColor:"#fff",
                         strokeWeight:2
                       }}
-
                     />
 
                   );
@@ -236,11 +266,7 @@ export default function RoutePlanningPage() {
                 })}
 
                 {directions && (
-
-                  <DirectionsRenderer
-                    directions={directions}
-                  />
-
+                  <DirectionsRenderer directions={directions}/>
                 )}
 
               </GoogleMap>
@@ -251,7 +277,7 @@ export default function RoutePlanningPage() {
 
           <div className="grid gap-3">
 
-            {jobs.map((job,index)=>{
+            {(optimizedJobs.length ? optimizedJobs : jobs).map((job,index)=>{
 
               const statusColor =
                 job.status==="done"
