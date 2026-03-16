@@ -6,22 +6,22 @@
 
 @layer base {
   :root {
-    --background: 220 40% 6%;
-    --foreground: 210 20% 92%;
+    --background: 222 47% 5%;
+    --foreground: 210 20% 95%;
 
-    --card: 220 30% 9%;
-    --card-foreground: 210 20% 92%;
+    --card: 222 40% 7%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 220 32% 10%;
-    --popover-foreground: 210 20% 92%;
+    --popover: 222 42% 8%;
+    --popover-foreground: 210 20% 95%;
 
     --primary: 152 55% 42%;
     --primary-foreground: 150 30% 97%;
 
-    --secondary: 220 20% 13%;
+    --secondary: 222 20% 12%;
     --secondary-foreground: 210 15% 78%;
 
-    --muted: 220 20% 11%;
+    --muted: 222 20% 10%;
     --muted-foreground: 215 12% 45%;
 
     --accent: 152 45% 22%;
@@ -36,19 +36,19 @@
     --warning: 38 92% 50%;
     --warning-foreground: 38 30% 8%;
 
-    --border: 220 15% 14%;
-    --input: 220 18% 16%;
+    --border: 222 15% 12%;
+    --input: 222 18% 14%;
     --ring: 152 55% 42%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    --sidebar-background: 220 35% 5%;
+    --sidebar-background: 222 45% 4%;
     --sidebar-foreground: 210 10% 55%;
     --sidebar-primary: 152 55% 45%;
     --sidebar-primary-foreground: 150 30% 97%;
-    --sidebar-accent: 220 20% 12%;
+    --sidebar-accent: 222 20% 10%;
     --sidebar-accent-foreground: 210 15% 90%;
-    --sidebar-border: 220 15% 11%;
+    --sidebar-border: 222 15% 10%;
     --sidebar-ring: 152 55% 42%;
 
     --neon-glow: 152 70% 50%;
@@ -66,16 +66,17 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: linear-gradient(180deg, #0A0F1C 0%, #05070D 100%);
+    background: linear-gradient(180deg, #020617 0%, #020617 40%, #022c22 100%);
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', system-ui, sans-serif;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.03em;
   }
 
-  h1 { @apply text-3xl font-bold; }
+  h1 { @apply text-2xl font-bold; }
   h2 { @apply text-xl font-semibold; }
 
   html {
@@ -83,29 +84,31 @@
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(220 15% 20%);
-    border-radius: 3px;
+    background: hsl(222 15% 18%);
+    border-radius: 2px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(220 15% 28%);
+    background: hsl(222 15% 25%);
   }
 }
 
 @layer utilities {
+  /* ─── Glass Cards ─── */
   .glass-card {
-    @apply backdrop-blur-xl border border-border/50 rounded-xl;
-    background: hsl(220 30% 9% / 0.7);
+    @apply backdrop-blur-2xl rounded-2xl;
+    background: hsl(222 30% 8% / 0.6);
+    border: 1px solid hsl(0 0% 100% / 0.06);
     box-shadow:
-      0 0 0 1px hsl(220 15% 14% / 0.5),
-      0 4px 24px -4px hsl(220 40% 4% / 0.4),
-      0 1px 2px hsl(220 40% 4% / 0.2);
+      0 0 0 1px hsl(222 15% 12% / 0.4),
+      0 8px 32px -8px hsl(222 50% 3% / 0.5),
+      0 2px 8px hsl(222 50% 3% / 0.2);
   }
 
   .glass-card-hover {
@@ -114,12 +117,63 @@
   .glass-card-hover:hover {
     transform: translateY(-2px);
     box-shadow:
-      0 0 0 1px hsl(152 55% 42% / 0.15),
-      0 8px 32px -4px hsl(220 40% 4% / 0.5),
-      0 2px 4px hsl(220 40% 4% / 0.3),
-      0 0 20px -4px hsl(152 55% 42% / 0.1);
+      0 0 0 1px hsl(152 55% 42% / 0.12),
+      0 12px 40px -8px hsl(222 50% 3% / 0.6),
+      0 4px 12px hsl(222 50% 3% / 0.3),
+      0 0 24px -6px hsl(152 55% 42% / 0.08);
   }
 
+  /* ─── Glass Pill (filter buttons) ─── */
+  .glass-pill {
+    @apply px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200;
+    background: hsl(0 0% 100% / 0.05);
+    border: 1px solid hsl(0 0% 100% / 0.06);
+    color: hsl(0 0% 100% / 0.5);
+  }
+  .glass-pill:hover {
+    background: hsl(0 0% 100% / 0.08);
+    color: hsl(0 0% 100% / 0.7);
+  }
+  .glass-pill-active {
+    @apply px-4 py-1.5 rounded-full text-xs font-semibold;
+    background: hsl(152 55% 42% / 0.15);
+    border: 1px solid hsl(152 55% 42% / 0.3);
+    color: hsl(152 55% 50%);
+    box-shadow: 0 0 12px hsl(152 70% 50% / 0.1);
+  }
+
+  /* ─── Glass Nav (bottom navigation) ─── */
+  .glass-nav {
+    @apply backdrop-blur-2xl rounded-2xl;
+    background: hsl(222 30% 8% / 0.75);
+    border: 1px solid hsl(0 0% 100% / 0.08);
+    box-shadow:
+      0 -4px 24px hsl(222 50% 3% / 0.5),
+      0 0 0 1px hsl(222 15% 12% / 0.3);
+  }
+
+  /* ─── Glass Stat Card ─── */
+  .glass-stat {
+    @apply relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ease-out;
+    background: hsl(222 30% 8% / 0.5);
+    border: 1px solid hsl(0 0% 100% / 0.05);
+    box-shadow: 0 4px 20px -4px hsl(222 50% 3% / 0.4);
+  }
+  .glass-stat::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle at top right, hsl(152 55% 42% / 0.06), transparent 70%);
+    pointer-events: none;
+  }
+  .glass-stat:active {
+    transform: scale(0.98);
+  }
+
+  /* ─── Neon Effects ─── */
   .neon-glow {
     box-shadow:
       0 0 8px hsl(152 70% 50% / 0.3),
@@ -145,67 +199,7 @@
     box-shadow: 0 0 12px hsl(152 70% 50% / 0.1);
   }
 
-  .stat-card {
-    @apply relative overflow-hidden rounded-xl border border-border/40 p-6 transition-all duration-300 ease-out;
-    background: linear-gradient(
-      135deg,
-      hsl(220 30% 10%) 0%,
-      hsl(220 25% 8%) 100%
-    );
-    box-shadow:
-      0 0 0 1px hsl(220 15% 14% / 0.5),
-      0 4px 24px -4px hsl(220 40% 4% / 0.4);
-  }
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 120px;
-    height: 120px;
-    background: radial-gradient(circle at top right, hsl(152 55% 42% / 0.08), transparent 70%);
-    pointer-events: none;
-  }
-  .stat-card:hover {
-    transform: translateY(-2px);
-    border-color: hsl(152 55% 42% / 0.2);
-    box-shadow:
-      0 0 0 1px hsl(152 55% 42% / 0.15),
-      0 12px 40px -8px hsl(220 40% 4% / 0.5),
-      0 0 20px -4px hsl(152 55% 42% / 0.08);
-  }
-
-  .stat-card-primary {
-    @apply relative overflow-hidden rounded-xl border p-6 transition-all duration-300 ease-out;
-    background: linear-gradient(
-      135deg,
-      hsl(152 40% 14%) 0%,
-      hsl(220 30% 10%) 100%
-    );
-    border-color: hsl(152 55% 42% / 0.25);
-    box-shadow:
-      0 0 0 1px hsl(152 55% 42% / 0.1),
-      0 4px 24px -4px hsl(152 50% 20% / 0.3),
-      0 0 40px -12px hsl(152 55% 42% / 0.1);
-  }
-  .stat-card-primary::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(circle at top right, hsl(152 55% 42% / 0.12), transparent 70%);
-    pointer-events: none;
-  }
-  .stat-card-primary:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      0 0 0 1px hsl(152 55% 42% / 0.2),
-      0 12px 40px -8px hsl(152 50% 20% / 0.4),
-      0 0 60px -12px hsl(152 55% 42% / 0.15);
-  }
-
+  /* ─── Premium Table ─── */
   .premium-table {
     @apply w-full text-sm;
   }
@@ -220,18 +214,19 @@
     @apply border-b border-border/30 transition-colors duration-150;
   }
   .premium-table tbody tr:nth-child(even) {
-    background: hsl(220 25% 8% / 0.4);
+    background: hsl(222 25% 7% / 0.4);
   }
   .premium-table tbody tr:hover {
-    background: hsl(152 55% 42% / 0.06);
+    background: hsl(152 55% 42% / 0.04);
   }
   .premium-table td {
     @apply py-3.5 pr-4;
   }
 
+  /* ─── Progress ─── */
   .progress-track {
     @apply w-full h-1.5 rounded-full overflow-hidden;
-    background: hsl(220 15% 14%);
+    background: hsl(222 15% 12%);
   }
   .progress-fill {
     @apply h-full rounded-full transition-all duration-700 ease-out;
@@ -239,6 +234,7 @@
     box-shadow: 0 0 8px hsl(152 70% 50% / 0.4);
   }
 
+  /* ─── Buttons ─── */
   .btn-scale {
     @apply transition-all duration-150 ease-out active:scale-[0.97];
   }
@@ -246,23 +242,33 @@
     transform: translateY(-1px);
   }
 
-  /* Glowing progress ring */
   .glow-ring {
     filter: drop-shadow(0 0 6px hsl(152 70% 50% / 0.4));
+  }
+
+  /* ─── Stat card legacy ─── */
+  .stat-card {
+    @apply glass-stat;
+  }
+  .stat-card-primary {
+    @apply glass-stat;
+    background: linear-gradient(135deg, hsl(152 40% 12%) 0%, hsl(222 30% 8%) 100%);
+    border-color: hsl(152 55% 42% / 0.2);
+    box-shadow: 0 4px 24px -4px hsl(152 50% 20% / 0.2), 0 0 30px -10px hsl(152 55% 42% / 0.08);
   }
 }
 
 /* Leaflet dark map tiles */
 .leaflet-tile-pane {
-  filter: brightness(0.65) contrast(1.15) saturate(0.7);
+  filter: brightness(0.6) contrast(1.2) saturate(0.6) hue-rotate(10deg);
 }
 
 /* Bottom nav safe area */
 .pb-bottom-nav {
-  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Keyframes for home button */
+/* ─── Keyframes ─── */
 @keyframes neon-pulse {
   0%, 100% {
     box-shadow:
@@ -279,14 +285,18 @@
 }
 
 @keyframes radial-appear {
-  0% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0.3); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .animate-neon-pulse {
@@ -296,3 +306,21 @@
 .animate-radial-appear {
   animation: radial-appear 0.25s ease-out forwards;
 }
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out forwards;
+}
+
+/* Stagger children */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }

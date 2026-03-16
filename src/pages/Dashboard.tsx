@@ -8,8 +8,8 @@ import {
   Play,
   Check,
   Timer,
-  MapPin } from
-"lucide-react";
+  MapPin,
+} from "lucide-react";
 
 import { format, addDays, getISOWeek } from "date-fns";
 import { sv } from "date-fns/locale";
@@ -25,38 +25,29 @@ interface Job {
   source: string;
 }
 
-export default function Dashboard() {
+type FilterType = "all" | "pending" | "in-progress" | "done";
 
-  const { user } = useAuth();
+export default function Dashboard() {
+  const { user, profile } = useAuth();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [weeklyHours, setWeeklyHours] = useState(0);
+  const [filter, setFilter] = useState<FilterType>("all");
 
   const today = format(new Date(), "yyyy-MM-dd");
 
   /* ---------------- LOAD JOBS ---------------- */
 
   const loadJobs = useCallback(async () => {
-
-    const [
-    projects,
-    tidx,
-    egna,
-    tmm,
-    optimal] =
-    await Promise.all([
-
-    supabase.from("projects").select("*"),
-    supabase.from("tidx_entries").select("*"),
-    supabase.from("egna_entries").select("*"),
-    supabase.from("tmm_entries").select("*"),
-    supabase.from("optimal_entries").select("*")]
-
-    );
+    const [projects, tidx, egna, tmm, optimal] = await Promise.all([
+      supabase.from("projects").select("*"),
+      supabase.from("tidx_entries").select("*"),
+      supabase.from("egna_entries").select("*"),
+      supabase.from("tmm_entries").select("*"),
+      supabase.from("optimal_entries").select("*"),
+    ]);
 
     const result: Job[] = [];
-
-    /* PROJECTS */
 
     projects.data?.forEach((p: any) => {
       if (!p.datum_planerat) return;
@@ -68,11 +59,9 @@ export default function Dashboard() {
         date: p.datum_planerat.slice(0, 10),
         lat: p.lat,
         lng: p.lng,
-        source: "project"
+        source: "project",
       });
     });
-
-    /* TIDX */
 
     tidx.data?.forEach((t: any) => {
       if (!t.datum_planerat) return;
@@ -84,11 +73,9 @@ export default function Dashboard() {
         date: t.datum_planerat.slice(0, 10),
         lat: t.lat,
         lng: t.lng,
-        source: "tidx"
+        source: "tidx",
       });
     });
-
-    /* EGNA */
 
     egna.data?.forEach((e: any) => {
       if (!e.datum_planerat) return;
@@ -100,11 +87,9 @@ export default function Dashboard() {
         date: e.datum_planerat.slice(0, 10),
         lat: e.lat,
         lng: e.lng,
-        source: "egna"
+        source: "egna",
       });
     });
-
-    /* TMM */
 
     tmm.data?.forEach((t: any) => {
       if (!t.datum) return;
@@ -116,11 +101,9 @@ export default function Dashboard() {
         date: t.datum.slice(0, 10),
         lat: t.lat,
         lng: t.lng,
-        source: "tmm"
+        source: "tmm",
       });
     });
-
-    /* OPTIMAL */
 
     optimal.data?.forEach((o: any) => {
       if (!o.datum_start) return;
@@ -132,12 +115,11 @@ export default function Dashboard() {
         date: o.datum_start.slice(0, 10),
         lat: o.lat,
         lng: o.lng,
-        source: "optimal"
+        source: "optimal",
       });
     });
 
     setJobs(result);
-
   }, []);
 
   useEffect(() => {
@@ -147,22 +129,18 @@ export default function Dashboard() {
   /* ---------------- HOURS ---------------- */
 
   useEffect(() => {
-
     async function loadHours() {
+      const { data } = await supabase
+        .from("user_time_entries")
+        .select("hours");
 
-      const { data } = await supabase.
-      from("user_time_entries").
-      select("hours");
-
-      const total =
-      (data ?? []).reduce((s: any, r: any) => s + (Number(r.hours) || 0), 0);
-
+      const total = (data ?? []).reduce(
+        (s: any, r: any) => s + (Number(r.hours) || 0),
+        0
+      );
       setWeeklyHours(total);
-
     }
-
     loadHours();
-
   }, []);
 
   /* ---------------- TODAY JOBS ---------------- */
@@ -173,16 +151,18 @@ export default function Dashboard() {
   const started = todayJobs.filter((j) => j.status === "in-progress").length;
 
   const progress =
-  todayJobs.length > 0 ?
-  Math.round(done / todayJobs.length * 100) :
-  0;
+    todayJobs.length > 0 ? Math.round((done / todayJobs.length) * 100) : 0;
+
+  /* Filter for display only */
+  const filteredJobs =
+    filter === "all"
+      ? todayJobs
+      : todayJobs.filter((j) => j.status === filter);
 
   /* ---------------- AI ROUTE (sort by distance) ---------------- */
 
   const mapJobs = useMemo(() => {
-
-    const jobsWithCoords = todayJobs.
-    filter((j) => j.lat && j.lng);
+    const jobsWithCoords = todayJobs.filter((j) => j.lat && j.lng);
 
     if (jobsWithCoords.length <= 1) return jobsWithCoords;
 
@@ -190,26 +170,22 @@ export default function Dashboard() {
     const visited = new Set([jobsWithCoords[0].id]);
 
     while (sorted.length < jobsWithCoords.length) {
-
       const current = sorted[sorted.length - 1];
 
       let nearest: any = null;
       let shortest = Infinity;
 
       for (const j of jobsWithCoords) {
-
         if (visited.has(j.id)) continue;
 
         const dx = current.lat! - j.lat!;
         const dy = current.lng! - j.lng!;
-
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < shortest) {
           shortest = dist;
           nearest = j;
         }
-
       }
 
       if (nearest) {
@@ -218,196 +194,191 @@ export default function Dashboard() {
       } else {
         break;
       }
-
     }
 
     return sorted;
-
   }, [todayJobs]);
 
   /* ---------------- WEEK STRIP ---------------- */
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => {
-
     const d = addDays(new Date(), i - 3);
-
     const str = format(d, "yyyy-MM-dd");
-
     const count = jobs.filter((j) => j.date === str).length;
-
-    return { date: d, count };
-
+    return { date: d, count, isToday: str === today };
   });
 
+  const firstName = profile?.fullName?.split(" ")[0] || "där";
+
+  /* ─── Filters config ─── */
+  const filters: { key: FilterType; label: string }[] = [
+    { key: "all", label: "Alla" },
+    { key: "pending", label: "Planerade" },
+    { key: "in-progress", label: "Pågående" },
+    { key: "done", label: "Klart" },
+  ];
+
+  const statusDot = (status: string) => {
+    if (status === "done") return "bg-emerald-400";
+    if (status === "in-progress") return "bg-amber-400";
+    return "bg-white/20";
+  };
+
+  const statusLabel = (status: string) => {
+    if (status === "done") return "Klar";
+    if (status === "in-progress") return "Pågående";
+    return "Planerad";
+  };
+
   return (
+    <div className="space-y-5 animate-fade-up">
+      {/* ─── GREETING ─── */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Hej {firstName} 👋
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {format(new Date(), "EEEE d MMMM", { locale: sv })}
+        </p>
+      </div>
 
-    <div className="relative min-h-screen pb-28">
+      {/* ─── FILTER PILLS ─── */}
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+        {filters.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={filter === f.key ? "glass-pill-active" : "glass-pill"}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
 
-<div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#020617] via-[#020617] to-[#022c22]" />
+      {/* ─── PROGRESS ─── */}
+      <div className="glass-card p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-medium text-white/60">Dagens framsteg</p>
+          <p className="text-xs font-semibold text-primary">{progress}%</p>
+        </div>
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
 
-<div className="space-y-4 bg-zinc-800 py-[20px] px-[20px] rounded-xl">
+      {/* ─── STATS ─── */}
+      <div className="grid grid-cols-2 gap-3 stagger-children">
+        <StatCard
+          label="Totalt"
+          value={todayJobs.length}
+          icon={<CalendarDays size={16} />}
+        />
+        <StatCard
+          label="Påbörjade"
+          value={started}
+          icon={<Play size={16} />}
+        />
+        <StatCard
+          label="Klara"
+          value={done}
+          icon={<Check size={16} />}
+        />
+        <StatCard
+          label={`v.${getISOWeek(new Date())}`}
+          value={`${weeklyHours.toFixed(1)}h`}
+          icon={<Timer size={16} />}
+        />
+      </div>
 
-{/* HEADER */}
-
-<div>
-
-<h1 className="text-xl font-semibold text-primary-foreground">
-Arbete idag
-</h1>
-
-<p className="text-xs text-muted-foreground">
-{format(new Date(), "EEEE d MMMM", { locale: sv })}
-</p>
-
-</div>
-
-{/* PROGRESS */}
-
-<div className="rounded-xl border border-white/5 bg-white/[0.04] p-3">
-
-<p className="text-xs mb-1 text-primary-foreground">
-Dagens framsteg
-</p>
-
-<div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-
-<div
-              className="h-full bg-primary transition-all"
-              style={{ width: `${progress}%` }} />
-            
-
-</div>
-
-<p className="text-[10px] mt-1 text-right text-primary-foreground">
-{progress}%
-</p>
-
-</div>
-
-{/* STATS */}
-
-<div className="grid grid-cols-2 gap-3">
-
-<Stat label="Totalt" value={todayJobs.length} icon={<CalendarDays size={16} />} />
-<Stat label="Påbörjade" value={started} icon={<Play size={16} />} />
-<Stat label="Klara" value={done} icon={<Check size={16} />} />
-<Stat label={`v.${getISOWeek(new Date())}`} value={`${weeklyHours.toFixed(1)}h`} icon={<Timer size={16} />} />
-
-</div>
-
-{/* WEEK STRIP */}
-
-<div className="flex gap-2 overflow-x-auto pb-1">
-
-{weekDays.map((d, i) =>
-
+      {/* ─── WEEK STRIP ─── */}
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+        {weekDays.map((d, i) => (
           <div
             key={i}
-            className="min-w-[60px] rounded-xl border border-white/5 bg-white/[0.04] px-2 py-2 text-center">
-            
+            className={`min-w-[56px] rounded-xl px-2 py-2 text-center transition-all shrink-0
+              ${d.isToday
+                ? "bg-primary/15 border border-primary/30 shadow-[0_0_12px_hsl(152_70%_50%/0.1)]"
+                : "bg-white/[0.03] border border-white/[0.04]"
+              }`}
+          >
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+              {format(d.date, "EEE", { locale: sv })}
+            </p>
+            <p className={`text-sm font-semibold ${d.isToday ? "text-primary" : "text-foreground"}`}>
+              {format(d.date, "d")}
+            </p>
+            <p className="text-[10px] text-white/40">{d.count}</p>
+          </div>
+        ))}
+      </div>
 
-<p className="text-[9px] text-muted-foreground">
-{format(d.date, "EEE", { locale: sv })}
-</p>
+      {/* ─── MAP ─── */}
+      {mapJobs.length > 0 && (
+        <div className="glass-card overflow-hidden p-0">
+          <DashboardWorkerMap jobs={mapJobs} />
+        </div>
+      )}
 
-<p className="text-sm font-semibold">
-{format(d.date, "d")}
-</p>
+      {/* ─── JOB LIST ─── */}
+      <div className="space-y-2 stagger-children">
+        {filteredJobs.length === 0 && (
+          <div className="text-center text-sm text-muted-foreground glass-card p-8">
+            Inga uppdrag att visa
+          </div>
+        )}
 
-<p className="text-[10px] text-primary-foreground">
-{d.count}
-</p>
-
-</div>
-
-          )}
-
-</div>
-
-{/* MAP */}
-
-{mapJobs.length > 0 &&
-        <DashboardWorkerMap jobs={mapJobs} />
-        }
-
-{/* JOB LIST */}
-
-<div className="space-y-2">
-
-{todayJobs.length === 0 &&
-
-          <div className="text-center text-xs text-muted-foreground border border-white/10 rounded-xl p-5">
-Inga uppdrag planerade idag
-</div>
-
-          }
-
-{mapJobs.map((job) =>
-
+        {(filter === "all" ? mapJobs : filteredJobs).map((job) => (
           <div
             key={job.id}
-            className="rounded-xl border border-white/5 bg-white/[0.04] p-3 flex justify-between items-center">
-            
+            className="glass-card p-3.5 flex items-center gap-3 active:scale-[0.98] transition-transform duration-150 animate-fade-up"
+          >
+            {/* Status dot */}
+            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusDot(job.status)}`} />
 
-<div>
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {job.name}
+              </p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                <MapPin size={11} />
+                <span className="truncate">{job.address}</span>
+              </p>
+            </div>
 
-<p className="font-medium">
-{job.name}
-</p>
-
-<p className="text-xs text-muted-foreground flex items-center gap-1">
-
-<MapPin size={12} />
-{job.address}
-
-</p>
-
-</div>
-
-<span className="text-[10px] px-2 py-1 rounded bg-primary/10">
-{job.status}
-</span>
-
-</div>
-
-          )}
-
-</div>
-
-</div>
-
-</div>);
-
-
-
+            {/* Status badge */}
+            <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.06] text-white/50 shrink-0">
+              {statusLabel(job.status)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-/* ---------------- STAT COMPONENT ---------------- */
+/* ─── STAT CARD ─── */
 
-function Stat({ label, value, icon }: {label: string;value: any;icon: any;}) {
-
+function StatCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: any;
+  icon: any;
+}) {
   return (
-
-    <div className="rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2.5 flex items-center justify-between">
-
-<div>
-
-<p className="text-[9px] uppercase text-primary-foreground">
-{label}
-</p>
-
-<p className="text-lg font-semibold bg-zinc-100/0 text-zinc-400">
-{value}
-</p>
-
-</div>
-
-<div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-{icon}
-</div>
-
-</div>);
-
-
-
+    <div className="glass-stat flex items-center justify-between animate-fade-up">
+      <div>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        <p className="text-xl font-bold text-foreground mt-0.5">{value}</p>
+      </div>
+      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+        {icon}
+      </div>
+    </div>
+  );
 }

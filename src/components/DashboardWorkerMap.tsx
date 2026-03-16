@@ -81,8 +81,8 @@ export function DashboardWorkerMap({ jobs }: DashboardWorkerMapProps) {
   return (
     <div
       ref={mapRef}
-      className="h-[280px] w-full rounded-xl overflow-hidden border border-border/50"
-      style={{ filter: "brightness(0.95) contrast(1.1) saturate(0.85)" }}
+      className="h-[320px] w-full rounded-2xl overflow-hidden"
+      style={{ filter: "brightness(0.85) contrast(1.1) saturate(0.8)" }}
     />
   );
 }
