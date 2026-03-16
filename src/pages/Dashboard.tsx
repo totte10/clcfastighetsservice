@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -22,11 +22,12 @@ interface Job {
   lat:number
   lng:number
   status:string
+  type:string
+  date?:string
 }
 
 interface Weather {
   temp:number
-  snow:number
   rain:number
   wind:number
 }
@@ -37,7 +38,6 @@ export default function Dashboard(){
 
   const [jobs,setJobs] = useState<Job[]>([])
   const [loading,setLoading] = useState(true)
-
   const [weather,setWeather] = useState<Weather | null>(null)
 
   const { isLoaded } = useLoadScript({
@@ -52,13 +52,24 @@ export default function Dashboard(){
 
     setLoading(true)
 
-    const { data } = await supabase
-      .from("projects")
-      .select("id,name,address,lat,lng,status")
+    const [projects,tidx,egna] = await Promise.all([
+
+      supabase.from("projects")
+      .select("id,name,address,lat,lng,status,datum_planerat"),
+
+      supabase.from("tidx_entries")
+      .select("id,omrade,address,lat,lng,status,datum_planerat"),
+
+      supabase.from("egna_entries")
+      .select("id,address,lat,lng,datum_planerat,blow_status,sweep_status")
+
+    ])
 
     const points:Job[] = []
 
-    ;(data ?? []).forEach(r => {
+    /* PROJECTS */
+
+    ;(projects.data ?? []).forEach(r => {
 
       if(r.lat && r.lng){
 
@@ -68,7 +79,53 @@ export default function Dashboard(){
           address:r.address,
           lat:r.lat,
           lng:r.lng,
-          status:r.status
+          status:r.status ?? "pending",
+          type:"project",
+          date:r.datum_planerat
+        })
+
+      }
+
+    })
+
+    /* TIDX */
+
+    ;(tidx.data ?? []).forEach(r => {
+
+      if(r.lat && r.lng){
+
+        points.push({
+          id:r.id,
+          name:r.omrade ?? "Tidx",
+          address:r.address,
+          lat:r.lat,
+          lng:r.lng,
+          status:r.status ?? "pending",
+          type:"tidx",
+          date:r.datum_planerat
+        })
+
+      }
+
+    })
+
+    /* EGNA */
+
+    ;(egna.data ?? []).forEach(r => {
+
+      if(r.lat && r.lng){
+
+        const done = r.blow_status === "done" && r.sweep_status === "done"
+
+        points.push({
+          id:r.id,
+          name:"Egna område",
+          address:r.address,
+          lat:r.lat,
+          lng:r.lng,
+          status:done ? "done" : "pending",
+          type:"egna",
+          date:r.datum_planerat
         })
 
       }
@@ -97,14 +154,15 @@ export default function Dashboard(){
 
       const data = await res.json()
 
+      if(!data?.current) return
+
       setWeather({
         temp:data.current.temperature_2m,
-        snow:data.current.precipitation,
         rain:data.current.precipitation,
         wind:data.current.wind_speed_10m
       })
 
-    }catch(e){
+    }catch{
 
       console.log("Weather error")
 
@@ -115,6 +173,7 @@ export default function Dashboard(){
   useEffect(()=>{
     loadWeather()
   },[])
+
 
   /* ---------------- NAVIGATION ---------------- */
 
@@ -127,7 +186,6 @@ export default function Dashboard(){
 
   }
 
-  /* ---------------- UI ---------------- */
 
   return(
 
@@ -152,7 +210,7 @@ export default function Dashboard(){
 
       {weather && (
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
 
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
@@ -184,26 +242,6 @@ export default function Dashboard(){
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
-
-              {weather.temp <= 0 && weather.rain > 0 ? (
-
-                <Badge variant="destructive">
-                  Halkrisk
-                </Badge>
-
-              ) : (
-
-                <Badge variant="outline">
-                  Normal drift
-                </Badge>
-
-              )}
-
-            </CardContent>
-          </Card>
-
         </div>
 
       )}
@@ -220,12 +258,10 @@ export default function Dashboard(){
       ) : (
 
         isLoaded && (
-
           <AdvancedMap
             jobs={jobs}
             directions={null}
           />
-
         )
 
       )}
@@ -241,7 +277,7 @@ export default function Dashboard(){
 
           return(
 
-            <Card key={job.id}>
+            <Card key={`${job.type}-${job.id}`}>
 
               <CardContent className="p-4 flex items-center gap-4">
 
@@ -256,6 +292,14 @@ export default function Dashboard(){
                   <p className="text-xs text-muted-foreground">
                     {job.address}
                   </p>
+
+                  {job.date && (
+
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {format(new Date(job.date),"d MMM")}
+                    </p>
+
+                  )}
 
                   <Badge
                     variant="outline"
