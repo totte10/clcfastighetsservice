@@ -6,127 +6,55 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
+
     const { messages, context } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY saknas");
+    }
 
-    /* 🔥 DYNAMISK KONTEXT */
+    /* 🔥 LIVE DATA */
     const dynamicContext = `
-─────────────────────────────
 LIVE DATA:
-─────────────────────────────
-${context?.weather ? `Väder:
-- Temperatur: ${context.weather.temp}°C
-- Nederbörd: ${context.weather.rain} mm
-- Vind: ${context.weather.wind} m/s` : "Ingen väderdata"}
+${context?.weather ? `
+Temperatur: ${context.weather.temp}°C
+Nederbörd: ${context.weather.rain} mm
+Vind: ${context.weather.wind} m/s
+` : "Ingen väderdata"}
 
 ${context?.jobs ? `
-
-Dagens jobb:
+JOBB:
 ${context.jobs.map((j: any, i: number) => `
 ${i + 1}. ${j.name}
 Adress: ${j.address}
 Status: ${j.status}
 `).join("")}
-` : "Inga jobb laddade"}
+` : "Inga jobb"}
 `;
 
     /* 🧠 ELIT AI */
     const systemPrompt = `
 Du är en ELIT AI för CLC Fastighetsservice.
 
-Du fungerar som:
+ROLLER:
 - Driftchef
 - Arbetsledare
 - Ruttoptimerare
 
-─────────────────────────────
-PRIORITERING:
-─────────────────────────────
-1. Säkerhet (halkrisk först)
-2. Effektivitet
-3. Minimera körtid
+MÅL:
+1. Minimera körtid
+2. Prioritera halkrisk
+3. Maximera effektivitet
 
-─────────────────────────────
 REGLER:
-─────────────────────────────
-- Ge alltid konkreta beslut
-- Prioritera jobb i rätt ordning
-- Anpassa efter väder
-- Tänk som en chef
-
-─────────────────────────────
-SVARFORMAT:
-─────────────────────────────
-• Punktlista
-• Max 5 rader
-• Direkt beslut (inga långa texter)
-
-─────────────────────────────
-${dynamicContext}
-`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          ...messages,
-        ],
-        temperature: 0.3,
-        stream: true,
-      }),
-    });
-
-    if (!response.ok) {
-
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "För många förfrågningar." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI-krediter slut." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      return new Response(JSON.stringify({ error: "AI fel." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(response.body, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/event-stream",
-      },
-    });
-
-  } catch (e) {
-
-    return new Response(JSON.stringify({
-      error: e instanceof Error ? e.message : "Unknown error"
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
-  }
-});
+- Svara kort (max 5 rader)
+- Punktlista
+- Alltid konkreta beslut
+-
