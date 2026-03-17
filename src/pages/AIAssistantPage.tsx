@@ -1,198 +1,131 @@
-import { useState } from "react"
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { useState, useRef, useEffect } from "react"
+import { streamChat } from "@/services/aiAssistant"
+import ReactMarkdown from "react-markdown"
 
 import { Bot, Send, Loader2 } from "lucide-react"
 
-const genAI = new GoogleGenerativeAI(
-  import.meta.env.VITE_GEMINI_API_KEY
-)
+type Msg = { role: "user" | "assistant"; content: string }
 
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
-})
+export default function AIAssistantPage() {
 
-export default function AIAssistantPage(){
+  const [messages, setMessages] = useState<Msg[]>([])
+  const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
-  const [messages,setMessages] = useState<any[]>([])
-  const [input,setInput] = useState("")
-  const [loading,setLoading] = useState(false)
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
-  async function send(){
+  async function send() {
+    if (!input.trim() || loading) return
 
-    if(!input || loading) return
-
-    const userMsg = {
-      role:"user",
-      text:input
-    }
-
-    setMessages(prev=>[...prev,userMsg])
+    const userMsg: Msg = { role: "user", content: input.trim() }
+    const newMessages = [...messages, userMsg]
+    setMessages(newMessages)
     setInput("")
     setLoading(true)
 
-    try{
+    let assistantSoFar = ""
 
-      const result = await model.generateContent({
-
-        contents:[{
-          role:"user",
-          parts:[{
-            text:`
-
-Du är AI assistent för företaget CLC Fastighetsservice.
-
-Du hjälper med:
-
-- planering
-- ruttoptimering
-- arbetsrapporter
-- maskinsopning
-- halkrisk
-- väderanalys
-- effektivisering av arbetsdag
-
-Svar ska vara korta, tydliga och professionella.
-
-Fråga från användare:
-${input}
-
-`
-          }]
-        }]
-
+    const upsertAssistant = (chunk: string) => {
+      assistantSoFar += chunk
+      setMessages(prev => {
+        const last = prev[prev.length - 1]
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m))
+        }
+        return [...prev, { role: "assistant", content: assistantSoFar }]
       })
-
-      const text = result.response.text()
-
-      setMessages(prev=>[
-        ...prev,
-        {
-          role:"ai",
-          text
-        }
-      ])
-
-    }catch(err){
-
-      setMessages(prev=>[
-        ...prev,
-        {
-          role:"ai",
-          text:"AI kunde inte svara just nu."
-        }
-      ])
-
     }
 
-    setLoading(false)
-
+    await streamChat({
+      messages: newMessages,
+      onDelta: upsertAssistant,
+      onDone: () => setLoading(false),
+      onError: (err) => {
+        setMessages(prev => [...prev, { role: "assistant", content: err }])
+        setLoading(false)
+      },
+    })
   }
 
-  return(
-
-    <div className="flex flex-col h-[calc(100vh-140px)]">
+  return (
+    <div className="flex flex-col h-[calc(100dvh-140px)] max-w-2xl mx-auto">
 
       {/* HEADER */}
-
       <div className="flex items-center gap-3 mb-4">
-
-        <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
-          <Bot size={18}/>
+        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Bot size={18} className="text-primary" />
         </div>
-
         <div>
-
-          <h1 className="font-semibold">
-            CLC AI
-          </h1>
-
-          <p className="text-xs text-muted-foreground">
-            Powered by Gemini
-          </p>
-
+          <h1 className="font-semibold text-foreground">CLC AI Assistent</h1>
+          <p className="text-xs text-muted-foreground">Fråga om rutt, väder, planering...</p>
         </div>
-
       </div>
 
-
-      {/* CHAT */}
-
+      {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
 
         {messages.length === 0 && (
-
-          <div className="text-sm text-muted-foreground">
-
-            Fråga AI om:
-
-            <ul className="mt-2 space-y-1 list-disc pl-4">
+          <div className="text-sm text-muted-foreground mt-8">
+            <p className="mb-2 font-medium">Fråga AI om:</p>
+            <ul className="space-y-1 list-disc pl-4">
               <li>Planera dagens rutt</li>
-              <li>Hur lång tid tar maskinsopning</li>
               <li>Väder och halkrisk</li>
-              <li>Arbetsrapport</li>
+              <li>Jobbprioritering</li>
+              <li>Sammanfatta arbetsdagen</li>
             </ul>
-
           </div>
-
         )}
 
-        {messages.map((m,i)=>(
-
+        {messages.map((m, i) => (
           <div
             key={i}
-            className={`p-3 rounded-xl text-sm max-w-[80%]
-            ${m.role==="user"
-              ? "bg-primary text-white ml-auto"
-              : "bg-white/[0.04] border border-white/[0.06]"
+            className={`p-3 rounded-xl text-sm max-w-[85%] animate-fade-in-up ${
+              m.role === "user"
+                ? "bg-primary text-primary-foreground ml-auto"
+                : "glass-card"
             }`}
           >
-
-            {m.text}
-
+            {m.role === "assistant" ? (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown>{m.content}</ReactMarkdown>
+              </div>
+            ) : (
+              m.content
+            )}
           </div>
-
         ))}
 
-        {loading && (
-
+        {loading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-
-            <Loader2 className="animate-spin" size={14}/>
-
+            <Loader2 className="animate-spin" size={14} />
             AI tänker...
-
           </div>
-
         )}
 
+        <div ref={bottomRef} />
       </div>
 
-
       {/* INPUT */}
-
       <div className="mt-4 flex gap-2">
-
         <input
           value={input}
-          onChange={(e)=>setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Fråga AI..."
-          className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm"
+          className="flex-1 bg-muted border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
-
         <button
           onClick={send}
-          disabled={loading}
-          className="bg-primary text-white rounded-xl px-3 flex items-center justify-center"
+          disabled={loading || !input.trim()}
+          className="bg-primary text-primary-foreground rounded-xl px-4 flex items-center justify-center disabled:opacity-50 transition"
         >
-
-          <Send size={16}/>
-
+          <Send size={16} />
         </button>
-
       </div>
 
     </div>
-
   )
-
 }
