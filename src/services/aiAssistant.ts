@@ -13,67 +13,106 @@ export async function streamChat({
   onDone: () => void
   onError?: (error: string) => void
 }) {
-  const resp = await fetch(CHAT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-    },
-    body: JSON.stringify({ messages }),
-  })
 
-  if (!resp.ok) {
-    const data = await resp.json().catch(() => ({}))
-    const msg = data.error || "AI-tjänsten svarade inte."
-    onError?.(msg)
-    onDone()
-    return
-  }
+  try {
 
-  if (!resp.body) {
-    onError?.("Inget svar från AI.")
-    onDone()
-    return
-  }
+    const resp = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ messages }),
+    })
 
-  const reader = resp.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ""
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-
-    let newlineIndex: number
-    while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-      let line = buffer.slice(0, newlineIndex)
-      buffer = buffer.slice(newlineIndex + 1)
-
-      if (line.endsWith("\r")) line = line.slice(0, -1)
-      if (line.startsWith(":") || line.trim() === "") continue
-      if (!line.startsWith("data: ")) continue
-
-      const jsonStr = line.slice(6).trim()
-      if (jsonStr === "[DONE]") {
-        onDone()
-        return
-      }
-
+    /* ❌ ERROR RESPONSE */
+    if (!resp.ok) {
+      let msg = "AI-tjänsten svarade inte."
       try {
-        const parsed = JSON.parse(jsonStr)
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined
-        if (content) onDelta(content)
-      } catch {
-        buffer = line + "\n" + buffer
-        break
+        const data = await resp.json()
+        msg = data.error || msg
+      } catch {}
+      onError?.(msg)
+      onDone()
+      return
+    }
+
+    if (!resp.body) {
+      onError?.("Tomt svar från AI.")
+      onDone()
+      return
+    }
+
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder()
+
+    let buffer = ""
+
+    while (true) {
+
+      const { done, value } = await reader.read()
+
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+
+      const lines = buffer.split("\n")
+      buffer = lines.pop() || ""
+
+      for (let line of lines) {
+
+        line = line.trim()
+
+        if (!line || line.startsWith(":")) continue
+        if (!line.startsWith("data:")) continue
+
+        const jsonStr = line.replace("data:", "").trim()
+
+        /* 🛑 DONE */
+        if (jsonStr === "[DONE]") {
+          onDone()
+          return
+        }
+
+        try {
+
+          const parsed = JSON.parse(jsonStr)
+
+          const content =
+            parsed?.choices?.[0]?.delta?.content ||
+            parsed?.text || ""
+
+          if (content) onDelta(content)
+
+        } catch {
+          // buffer incomplete JSON, vänta nästa chunk
+          buffer = jsonStr + buffer
+        }
       }
     }
-  }
 
-  onDone()
+    onDone()
+
+  } catch (err: any) {
+
+    console.error("AI stream error:", err)
+
+    onError?.(err?.message || "Nätverksfel")
+    onDone()
+
+  }
 }
 
+
+/* 🔥 HOOK (redo för framtida features) */
 export function useGeminiAssistant() {
-  return { streamChat }
+
+  const send = async (params: any) => {
+    return streamChat(params)
+  }
+
+  return {
+    streamChat,
+    send
+  }
 }
