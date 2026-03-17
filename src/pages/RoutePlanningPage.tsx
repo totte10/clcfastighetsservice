@@ -10,10 +10,9 @@ import {
   Route,
   Loader2,
   Navigation,
-  Sun,
-  Cloud,
   CloudRain,
-  Zap
+  Wind,
+  Thermometer
 } from "lucide-react"
 
 import { format } from "date-fns"
@@ -27,8 +26,6 @@ import {
   useLoadScript
 } from "@react-google-maps/api"
 
-/* TYPES */
-
 interface Job{
   id:string
   name:string
@@ -40,299 +37,302 @@ interface Job{
   type:string
 }
 
-interface Forecast{
-  day:string
-  tempMin:number
-  tempMax:number
-  weathercode:number
+interface Weather{
+  temp:number
+  rain:number
+  wind:number
 }
-
-/* WEATHER ICON */
-
-function WeatherIcon({code}:{code:number}){
-
-  if(code === 0) return <Sun className="text-yellow-400" size={22}/>
-  if(code < 3) return <Cloud size={22}/>
-  if(code < 60) return <CloudRain size={22}/>
-  return <Zap size={22}/>
-
-}
-
-/* PAGE */
 
 export default function RoutePlanningPage(){
 
-const { user } = useAuth()
+  const { user } = useAuth()
 
-const [jobs,setJobs] = useState<Job[]>([])
-const [optimized,setOptimized] = useState<Job[]>([])
-const [directions,setDirections] = useState<any>(null)
-const [loading,setLoading] = useState(true)
+  const [jobs,setJobs] = useState<Job[]>([])
+  const [optimized,setOptimized] = useState<Job[]>([])
+  const [directions,setDirections] = useState<any>(null)
+  const [loading,setLoading] = useState(true)
 
-const [forecast,setForecast] = useState<Forecast[]>([])
+  const [weather,setWeather] = useState<Weather | null>(null)
 
-const [selectedDate,setSelectedDate] = useState(
-format(new Date(),"yyyy-MM-dd")
-)
+  const [selectedDate,setSelectedDate] = useState(
+    format(new Date(),"yyyy-MM-dd")
+  )
 
-const { isLoaded } = useLoadScript({
-googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
-})
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
+  })
+
 
 /* LOAD JOBS */
 
 const loadJobs = useCallback(async()=>{
 
-if(!user){
-setLoading(false)
-return
-}
+  if(!user){
+    setLoading(false)
+    return
+  }
 
-setLoading(true)
+  setLoading(true)
 
-try{
+  try{
 
-const [projects,egna,tidx,optimal,tmm] = await Promise.all([
+    const [projects,egna,tidx,optimal,tmm] = await Promise.all([
 
-supabase.from("projects")
-.select("id,name,address,lat,lng,status,datum_planerat"),
+      supabase
+        .from("projects")
+        .select("id,name,address,lat,lng,status,datum_planerat"),
 
-supabase.from("egna_entries")
-.select("id,address,lat,lng,datum_planerat,blow_status,sweep_status"),
+      supabase
+        .from("egna_entries")
+        .select("id,address,lat,lng,datum_planerat,blow_status,sweep_status"),
 
-supabase.from("tidx_entries")
-.select("id,omrade,address,lat,lng,status,datum_planerat"),
+      supabase
+        .from("tidx_entries")
+        .select("id,omrade,address,lat,lng,status,datum_planerat"),
 
-supabase.from("optimal_entries")
-.select("id,name,address,lat,lng,status,datum_start"),
+      supabase
+        .from("optimal_entries")
+        .select("id,name,address,lat,lng,status,datum_start"),
 
-supabase.from("tmm_entries")
-.select("id,beskrivning,address,lat,lng,status,datum")
+      supabase
+        .from("tmm_entries")
+        .select("id,beskrivning,address,lat,lng,status,datum")
 
-])
+    ])
 
-const list:Job[] = []
+    const list:Job[] = []
 
-/* PROJECTS */
+    /* PROJECTS */
 
-projects.data?.forEach(r=>{
+    ;(projects.data ?? []).forEach(r=>{
 
-if(!r.lat || !r.lng) return
+      if(!r.lat || !r.lng) return
 
-const d = r.datum_planerat?.slice(0,10)
-if(d && d !== selectedDate) return
+      const d = r.datum_planerat?.slice(0,10)
 
-list.push({
-id:r.id,
-name:r.name || "Projekt",
-address:r.address || "",
-lat:Number(r.lat),
-lng:Number(r.lng),
-status:r.status === "done" ? "done":"pending",
-type:"project",
-date:d
-})
+      if(d && d !== selectedDate) return
 
-})
+      list.push({
+        id:r.id,
+        name:r.name || "Projekt",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:r.status === "done" ? "done":"pending",
+        type:"project",
+        date:d
+      })
 
-/* EGNA */
+    })
 
-egna.data?.forEach(r=>{
 
-if(!r.lat || !r.lng) return
+    /* EGNA */
 
-const d = r.datum_planerat?.slice(0,10)
-if(d && d !== selectedDate) return
+    ;(egna.data ?? []).forEach(r=>{
 
-const done =
-r.blow_status === "done" &&
-r.sweep_status === "done"
+      if(!r.lat || !r.lng) return
 
-list.push({
-id:r.id,
-name:"Egna område",
-address:r.address || "",
-lat:Number(r.lat),
-lng:Number(r.lng),
-status:done ? "done":"pending",
-type:"egna",
-date:d
-})
+      const d = r.datum_planerat?.slice(0,10)
 
-})
+      if(d && d !== selectedDate) return
 
-/* TIDX */
+      const done =
+        r.blow_status === "done" &&
+        r.sweep_status === "done"
 
-tidx.data?.forEach(r=>{
+      list.push({
+        id:r.id,
+        name:"Egna område",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:done ? "done":"pending",
+        type:"egna",
+        date:d
+      })
 
-if(!r.lat || !r.lng) return
+    })
 
-const d = r.datum_planerat?.slice(0,10)
-if(d && d !== selectedDate) return
 
-list.push({
-id:r.id,
-name:r.omrade || "Tidx område",
-address:r.address || "",
-lat:Number(r.lat),
-lng:Number(r.lng),
-status:r.status === "done" ? "done":"pending",
-type:"tidx",
-date:d
-})
+    /* TIDX */
 
-})
+    ;(tidx.data ?? []).forEach(r=>{
 
-/* OPTIMAL */
+      if(!r.lat || !r.lng) return
 
-optimal.data?.forEach(r=>{
+      const d = r.datum_planerat?.slice(0,10)
 
-if(!r.lat || !r.lng) return
+      if(d && d !== selectedDate) return
 
-const d = r.datum_start?.slice(0,10)
-if(d && d !== selectedDate) return
+      list.push({
+        id:r.id,
+        name:r.omrade || "Tidx område",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:r.status === "done" ? "done":"pending",
+        type:"tidx",
+        date:d
+      })
 
-list.push({
-id:r.id,
-name:r.name || "Optimal",
-address:r.address || "",
-lat:Number(r.lat),
-lng:Number(r.lng),
-status:r.status === "done" ? "done":"pending",
-type:"optimal",
-date:d
-})
+    })
 
-})
 
-/* TMM */
+    /* OPTIMAL */
 
-tmm.data?.forEach(r=>{
+    ;(optimal.data ?? []).forEach(r=>{
 
-if(!r.lat || !r.lng) return
+      if(!r.lat || !r.lng) return
 
-const d = r.datum?.slice(0,10)
-if(d && d !== selectedDate) return
+      const d = r.datum_start?.slice(0,10)
 
-list.push({
-id:r.id,
-name:r.beskrivning || "TMM",
-address:r.address || "",
-lat:Number(r.lat),
-lng:Number(r.lng),
-status:r.status === "done" ? "done":"pending",
-type:"tmm",
-date:d
-})
+      if(d && d !== selectedDate) return
 
-})
+      list.push({
+        id:r.id,
+        name:r.name || "Optimal",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:r.status === "done" ? "done":"pending",
+        type:"optimal",
+        date:d
+      })
 
-setJobs(list)
+    })
 
-}catch(e){
 
-console.log("Job load error",e)
+    /* TMM */
 
-}
+    ;(tmm.data ?? []).forEach(r=>{
 
-setLoading(false)
+      if(!r.lat || !r.lng) return
+
+      const d = r.datum?.slice(0,10)
+
+      if(d && d !== selectedDate) return
+
+      list.push({
+        id:r.id,
+        name:r.beskrivning || "TMM",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:r.status === "done" ? "done":"pending",
+        type:"tmm",
+        date:d
+      })
+
+    })
+
+
+    setJobs(list)
+
+  }catch(e){
+
+    console.log("Job load error",e)
+
+  }
+
+  setLoading(false)
 
 },[user,selectedDate])
 
+
 useEffect(()=>{
-loadJobs()
+  loadJobs()
 },[loadJobs])
 
-/* WEATHER FORECAST */
+
+/* WEATHER */
 
 const loadWeather = async()=>{
 
-try{
+  try{
 
-const res = await fetch(
-"https://api.open-meteo.com/v1/forecast?latitude=57.7089&longitude=11.9746&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto"
-)
+    const res = await fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=57.7089&longitude=11.9746&current=temperature_2m,precipitation,wind_speed_10m"
+    )
 
-const data = await res.json()
+    const data = await res.json()
 
-const days:Forecast[] = data.daily.time.slice(0,4).map((d:string,i:number)=>({
+    if(!data?.current) return
 
-day:format(new Date(d),"EEE",{locale:sv}),
-tempMin:data.daily.temperature_2m_min[i],
-tempMax:data.daily.temperature_2m_max[i],
-weathercode:data.daily.weathercode[i]
+    setWeather({
+      temp:data.current.temperature_2m,
+      rain:data.current.precipitation,
+      wind:data.current.wind_speed_10m
+    })
 
-}))
-
-setForecast(days)
-
-}catch(e){
-console.log("weather error",e)
-}
+  }catch{
+    console.log("Weather error")
+  }
 
 }
 
 useEffect(()=>{
-loadWeather()
+  loadWeather()
 },[])
+
 
 /* ROUTE OPTIMIZATION */
 
 useEffect(()=>{
 
-if(!isLoaded) return
-if(jobs.length < 2) return
+  if(!isLoaded) return
+  if(jobs.length < 2) return
 
-const directionsService =
-new window.google.maps.DirectionsService()
+  const directionsService =
+    new window.google.maps.DirectionsService()
 
-const origin = jobs[0]
-const destination = jobs[jobs.length-1]
+  const origin = jobs[0]
+  const destination = jobs[jobs.length-1]
 
-const waypoints = jobs.slice(1,-1).map(j=>({
-location:{lat:j.lat,lng:j.lng}
-}))
+  const waypoints = jobs.slice(1,-1).map(j=>({
+    location:{lat:j.lat,lng:j.lng}
+  }))
 
-directionsService.route({
+  directionsService.route({
 
-origin,
-destination,
-waypoints,
-optimizeWaypoints:true,
-travelMode:window.google.maps.TravelMode.DRIVING
+    origin,
+    destination,
+    waypoints,
+    optimizeWaypoints:true,
+    travelMode:window.google.maps.TravelMode.DRIVING
 
-},
-(result,status)=>{
+  },
+  (result,status)=>{
 
-if(status==="OK" && result){
+    if(status==="OK" && result){
 
-setDirections(result)
+      setDirections(result)
 
-const order = result.routes[0].waypoint_order
+      const order = result.routes[0].waypoint_order
 
-const optimizedRoute = [
-jobs[0],
-...order.map((i:number)=>jobs[i+1]),
-jobs[jobs.length-1]
-]
+      const optimizedRoute = [
+        jobs[0],
+        ...order.map((i:number)=>jobs[i+1]),
+        jobs[jobs.length-1]
+      ]
 
-setOptimized(optimizedRoute)
+      setOptimized(optimizedRoute)
 
-}
+    }
 
-})
+  })
 
 },[jobs,isLoaded])
 
+
 const routeJobs =
-optimized.length ? optimized : jobs
+  optimized.length ? optimized : jobs
+
 
 const center =
-routeJobs.length
-? {lat:routeJobs[0].lat,lng:routeJobs[0].lng}
-: {lat:57.7089,lng:11.9746}
+  routeJobs.length
+  ? {lat:routeJobs[0].lat,lng:routeJobs[0].lng}
+  : {lat:57.7089,lng:11.9746}
 
-/* UI */
 
 return(
 
@@ -343,37 +343,53 @@ return(
 Ruttplanering – {format(new Date(selectedDate),"d MMMM",{locale:sv})}
 </h1>
 
-{/* WEATHER FORECAST */}
 
-{forecast.length > 0 && (
+{/* WEATHER */}
+
+{weather && (
+
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
 <Card>
-<CardContent className="p-4">
-
-<div className="flex justify-between">
-
-{forecast.map((f,i)=>(
-
-<div key={i} className="flex flex-col items-center gap-1">
-
-<p className="text-xs text-muted-foreground">{f.day}</p>
-
-<WeatherIcon code={f.weathercode}/>
-
-<p className="text-xs font-medium">
-{Math.round(f.tempMin)}-{Math.round(f.tempMax)}°
-</p>
-
+<CardContent className="p-4 flex items-center gap-3">
+<Thermometer className="w-5 h-5 text-orange-500"/>
+<div>
+<p className="text-xs text-muted-foreground">Temperatur</p>
+<p className="font-semibold">{weather.temp}°C</p>
 </div>
-
-))}
-
-</div>
-
 </CardContent>
 </Card>
 
+<Card>
+<CardContent className="p-4 flex items-center gap-3">
+<CloudRain className="w-5 h-5 text-blue-500"/>
+<div>
+<p className="text-xs text-muted-foreground">Nederbörd</p>
+<p className="font-semibold">{weather.rain} mm</p>
+</div>
+</CardContent>
+</Card>
+
+<Card>
+<CardContent className="p-4 flex items-center gap-3">
+<Wind className="w-5 h-5 text-gray-500"/>
+<div>
+<p className="text-xs text-muted-foreground">Vind</p>
+<p className="font-semibold">{weather.wind} m/s</p>
+</div>
+</CardContent>
+</Card>
+
+<Card>
+<CardContent className="p-4 flex items-center">
+<Badge variant="outline">Driftinfo</Badge>
+</CardContent>
+</Card>
+
+</div>
+
 )}
+
 
 {/* MAP */}
 
@@ -412,6 +428,7 @@ label={{text:String(index+1),color:"#fff"}}
 </div>
 
 )}
+
 
 {/* JOB LIST */}
 
