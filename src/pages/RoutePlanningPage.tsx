@@ -92,11 +92,11 @@ const loadJobs = useCallback(async()=>{
 
       supabase
         .from("optimal_entries")
-        .select("id,name,address,lat,lng,status,datum_planerat"),
+        .select("id,name,address,lat,lng,status,datum_start"),
 
       supabase
         .from("tmm_entries")
-        .select("id,name,address,lat,lng,status,datum_planerat")
+        .select("id,beskrivning,address,lat,lng,status,datum")
 
     ])
 
@@ -184,7 +184,7 @@ const loadJobs = useCallback(async()=>{
 
       if(!r.lat || !r.lng) return
 
-      const d = r.datum_planerat?.slice(0,10)
+      const d = r.datum_start?.slice(0,10)
 
       if(d && d !== selectedDate) return
 
@@ -208,13 +208,13 @@ const loadJobs = useCallback(async()=>{
 
       if(!r.lat || !r.lng) return
 
-      const d = r.datum_planerat?.slice(0,10)
+      const d = r.datum?.slice(0,10)
 
       if(d && d !== selectedDate) return
 
       list.push({
         id:r.id,
-        name:r.name || "TMM",
+        name:r.beskrivning || "TMM",
         address:r.address || "",
         lat:Number(r.lat),
         lng:Number(r.lng),
