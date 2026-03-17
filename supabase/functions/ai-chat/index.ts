@@ -1,75 +1,74 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const genAI = new GoogleGenerativeAI(
-  Deno.env.get("GEMINI_API_KEY")!
-)
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
-})
-
-Deno.serve(async (req) => {
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const { messages } = await req.json();
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { messages } = await req.json()
-
-    const system = `
-Du är en AI för fastighetsservice.
-
-Du hjälper med:
-- ruttplanering
-- väder
-- jobbprioritering
-
-Svara kort, konkret och smart.
-`
-
-    const chat = model.startChat({
-      history: messages.map((m: any) => ({
-        role: m.role,
-        parts: [{ text: m.content }]
-      }))
-    })
-
-    const result = await chat.sendMessageStream(system)
-
-    const stream = new ReadableStream({
-      async start(controller) {
-
-        for await (const chunk of result.stream) {
-          const text = chunk.text()
-          if (text) {
-            controller.enqueue(
-              new TextEncoder().encode(
-                `data: ${JSON.stringify({
-                  choices: [{ delta: { content: text } }]
-                })}\n\n`
-              )
-            )
-          }
-        }
-
-        controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"))
-        controller.close()
-      }
-    })
-
-    return new Response(stream, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: `Du är AI-assistent för CLC Fastighetsservice. Du hjälper med:
+- Ruttplanering och optimering
+- Jobbprioritering baserat på väder och halkrisk
+- Väderanalys och driftbeslut
+- Arbetsrapporter och sammanfattningar
+- Maskinsopning och snöröjning
+- Effektivisering av arbetsdagen
+
+Svara alltid kort, professionellt och på svenska. Ge konkreta rekommendationer.`
+          },
+          ...messages,
+        ],
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "För många förfrågningar. Försök igen om en stund." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-    })
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI-krediter slut. Kontakta admin." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const t = await response.text();
+      console.error("AI gateway error:", response.status, t);
+      return new Response(JSON.stringify({ error: "AI-tjänsten är inte tillgänglig just nu." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-  } catch (err: any) {
-
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500 }
-    )
-
+    return new Response(response.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
+  } catch (e) {
+    console.error("chat error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-
-})
+});
