@@ -12,6 +12,10 @@
     "moduleDetection": "force",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "noFallthroughCasesInSwitch": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "paths": {
       "@/*": [
         "./src/*"
@@ -26,6 +30,6 @@
     "useDefineForClassFields": true
   },
   "include": [
-    "./src"
+    "src"
   ]
 }
