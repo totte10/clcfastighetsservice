@@ -214,7 +214,7 @@ const loadJobs = useCallback(async()=>{
 
       list.push({
         id:r.id,
-        name:r.name || "TMM",
+        name:r.beskrivning || "TMM",
         address:r.address || "",
         lat:Number(r.lat),
         lng:Number(r.lng),
