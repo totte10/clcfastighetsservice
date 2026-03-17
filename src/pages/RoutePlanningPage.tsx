@@ -208,7 +208,7 @@ const loadJobs = useCallback(async()=>{
 
       if(!r.lat || !r.lng) return
 
-      const d = r.datum_planerat?.slice(0,10)
+      const d = r.datum?.slice(0,10)
 
       if(d && d !== selectedDate) return
 
