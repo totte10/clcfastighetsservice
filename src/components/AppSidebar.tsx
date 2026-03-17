@@ -36,7 +36,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-border/60 px-4 py-4">
         <div className="flex items-center gap-3">
           <img
-            src="/lovable-uploads/f50fb16e-0a0e-4157-a6a4-ac098b2d14fb.png"
+            src="/clc-logo.png"
             className="h-8 w-8"
             alt="CLC"
           />
