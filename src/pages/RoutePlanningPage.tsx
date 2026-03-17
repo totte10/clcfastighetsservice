@@ -92,7 +92,7 @@ const loadJobs = useCallback(async()=>{
 
       supabase
         .from("optimal_entries")
-        .select("id,name,address,lat,lng,status,datum_planerat"),
+        .select("id,name,address,lat,lng,status,datum_start"),
 
       supabase
         .from("tmm_entries")
