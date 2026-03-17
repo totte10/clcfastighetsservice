@@ -34,6 +34,8 @@ import PayrollPage from "@/pages/PayrollPage";
 import RoutePlanningPage from "@/pages/RoutePlanningPage";
 import VoicePage from "@/pages/VoicePage";
 
+import AIAssistantPage from "@/pages/AIAssistantPage";
+
 import NotFound from "@/pages/NotFound";
 
 import { Loader2 } from "lucide-react";
@@ -100,6 +102,10 @@ function ProtectedRoutes() {
 
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/voice" element={<VoicePage />} />
+
+        {/* AI Assistant */}
+
+        <Route path="/ai" element={<AIAssistantPage />} />
 
         {/* Routing */}
 
