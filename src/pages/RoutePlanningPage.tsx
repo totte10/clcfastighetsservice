@@ -96,7 +96,7 @@ const loadJobs = useCallback(async()=>{
 
       supabase
         .from("tmm_entries")
-        .select("id,name,address,lat,lng,status,datum_planerat")
+        .select("id,beskrivning,address,lat,lng,status,datum")
 
     ])
 
