@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -15,364 +15,475 @@ import {
   Thermometer
 } from "lucide-react"
 
+import { format } from "date-fns"
+import { sv } from "date-fns/locale"
+
 import {
   GoogleMap,
   Marker,
   DirectionsRenderer,
   TrafficLayer,
-  Polygon,
   useLoadScript
 } from "@react-google-maps/api"
 
-interface Job {
-  id: string
-  name: string
-  address: string
-  lat: number
-  lng: number
-  status: string
-  type: string
+interface Job{
+  id:string
+  name:string
+  address:string
+  lat:number
+  lng:number
+  status:string
+  date?:string
+  type:string
 }
 
-interface Weather {
-  temp: number
-  rain: number
-  wind: number
+interface Weather{
+  temp:number
+  rain:number
+  wind:number
 }
 
-export default function RoutePlanningPage() {
+export default function RoutePlanningPage(){
 
   const { user } = useAuth()
 
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [directions, setDirections] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [jobs,setJobs] = useState<Job[]>([])
+  const [optimized,setOptimized] = useState<Job[]>([])
+  const [directions,setDirections] = useState<any>(null)
+  const [loading,setLoading] = useState(true)
 
-  const [weather, setWeather] = useState<Weather | null>(null)
+  const [weather,setWeather] = useState<Weather | null>(null)
 
-  const [area, setArea] = useState<any[]>([]) // 🔥 AI AREA
-
-  const mapRef = useRef<any>(null)
+  const [selectedDate,setSelectedDate] = useState(
+    format(new Date(),"yyyy-MM-dd")
+  )
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
   })
 
-  /* ---------------- LOAD JOBS ---------------- */
 
-  const loadJobs = useCallback(async () => {
+/* LOAD JOBS */
 
-    if (!user) {
-      setLoading(false)
-      return
-    }
+const loadJobs = useCallback(async()=>{
 
-    setLoading(true)
-
-    try {
-
-      const { data } = await supabase
-        .from("projects")
-        .select("id,name,address,lat,lng,status")
-
-      const list: Job[] = []
-
-      ;(data ?? []).forEach(r => {
-
-        if (!r.lat || !r.lng) return
-
-        list.push({
-          id: r.id,
-          name: r.name || "Projekt",
-          address: r.address || "",
-          lat: Number(r.lat),
-          lng: Number(r.lng),
-          status: r.status === "done" ? "done" : "pending",
-          type: "project"
-        })
-
-      })
-
-      setJobs(list)
-
-    } catch (e) {
-      console.log("Job load error", e)
-    }
-
+  if(!user){
     setLoading(false)
+    return
+  }
 
-  }, [user])
+  setLoading(true)
 
-  useEffect(() => {
-    loadJobs()
-  }, [loadJobs])
+  try{
 
+    const [projects,egna,tidx,optimal,tmm] = await Promise.all([
 
-  /* ---------------- WEATHER ---------------- */
+      supabase
+        .from("projects")
+        .select("id,name,address,lat,lng,status,datum_planerat"),
 
-  useEffect(() => {
+      supabase
+        .from("egna_entries")
+        .select("id,address,lat,lng,datum_planerat,blow_status,sweep_status"),
 
-    async function loadWeather() {
+      supabase
+        .from("tidx_entries")
+        .select("id,omrade,address,lat,lng,status,datum_planerat"),
 
-      try {
+      supabase
+        .from("optimal_entries")
+        .select("id,name,address,lat,lng,status,datum_start"),
 
-        const res = await fetch(
-          "https://api.open-meteo.com/v1/forecast?latitude=57.7089&longitude=11.9746&current=temperature_2m,precipitation,wind_speed_10m"
-        )
+      supabase
+        .from("tmm_entries")
+        .select("id,beskrivning,address,lat,lng,status,datum")
 
-        const data = await res.json()
+    ])
 
-        if (!data?.current) return
+    const list:Job[] = []
 
-        setWeather({
-          temp: data.current.temperature_2m,
-          rain: data.current.precipitation,
-          wind: data.current.wind_speed_10m
-        })
+    /* PROJECTS */
 
-      } catch {
-        console.log("Weather error")
-      }
+    ;(projects.data ?? []).forEach(r=>{
 
-    }
+      if(!r.lat || !r.lng) return
 
-    loadWeather()
+      const d = r.datum_planerat?.slice(0,10)
 
-  }, [])
+      if(d && d !== selectedDate) return
 
-
-  /* ---------------- ROUTE ---------------- */
-
-  useEffect(() => {
-
-    if (!isLoaded || jobs.length < 2) return
-
-    const service = new window.google.maps.DirectionsService()
-
-    service.route({
-
-      origin: jobs[0],
-      destination: jobs[jobs.length - 1],
-      waypoints: jobs.slice(1, -1).map(j => ({
-        location: { lat: j.lat, lng: j.lng }
-      })),
-      optimizeWaypoints: true,
-      travelMode: window.google.maps.TravelMode.DRIVING
-
-    },
-      (result, status) => {
-
-        if (status === "OK" && result) {
-          setDirections(result)
-        }
-
+      list.push({
+        id:r.id,
+        name:r.name || "Projekt",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:r.status === "done" ? "done":"pending",
+        type:"project",
+        date:d
       })
 
-  }, [jobs, isLoaded])
+    })
 
 
-  /* ---------------- AI AREA ---------------- */
+    /* EGNA */
 
-  async function createAreaFromAddress(address: string) {
+    ;(egna.data ?? []).forEach(r=>{
 
-    try {
+      if(!r.lat || !r.lng) return
 
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}`
-      )
+      const d = r.datum_planerat?.slice(0,10)
 
-      const data = await res.json()
+      if(d && d !== selectedDate) return
 
-      if (!data.results?.length) return
+      const done =
+        r.blow_status === "done" &&
+        r.sweep_status === "done"
 
-      const loc = data.results[0].geometry.location
+      list.push({
+        id:r.id,
+        name:"Egna område",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:done ? "done":"pending",
+        type:"egna",
+        date:d
+      })
 
-      const offset = 0.0003
+    })
 
-      const polygon = [
-        { lat: loc.lat + offset, lng: loc.lng - offset },
-        { lat: loc.lat + offset, lng: loc.lng + offset },
-        { lat: loc.lat - offset, lng: loc.lng + offset },
-        { lat: loc.lat - offset, lng: loc.lng - offset },
-      ]
 
-      setArea(polygon)
+    /* TIDX */
 
-      // 🔥 AUTO ZOOM
-      if (mapRef.current) {
-        mapRef.current.panTo({ lat: loc.lat, lng: loc.lng })
-        mapRef.current.setZoom(15)
-      }
+    ;(tidx.data ?? []).forEach(r=>{
 
-    } catch (e) {
-      console.log("Geocode error", e)
-    }
+      if(!r.lat || !r.lng) return
+
+      const d = r.datum_planerat?.slice(0,10)
+
+      if(d && d !== selectedDate) return
+
+      list.push({
+        id:r.id,
+        name:r.omrade || "Tidx område",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:r.status === "done" ? "done":"pending",
+        type:"tidx",
+        date:d
+      })
+
+    })
+
+
+    /* OPTIMAL */
+
+    ;(optimal.data ?? []).forEach(r=>{
+
+      if(!r.lat || !r.lng) return
+
+      const d = r.datum_start?.slice(0,10)
+
+      if(d && d !== selectedDate) return
+
+      list.push({
+        id:r.id,
+        name:r.name || "Optimal",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:r.status === "done" ? "done":"pending",
+        type:"optimal",
+        date:d
+      })
+
+    })
+
+
+    /* TMM */
+
+    ;(tmm.data ?? []).forEach(r=>{
+
+      if(!r.lat || !r.lng) return
+
+      const d = r.datum?.slice(0,10)
+
+      if(d && d !== selectedDate) return
+
+      list.push({
+        id:r.id,
+        name:r.beskrivning || "TMM",
+        address:r.address || "",
+        lat:Number(r.lat),
+        lng:Number(r.lng),
+        status:r.status === "done" ? "done":"pending",
+        type:"tmm",
+        date:d
+      })
+
+    })
+
+
+    setJobs(list)
+
+  }catch(e){
+
+    console.log("Job load error",e)
 
   }
 
-  /* 🔥 GLOBAL AI HOOK (kan anropas från chat) */
+  setLoading(false)
 
-  useEffect(() => {
+},[user,selectedDate])
 
-    ;(window as any).highlightAddress = (address: string) => {
-      createAreaFromAddress(address)
+
+useEffect(()=>{
+  loadJobs()
+},[loadJobs])
+
+
+/* WEATHER */
+
+const loadWeather = async()=>{
+
+  try{
+
+    const res = await fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=57.7089&longitude=11.9746&current=temperature_2m,precipitation,wind_speed_10m"
+    )
+
+    const data = await res.json()
+
+    if(!data?.current) return
+
+    setWeather({
+      temp:data.current.temperature_2m,
+      rain:data.current.precipitation,
+      wind:data.current.wind_speed_10m
+    })
+
+  }catch{
+    console.log("Weather error")
+  }
+
+}
+
+useEffect(()=>{
+  loadWeather()
+},[])
+
+
+/* ROUTE OPTIMIZATION */
+
+useEffect(()=>{
+
+  if(!isLoaded) return
+  if(jobs.length < 2) return
+
+  const directionsService =
+    new window.google.maps.DirectionsService()
+
+  const origin = jobs[0]
+  const destination = jobs[jobs.length-1]
+
+  const waypoints = jobs.slice(1,-1).map(j=>({
+    location:{lat:j.lat,lng:j.lng}
+  }))
+
+  directionsService.route({
+
+    origin,
+    destination,
+    waypoints,
+    optimizeWaypoints:true,
+    travelMode:window.google.maps.TravelMode.DRIVING
+
+  },
+  (result,status)=>{
+
+    if(status==="OK" && result){
+
+      setDirections(result)
+
+      const order = result.routes[0].waypoint_order
+
+      const optimizedRoute = [
+        jobs[0],
+        ...order.map((i:number)=>jobs[i+1]),
+        jobs[jobs.length-1]
+      ]
+
+      setOptimized(optimizedRoute)
+
     }
 
-  }, [])
+  })
+
+},[jobs,isLoaded])
 
 
-  /* ---------------- CENTER ---------------- */
-
-  const center =
-    jobs.length
-      ? { lat: jobs[0].lat, lng: jobs[0].lng }
-      : { lat: 57.7089, lng: 11.9746 }
+const routeJobs =
+  optimized.length ? optimized : jobs
 
 
-  /* ---------------- UI ---------------- */
-
-  return (
-
-    <div className="space-y-6">
-
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        <Route className="h-6 w-6" />
-        Ruttplanering
-      </h1>
+const center =
+  routeJobs.length
+  ? {lat:routeJobs[0].lat,lng:routeJobs[0].lng}
+  : {lat:57.7089,lng:11.9746}
 
 
-      {/* WEATHER */}
+return(
 
-      {weather && (
+<div className="space-y-6">
 
-        <div className="grid grid-cols-3 gap-3">
-
-          <Card>
-            <CardContent className="p-3 flex items-center gap-2">
-              <Thermometer size={16} />
-              {weather.temp}°C
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-3 flex items-center gap-2">
-              <CloudRain size={16} />
-              {weather.rain} mm
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-3 flex items-center gap-2">
-              <Wind size={16} />
-              {weather.wind} m/s
-            </CardContent>
-          </Card>
-
-        </div>
-
-      )}
+<h1 className="text-2xl font-bold flex items-center gap-2">
+<Route className="h-6 w-6"/>
+Ruttplanering – {format(new Date(selectedDate),"d MMMM",{locale:sv})}
+</h1>
 
 
-      {/* MAP */}
+{/* WEATHER */}
 
-      {!isLoaded ? (
+{weather && (
 
-        <div className="flex justify-center p-10">
-          <Loader2 className="animate-spin" />
-        </div>
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-      ) : (
+<Card>
+<CardContent className="p-4 flex items-center gap-3">
+<Thermometer className="w-5 h-5 text-orange-500"/>
+<div>
+<p className="text-xs text-muted-foreground">Temperatur</p>
+<p className="font-semibold">{weather.temp}°C</p>
+</div>
+</CardContent>
+</Card>
 
-        <div className="h-[420px] rounded-xl overflow-hidden border">
+<Card>
+<CardContent className="p-4 flex items-center gap-3">
+<CloudRain className="w-5 h-5 text-blue-500"/>
+<div>
+<p className="text-xs text-muted-foreground">Nederbörd</p>
+<p className="font-semibold">{weather.rain} mm</p>
+</div>
+</CardContent>
+</Card>
 
-          <GoogleMap
-            zoom={11}
-            center={center}
-            mapContainerStyle={{ width: "100%", height: "100%" }}
-            onLoad={(map) => (mapRef.current = map)}
-          >
+<Card>
+<CardContent className="p-4 flex items-center gap-3">
+<Wind className="w-5 h-5 text-gray-500"/>
+<div>
+<p className="text-xs text-muted-foreground">Vind</p>
+<p className="font-semibold">{weather.wind} m/s</p>
+</div>
+</CardContent>
+</Card>
 
-            <TrafficLayer />
+<Card>
+<CardContent className="p-4 flex items-center">
+<Badge variant="outline">Driftinfo</Badge>
+</CardContent>
+</Card>
 
-            {/* MARKERS */}
+</div>
 
-            {jobs.map((job, i) => (
-              <Marker
-                key={job.id}
-                position={{ lat: job.lat, lng: job.lng }}
-                label={{ text: String(i + 1), color: "#fff" }}
-              />
-            ))}
-
-            {/* ROUTE */}
-
-            {directions && <DirectionsRenderer directions={directions} />}
-
-            {/* 🔥 AREA */}
-
-            {area.length > 0 && (
-              <Polygon
-                paths={area}
-                options={{
-                  fillColor: "#22c55e",
-                  fillOpacity: 0.3,
-                  strokeColor: "#22c55e",
-                  strokeWeight: 2
-                }}
-              />
-            )}
-
-          </GoogleMap>
-
-        </div>
-
-      )}
+)}
 
 
-      {/* JOB LIST */}
+{/* MAP */}
 
-      <div className="grid gap-3">
+{!isLoaded ? (
 
-        {jobs.map((job, i) => (
+<div className="flex justify-center p-10">
+<Loader2 className="animate-spin"/>
+</div>
 
-          <Card key={job.id}>
+):( 
 
-            <CardContent className="p-4 flex items-center gap-4">
+<div className="h-[420px] w-full rounded-xl overflow-hidden border">
 
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                {i + 1}
-              </div>
+<GoogleMap
+zoom={11}
+center={center}
+mapContainerStyle={{width:"100%",height:"100%"}}
+>
 
-              <div className="flex-1">
-                <p className="text-sm font-medium">{job.name}</p>
-                <p className="text-xs text-muted-foreground">{job.address}</p>
+<TrafficLayer />
 
-                <Badge className="text-[10px] mt-1">
-                  {job.status === "done" ? "Klar" : "Ej klar"}
-                </Badge>
-              </div>
+{routeJobs.map((job,index)=>(
+<Marker
+key={`${job.type}-${job.id}`}
+position={{lat:job.lat,lng:job.lng}}
+label={{text:String(index+1),color:"#fff"}}
+/>
+))}
 
-              <Button
-                size="sm"
-                onClick={() =>
-                  window.open(
-                    `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`
-                  )
-                }
-              >
-                <Navigation size={16} />
-              </Button>
+{directions && (
+<DirectionsRenderer directions={directions}/>
+)}
 
-            </CardContent>
+</GoogleMap>
 
-          </Card>
+</div>
 
-        ))}
+)}
 
-      </div>
 
-    </div>
+{/* JOB LIST */}
 
-  )
+<div className="grid gap-3">
+
+{routeJobs.map((job,index)=>{
+
+const done = job.status==="done"
+
+return(
+
+<Card key={`${job.type}-${job.id}`}>
+
+<CardContent className="p-4 flex items-center gap-4">
+
+<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+{index+1}
+</div>
+
+<div className="flex-1">
+
+<p className="font-medium text-sm">{job.name}</p>
+<p className="text-xs text-muted-foreground">{job.address}</p>
+
+<Badge variant="outline" className="text-[10px] mt-1">
+{done?"Klar":"Ej klar"}
+</Badge>
+
+</div>
+
+<Button
+size="sm"
+onClick={()=>window.open(
+`https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`
+)}
+className="gap-2"
+>
+
+<Navigation className="h-4 w-4"/>
+Navigera
+
+</Button>
+
+</CardContent>
+
+</Card>
+
+)
+
+})}
+
+</div>
+
+</div>
+
+)
 
 }

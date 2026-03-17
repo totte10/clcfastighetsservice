@@ -11,155 +11,75 @@ export default function AIAssistantPage() {
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-
-  /* 🔥 DETECT ADDRESS FROM AI */
-  function detectAddressFromText(text: string) {
-
-    const match = text.match(/"address"\s*:\s*"([^"]+)"/)
-
-    if (match && match[1]) {
-      return match[1]
-    }
-
-    return null
-  }
-
-
   async function send() {
-
     if (!input.trim() || loading) return
 
-    const userMsg: Msg = {
-      role: "user",
-      content: input.trim()
-    }
-
+    const userMsg: Msg = { role: "user", content: input.trim() }
     const newMessages = [...messages, userMsg]
-
     setMessages(newMessages)
     setInput("")
     setLoading(true)
 
     let assistantSoFar = ""
 
-
-    /* STREAM HANDLER */
     const upsertAssistant = (chunk: string) => {
-
       assistantSoFar += chunk
-
       setMessages(prev => {
-
         const last = prev[prev.length - 1]
-
         if (last?.role === "assistant") {
-          return prev.map((m, i) =>
-            i === prev.length - 1
-              ? { ...m, content: assistantSoFar }
-              : m
-          )
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m))
         }
-
-        return [
-          ...prev,
-          { role: "assistant", content: assistantSoFar }
-        ]
+        return [...prev, { role: "assistant", content: assistantSoFar }]
       })
     }
 
-
     await streamChat({
-
       messages: newMessages,
-
       onDelta: upsertAssistant,
-
-      onDone: () => {
-
-        setLoading(false)
-
-        /* 🔥 AUTO MAP TRIGGER */
-        const address = detectAddressFromText(assistantSoFar)
-
-        if (address && (window as any).highlightAddress) {
-          (window as any).highlightAddress(address)
-        }
-
-      },
-
+      onDone: () => setLoading(false),
       onError: (err) => {
-
-        setMessages(prev => [
-          ...prev,
-          { role: "assistant", content: err }
-        ])
-
+        setMessages(prev => [...prev, { role: "assistant", content: err }])
         setLoading(false)
-      }
-
+      },
     })
-
   }
 
-
   return (
-
     <div className="flex flex-col h-[calc(100dvh-140px)] max-w-2xl mx-auto">
 
       {/* HEADER */}
-
       <div className="flex items-center gap-3 mb-4">
-
         <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
           <Bot size={18} className="text-primary" />
         </div>
-
         <div>
-          <h1 className="font-semibold text-foreground">
-            CLC AI Assistent
-          </h1>
-
-          <p className="text-xs text-muted-foreground">
-            Rutter • Väder • Drift • Karta
-          </p>
+          <h1 className="font-semibold text-foreground">CLC AI Assistent</h1>
+          <p className="text-xs text-muted-foreground">Fråga om rutt, väder, planering...</p>
         </div>
-
       </div>
 
-
       {/* MESSAGES */}
-
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
 
         {messages.length === 0 && (
-
           <div className="text-sm text-muted-foreground mt-8">
-
-            <p className="mb-2 font-medium">
-              Testa detta:
-            </p>
-
+            <p className="mb-2 font-medium">Fråga AI om:</p>
             <ul className="space-y-1 list-disc pl-4">
-              <li>Visa Frölunda torg</li>
-              <li>Optimera dagens rutt</li>
-              <li>Finns halkrisk idag?</li>
-              <li>Vilket jobb ska jag börja med?</li>
+              <li>Planera dagens rutt</li>
+              <li>Väder och halkrisk</li>
+              <li>Jobbprioritering</li>
+              <li>Sammanfatta arbetsdagen</li>
             </ul>
-
           </div>
-
         )}
 
-
         {messages.map((m, i) => (
-
           <div
             key={i}
             className={`p-3 rounded-xl text-sm max-w-[85%] animate-fade-in-up ${
@@ -168,50 +88,35 @@ export default function AIAssistantPage() {
                 : "glass-card"
             }`}
           >
-
             {m.role === "assistant" ? (
-
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <ReactMarkdown>{m.content}</ReactMarkdown>
               </div>
-
             ) : (
-
               m.content
-
             )}
-
           </div>
-
         ))}
 
-
         {loading && messages[messages.length - 1]?.role !== "assistant" && (
-
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="animate-spin" size={14} />
-            AI analyserar...
+            AI tänker...
           </div>
-
         )}
 
         <div ref={bottomRef} />
-
       </div>
 
-
       {/* INPUT */}
-
       <div className="mt-4 flex gap-2">
-
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="Fråga AI (t.ex. visa adress...)"
+          placeholder="Fråga AI..."
           className="flex-1 bg-muted border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
-
         <button
           onClick={send}
           disabled={loading || !input.trim()}
@@ -219,11 +124,8 @@ export default function AIAssistantPage() {
         >
           <Send size={16} />
         </button>
-
       </div>
 
     </div>
-
   )
-
 }
