@@ -1,9 +1,9 @@
-import { defineConfig } from "vite"
-import react from "@vitejs/plugin-react-swc"
-import path from "path"
-import { VitePWA } from "vite-plugin-pwa"
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import path from "path";
+import { VitePWA } from "vite-plugin-pwa";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
     port: 5000,
@@ -12,21 +12,14 @@ export default defineConfig({
       overlay: false,
     },
   },
-
   plugins: [
     react(),
-
     VitePWA({
       registerType: "autoUpdate",
-
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,svg,webp}"], // ❌ tog bort png här
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
-
       manifest: {
         name: "CLC – Maskinsopning & Framblåsning",
         short_name: "CLC",
@@ -36,7 +29,6 @@ export default defineConfig({
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
-
         icons: [
           {
             src: "/clc-logo.png",
@@ -53,11 +45,10 @@ export default defineConfig({
         ],
       },
     }),
-  ],
-
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+}));
