@@ -1,5 +1,5 @@
-import Dashboard from "./Dashboard"
+import RoutePlanningPage from "./RoutePlanningPage"
 
 export default function Index() {
-  return <Dashboard />
+  return <RoutePlanningPage />
 }
