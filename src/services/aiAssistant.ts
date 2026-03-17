@@ -1,6 +1,35 @@
 type Msg = { role: "user" | "assistant"; content: string }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`
+/* ─────────────────────────────
+   URLS
+───────────────────────────── */
+
+const BASE_URL = import.meta.env.VITE_SUPABASE_URL
+const CHAT_URL = `${BASE_URL}/functions/v1/ai-chat`
+const IMAGE_URL = `${BASE_URL}/functions/v1/ai-image`
+
+/* ─────────────────────────────
+   FREE LIMIT SYSTEM (DAILY)
+───────────────────────────── */
+
+const LIMIT_PER_DAY = 20
+
+function checkLimit() {
+  const today = new Date().toDateString()
+  const key = `ai_usage_${today}`
+
+  const used = Number(localStorage.getItem(key) || 0)
+
+  if (used >= LIMIT_PER_DAY) {
+    throw new Error("Gratisgräns nådd idag (20 AI-anrop)")
+  }
+
+  localStorage.setItem(key, String(used + 1))
+}
+
+/* ─────────────────────────────
+   CHAT STREAM (TEXT AI)
+───────────────────────────── */
 
 export async function streamChat({
   messages,
@@ -16,6 +45,8 @@ export async function streamChat({
 
   try {
 
+    checkLimit()
+
     const resp = await fetch(CHAT_URL, {
       method: "POST",
       headers: {
@@ -25,9 +56,8 @@ export async function streamChat({
       body: JSON.stringify({ messages }),
     })
 
-    /* ❌ ERROR RESPONSE */
     if (!resp.ok) {
-      let msg = "AI-tjänsten svarade inte."
+      let msg = "AI svarade inte"
       try {
         const data = await resp.json()
         msg = data.error || msg
@@ -38,20 +68,18 @@ export async function streamChat({
     }
 
     if (!resp.body) {
-      onError?.("Tomt svar från AI.")
+      onError?.("Tomt svar från AI")
       onDone()
       return
     }
 
     const reader = resp.body.getReader()
     const decoder = new TextDecoder()
-
     let buffer = ""
 
     while (true) {
 
       const { done, value } = await reader.read()
-
       if (done) break
 
       buffer += decoder.decode(value, { stream: true })
@@ -68,7 +96,6 @@ export async function streamChat({
 
         const jsonStr = line.replace("data:", "").trim()
 
-        /* 🛑 DONE */
         if (jsonStr === "[DONE]") {
           onDone()
           return
@@ -80,12 +107,12 @@ export async function streamChat({
 
           const content =
             parsed?.choices?.[0]?.delta?.content ||
-            parsed?.text || ""
+            parsed?.text ||
+            ""
 
           if (content) onDelta(content)
 
         } catch {
-          // buffer incomplete JSON, vänta nästa chunk
           buffer = jsonStr + buffer
         }
       }
@@ -103,16 +130,54 @@ export async function streamChat({
   }
 }
 
+/* ─────────────────────────────
+   IMAGE ANALYSIS (GEMINI)
+───────────────────────────── */
 
-/* 🔥 HOOK (redo för framtida features) */
-export function useGeminiAssistant() {
+export async function analyzeImage(base64: string) {
 
-  const send = async (params: any) => {
-    return streamChat(params)
+  try {
+
+    checkLimit()
+
+    const resp = await fetch(IMAGE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ image: base64 }),
+    })
+
+    if (!resp.ok) {
+      let msg = "Bildanalys misslyckades"
+      try {
+        const data = await resp.json()
+        msg = data.error || msg
+      } catch {}
+      throw new Error(msg)
+    }
+
+    const data = await resp.json()
+
+    return data.result || "Ingen analys"
+
+  } catch (err: any) {
+
+    console.error("Image error:", err)
+
+    throw new Error(err?.message || "Bildfel")
+
   }
+}
 
+/* ─────────────────────────────
+   HOOK
+───────────────────────────── */
+
+export function useGeminiAssistant() {
   return {
     streamChat,
-    send
+    analyzeImage
   }
 }
