@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
 
 import RoutePlanningPage from "@/pages/RoutePlanningPage";
+import Index from "@/pages/Index";
 import AreasPage from "@/pages/AreasPage";
 import TimePage from "@/pages/TimePage";
 import AllTimeReportsPage from "@/pages/AllTimeReportsPage";
@@ -58,8 +59,11 @@ function ProtectedRoutes() {
   return (
     <AppLayout>
       <Routes>
-        {/* Dashboard = Route Planner */}
-        <Route path="/" element={<RoutePlanningPage />} />
+        {/* Dashboard = card grid home */}
+        <Route path="/" element={<Index />} />
+
+        {/* Route Planner */}
+        <Route path="/route" element={<RoutePlanningPage />} />
 
         {/* Time */}
         <Route path="/time" element={<TimePage />} />
@@ -98,8 +102,6 @@ function ProtectedRoutes() {
         {/* Job details */}
         <Route path="/job/:id" element={<JobDetails />} />
 
-        {/* Legacy route redirect */}
-        <Route path="/route" element={<Navigate to="/" replace />} />
 
         {/* Fallback */}
         <Route path="*" element={<NotFound />} />

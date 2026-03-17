@@ -1,0 +1,77 @@
+Transform my entire app UI to match a modern mobile dashboard similar to the attached reference design.
+
+Requirements:
+
+🎨 DESIGN SYSTEM
+- Use a dark theme with warm orange gradient background (#F4A261 → #E76F51)
+- Cards should be rounded (border-radius: 20px–28px)
+- Use soft shadows and glassmorphism (blur + transparency)
+- Primary UI color: deep black / dark gray panels
+- Accent color: orange highlights
+- Text: clean, minimal, high contrast (white / gray)
+
+📱 LAYOUT (VERY IMPORTANT)
+- REMOVE current sidebar layout completely
+- Replace with a mobile-first layout:
+  - Top section: greeting + user avatar
+  - Middle: grid of cards (2 columns)
+  - Bottom: fixed rounded navigation bar (floating style)
+
+📊 HOME SCREEN
+- Create a dashboard with cards like:
+  - Ruttplanering (main)
+  - Planering
+  - Karta
+  - AI Assistant
+- Cards must have icons + title + hover/tap animation
+- Keep ALL existing navigation routes working
+
+🧭 NAVIGATION
+- Replace sidebar with bottom navigation bar:
+  - Home
+  - Planning
+  - AI
+  - Map
+  - Profile/Admin
+- Floating rounded container with blur background
+- Active tab = highlighted icon + glow
+
+🧠 KEEP ALL FUNCTIONALITY
+- DO NOT remove or break:
+  - Supabase connections
+  - AI chat
+  - Route planning (Google Maps)
+  - Auth system
+- Only refactor UI and layout
+
+🗺 MAP PAGE
+- Keep full functionality
+- Wrap map inside rounded container
+- Add overlay cards (weather, stats)
+
+🤖 AI PAGE
+- Convert chat into modern chat UI:
+  - rounded bubbles
+  - dark glass background
+  - sticky input at bottom
+  - smooth animations
+
+📦 COMPONENT REFACTOR
+- Create reusable components:
+  - DashboardCard
+  - BottomNav
+  - GlassCard
+  - PageContainer
+
+⚡ UX
+- Add subtle animations (fade, scale, hover)
+- Smooth transitions between pages
+- Mobile-first responsive design
+
+🚫 DO NOT:
+- Change backend logic
+- Remove routes
+- Break existing features
+
+🎯 GOAL:
+Make the app feel like a premium modern mobile app (Uber / Tesla / Linear style), while keeping all existing functionality intact.
