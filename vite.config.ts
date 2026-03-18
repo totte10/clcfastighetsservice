@@ -3,11 +3,11 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5000,
-    allowedHosts: true,
+    allowedHosts: true as const,
     hmr: {
       overlay: false,
     },
@@ -17,38 +17,45 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        globPatterns: ["**/*.{js,css,html,ico,svg,webp,jpg,jpeg}"],
+        globIgnores: [
+          "**/pwa-192x192.png",
+          "**/pwa-512x512.png",
+          "**/favicon.png",
+          "**/clc-logo.png",
+          "**/apple-touch-icon.png",
+        ],
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
       manifest: {
-        name: "CLC – Maskinsopning & Framblåsning",
+        name: "CLC – Field Service Manager",
         short_name: "CLC",
-        description: "Hantera maskinsopning, framblåsning och tidrapportering",
-        theme_color: "#1a1a2e",
-        background_color: "#ffffff",
+        description: "AI-powered field service management for projects, planning, maps, and route work.",
+        theme_color: "#0b0d12",
+        background_color: "#0b0d12",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
         icons: [
           {
-            src: "/clc-logo.png",
-            sizes: "192x192",
-            type: "image/png",
+            src: "/green-logo.jpg",
+            sizes: "1600x1600",
+            type: "image/jpeg",
             purpose: "any",
           },
           {
-            src: "/clc-logo.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
+            src: "/green-logo.jpg",
+            sizes: "1600x1600",
+            type: "image/jpeg",
+            purpose: "maskable",
           },
         ],
       },
     }),
-  ].filter(Boolean),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+});

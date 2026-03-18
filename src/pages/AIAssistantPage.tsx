@@ -60,19 +60,16 @@ export default function AIAssistantPage() {
 
       {/* HEADER */}
       <div className="flex items-center gap-3 mb-4 animate-fade-in-up">
-        <div
-          className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg,rgba(180,100,255,0.25),rgba(140,60,220,0.25))", border: "1px solid rgba(180,100,255,0.2)" }}
-        >
-          <Bot size={18} className="text-purple-400" />
+        <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-primary/15 border border-primary/20">
+          <Bot size={18} className="text-primary" />
         </div>
         <div>
           <h1 className="font-bold text-foreground">CLC AI Assistent</h1>
-          <p className="text-xs text-muted-foreground">Powered by Gemini 2.0</p>
+          <p className="text-xs text-muted-foreground">Powered by Gemini Flash</p>
         </div>
-        <div className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)" }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] text-emerald-400 font-medium">Online</span>
+        <div className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-full bg-success/10 border border-success/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+          <span className="text-[10px] text-success font-medium">Online</span>
         </div>
       </div>
 

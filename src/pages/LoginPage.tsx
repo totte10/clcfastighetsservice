@@ -54,11 +54,8 @@ export default function LoginPage() {
 
         {/* Logo + Title */}
         <div className="flex flex-col items-center mb-7">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: "linear-gradient(135deg,#F4A261,#E76F51)", boxShadow: "0 8px 28px rgba(244,162,97,0.4)" }}
-          >
-            <img src="/clc-logo.png" alt="CLC" className="w-10 h-10 object-contain" />
+          <div className="w-20 h-20 rounded-[1.75rem] overflow-hidden mb-4 border border-border/60 shadow-2xl shadow-black/30 bg-card">
+            <img src="/green-logo.jpg" alt="CLC" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight">CLC Fastighetsservice</h1>
           <p className="text-xs text-muted-foreground mt-1">Logga in för att fortsätta</p>
@@ -88,7 +85,7 @@ export default function LoginPage() {
           />
 
           {error && (
-            <p className="text-xs text-red-400 text-center py-1.5 rounded-xl" style={{ background: "rgba(255,80,80,0.08)" }}>
+            <p className="text-xs text-destructive text-center py-1.5 rounded-xl bg-destructive/10 border border-destructive/20">
               {error}
             </p>
           )}
