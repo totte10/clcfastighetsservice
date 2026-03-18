@@ -60,11 +60,8 @@ export default function AIAssistantPage() {
 
       {/* HEADER */}
       <div className="flex items-center gap-3 mb-4 animate-fade-in-up">
-        <div
-          className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg,rgba(180,100,255,0.25),rgba(140,60,220,0.25))", border: "1px solid rgba(180,100,255,0.2)" }}
-        >
-          <Bot size={18} className="text-purple-400" />
+        <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-primary/15 border border-primary/20">
+          <Bot size={18} className="text-primary" />
         </div>
         <div>
           <h1 className="font-bold text-foreground">CLC AI Assistent</h1>

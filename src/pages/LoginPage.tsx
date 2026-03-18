@@ -85,7 +85,7 @@ export default function LoginPage() {
           />
 
           {error && (
-            <p className="text-xs text-red-400 text-center py-1.5 rounded-xl" style={{ background: "rgba(255,80,80,0.08)" }}>
+            <p className="text-xs text-destructive text-center py-1.5 rounded-xl bg-destructive/10 border border-destructive/20">
               {error}
             </p>
           )}
