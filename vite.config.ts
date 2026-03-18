@@ -25,6 +25,7 @@ export default defineConfig({
           "**/clc-logo.png",
           "**/apple-touch-icon.png",
         ],
+        navigateFallbackDenylist: [/^\/~oauth/],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
       manifest: {
