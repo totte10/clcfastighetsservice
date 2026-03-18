@@ -114,7 +114,7 @@ export default function ProjectDetailPage() {
   const loadTimeEntries = useCallback(async () => {
     if (!project) return
     const { data } = await supabase
-      .from("time_entries")
+      .from("user_time_entries")
       .select("*")
       .ilike("project", `%${project.name}%`)
       .order("date", { ascending: false })

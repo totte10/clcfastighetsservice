@@ -22,6 +22,7 @@ import JobDetails from "@/pages/JobDetails";
 import TidxSopningarPage from "@/pages/TidxSopningarPage";
 import EgnaOmradenPage from "@/pages/EgnaOmradenPage";
 import ProjectsPage from "@/pages/ProjectsPage";
+import ProjectDetailPage from "@/pages/ProjectDetailPage";
 
 import PlanningPage from "@/pages/PlanningPage";
 
@@ -71,6 +72,7 @@ function ProtectedRoutes() {
 
         {/* Projects */}
         <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/:id" element={<ProjectDetailPage />} />
 
         {/* Planning */}
         <Route path="/planning" element={<PlanningPage />} />

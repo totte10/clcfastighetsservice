@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { getAreas, updateArea, type Area } from "@/lib/store";
 import { StatusBadge } from "@/components/StatusBadge";
-import { AreaMap } from "@/components/AreaMap";
+import { GoogleMapView } from "@/components/GoogleMapView";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -122,11 +122,11 @@ export default function AreasPage() {
               Alla områden på karta
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <AreaMap
-              className="h-72 md:h-96 w-full rounded-lg overflow-hidden"
+          <CardContent className="p-0">
+            <GoogleMapView
+              height="300px"
               markers={areasWithCoords.map((a) => ({
-                lat: a.lat!, lng: a.lng!, label: a.name,
+                lat: a.lat!, lng: a.lng!, label: a.name, id: a.id,
                 color: getMarkerColor(a.blowStatus, a.sweepStatus),
               }))}
             />
