@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -7,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { GoogleMapView } from "@/components/GoogleMapView";
+import { AreaMap } from "@/components/AreaMap";
+import { EntryImageUpload } from "@/components/EntryImageUpload";
 import { geocodeAddress } from "@/lib/geocode";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -19,7 +19,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FolderOpen, Plus, Search, Map, Loader2, Trash2, Hash, ChevronRight } from "lucide-react";
+import { FolderOpen, Plus, Search, Map, Loader2, Trash2, Hash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { WorkerAssignment } from "@/components/WorkerAssignment";
 
@@ -44,7 +44,6 @@ function getMarkerColor(status: Status): "green" | "orange" | "red" {
 }
 
 export default function ProjectsPage() {
-  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [search, setSearch] = useState("");
   const [showDialog, setShowDialog] = useState(false);
@@ -73,6 +72,7 @@ export default function ProjectsPage() {
 
   useEffect(() => { loadProjects(); }, [loadProjects]);
 
+  // Realtime
   useEffect(() => {
     const channel = supabase
       .channel("projects_realtime")
@@ -102,8 +102,17 @@ export default function ProjectsPage() {
     loadProjects();
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleUpdate = async (id: string, updates: Partial<Project>) => {
+    const mapped: Record<string, unknown> = {};
+    if (updates.status !== undefined) mapped.status = updates.status;
+    if (updates.description !== undefined) mapped.description = updates.description;
+    if (updates.images !== undefined) mapped.images = updates.images;
+    if (updates.project_number !== undefined) mapped.project_number = updates.project_number;
+    await supabase.from("projects").update(mapped).eq("id", id);
+    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  };
+
+  const handleDelete = async (id: string) => {
     await supabase.from("projects").delete().eq("id", id);
     toast({ title: "Projekt borttaget!" });
     loadProjects();
@@ -141,7 +150,7 @@ export default function ProjectsPage() {
 
   const mapMarkers = useMemo(
     () => projects.filter((p) => p.lat != null && p.lng != null).map((p) => ({
-      lat: p.lat!, lng: p.lng!, label: `${p.project_number} - ${p.name}`, color: getMarkerColor(p.status), id: p.id,
+      lat: p.lat!, lng: p.lng!, label: `${p.project_number} - ${p.name}`, color: getMarkerColor(p.status),
     })),
     [projects]
   );
@@ -151,62 +160,64 @@ export default function ProjectsPage() {
   const geocodedCount = projects.filter((p) => p.lat != null).length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Projekt</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Övriga Projekt</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {done}/{projects.length} klara · {inProgress} pågår
           </p>
         </div>
-        <Button
-          onClick={() => setShowDialog(true)}
-          className="gap-2"
-          style={{ background: "linear-gradient(135deg,#F4A261,#E76F51)" }}
-        >
+        <Button onClick={() => setShowDialog(true)} className="gap-2">
           <Plus className="h-4 w-4" /> Nytt projekt
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="glass-card">
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-primary">{done}</p>
+            <p className="text-2xl font-semibold text-primary">{done}</p>
             <p className="text-xs text-muted-foreground">Klara</p>
           </CardContent>
         </Card>
         <Card className="glass-card">
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-yellow-400">{inProgress}</p>
+            <p className="text-2xl font-semibold text-warning">{inProgress}</p>
             <p className="text-xs text-muted-foreground">Pågår</p>
           </CardContent>
         </Card>
         <Card className="glass-card">
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-red-400">{projects.length - done - inProgress}</p>
+            <p className="text-2xl font-semibold text-destructive">{projects.length - done - inProgress}</p>
             <p className="text-xs text-muted-foreground">Ej påbörjad</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Map */}
-      <Card className="glass-card overflow-hidden">
-        <CardHeader className="pb-2">
+      <Card className="glass-card">
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Map className="h-4 w-4 text-primary" /> Karta ({geocodedCount}/{projects.length})
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Map className="h-5 w-5 text-primary" /> Karta ({geocodedCount}/{projects.length})
             </CardTitle>
             {geocodedCount < projects.length && (
-              <Button size="sm" variant="outline" onClick={handleGeocodeAll} disabled={geocoding} className="gap-2 h-7 text-xs">
+              <Button size="sm" variant="outline" onClick={handleGeocodeAll} disabled={geocoding} className="gap-2">
                 {geocoding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Map className="h-3 w-3" />}
-                {geocoding ? geocodeProgress || "Söker..." : "Hämta positioner"}
+                {geocoding ? "Söker..." : "Hämta positioner"}
               </Button>
             )}
           </div>
+          {geocoding && geocodeProgress && <p className="text-xs text-muted-foreground">{geocodeProgress}</p>}
         </CardHeader>
-        <CardContent className="p-0">
-          <GoogleMapView markers={mapMarkers} height="260px" zoom={10} />
+        <CardContent>
+          {mapMarkers.length > 0 ? (
+            <AreaMap className="h-72 md:h-96 w-full rounded-lg overflow-hidden" markers={mapMarkers} />
+          ) : (
+            <div className="h-48 bg-muted rounded-lg flex items-center justify-center">
+              <p className="text-sm text-muted-foreground">Inga kartpositioner ännu</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -217,42 +228,76 @@ export default function ProjectsPage() {
       </div>
 
       {/* Project list */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {filteredProjects.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">
             {search ? `Inga resultat för "${search}"` : "Inga projekt ännu. Klicka 'Nytt projekt' för att skapa."}
           </p>
         )}
         {filteredProjects.map((project) => (
-          <button
-            key={project.id}
-            onClick={() => navigate(`/projects/${project.id}`)}
-            className="w-full text-left transition-all duration-150 active:scale-[0.99]"
-          >
-            <div
-              className="flex items-center gap-3 p-4 rounded-2xl"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(244,162,97,0.1)" }}
-              >
-                <FolderOpen size={18} className="text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[10px] tracking-wider uppercase text-primary font-semibold">
-                    #{project.project_number}
-                  </span>
-                  <StatusBadge status={project.status} />
-                  {project.lat != null && <span className="text-[10px] text-emerald-400">📍</span>}
+          <Card key={project.id} className="glass-card">
+            <CardContent className="pt-4 pb-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] tracking-wider uppercase text-primary font-semibold flex items-center gap-1">
+                      <Hash className="h-3 w-3" />{project.project_number}
+                    </span>
+                    <StatusBadge status={project.status} />
+                    {project.lat != null && <span className="text-[10px] text-success">📍</span>}
+                  </div>
+                  <p className="text-sm font-medium">{project.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{project.address}</p>
+                  {project.description && <p className="text-xs text-muted-foreground/70 italic mt-1">{project.description}</p>}
                 </div>
-                <p className="text-sm font-semibold text-foreground leading-tight truncate">{project.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{project.address}</p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-destructive shrink-0"><Trash2 className="h-4 w-4" /></Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Ta bort projekt?</AlertDialogTitle>
+                      <AlertDialogDescription>Denna åtgärd kan inte ångras.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(project.id)}>Ta bort</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-              <ChevronRight size={16} className="text-muted-foreground/40 flex-shrink-0" />
-            </div>
-          </button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={project.status} onValueChange={(v) => handleUpdate(project.id, { status: v as Status })}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Ej påbörjad</SelectItem>
+                    <SelectItem value="in-progress">Pågår</SelectItem>
+                    <SelectItem value="done">Klart</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={project.project_number}
+                  onChange={(e) => handleUpdate(project.id, { project_number: e.target.value })}
+                  placeholder="Projektnr"
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              <Input
+                value={project.description}
+                onChange={(e) => handleUpdate(project.id, { description: e.target.value })}
+                placeholder="Beskrivning"
+                className="h-8 text-xs"
+              />
+
+              <WorkerAssignment entryType="project" entryId={project.id} compact />
+              <EntryImageUpload
+                images={project.images}
+                onImagesChange={(imgs) => handleUpdate(project.id, { images: imgs })}
+              />
+            </CardContent>
+          </Card>
         ))}
       </div>
 
@@ -282,7 +327,7 @@ export default function ProjectsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>Avbryt</Button>
-            <Button onClick={handleAdd} style={{ background: "linear-gradient(135deg,#F4A261,#E76F51)" }}>Skapa projekt</Button>
+            <Button onClick={handleAdd}>Skapa projekt</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

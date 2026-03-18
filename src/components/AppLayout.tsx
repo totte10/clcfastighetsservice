@@ -30,8 +30,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
 
   const isHome = location.pathname === "/"
-  const pageTitle = PAGE_TITLES[location.pathname] ||
-    (location.pathname.startsWith("/projects/") ? "Projekt" : "CLC")
+  const pageTitle = PAGE_TITLES[location.pathname] || "CLC"
 
   const hour = new Date().getHours()
   const greeting =
@@ -52,7 +51,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       >
         <div className="flex items-center justify-between">
 
-          {/* LEFT */}
+          {/* LEFT - Avatar + Greeting (home) or Title (other pages) */}
           <div className="flex items-center gap-3">
             {isHome ? (
               <>
@@ -91,15 +90,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          {/* RIGHT — Logo + AI btn + Bell */}
+          {/* RIGHT */}
           <div className="flex items-center gap-2">
-            {isHome && (
-              <img
-                src="/logo.jpeg"
-                alt="CLC"
-                className="h-9 w-9 rounded-xl object-cover ring-1 ring-white/10"
-              />
-            )}
             <button
               onClick={() => navigate("/ai")}
               className="h-9 w-9 rounded-xl flex items-center justify-center transition active:scale-95"

@@ -15,9 +15,7 @@ export const lovable = {
           queryParams: opts?.extraParams,
         },
       });
-      if (error) {
-        return { error };
-      }
+      if (error) return { error };
       return { redirected: true };
     },
   },

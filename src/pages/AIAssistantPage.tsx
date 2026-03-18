@@ -1,36 +1,21 @@
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { streamChat } from "@/services/aiAssistant"
-import { supabase } from "@/integrations/supabase/client"
-import { useAuth } from "@/hooks/useAuth"
 import ReactMarkdown from "react-markdown"
-import { Bot, Send, Loader2, Sparkles, ChevronDown, Folder } from "lucide-react"
+import { Bot, Send, Loader2, Sparkles } from "lucide-react"
 
 type Msg = { role: "user" | "assistant"; content: string }
 
-interface Project {
-  id: string
-  name: string
-  status: string
-  project_number: string
-}
-
 const SUGGESTIONS = [
   "Planera dagens rutt",
-  "Sammanfatta mina projekt",
-  "Prioritera jobben idag",
-  "Optimera arbetstid",
-  "Vad bör jag göra härnäst?",
-  "Tips för effektivare arbete",
+  "Hur är vädret?",
+  "Prioritera jobb idag",
+  "Sammanfatta arbetsdagen",
 ]
 
 export default function AIAssistantPage() {
-  const { user } = useAuth()
   const [messages, setMessages] = useState<Msg[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const [projects, setProjects] = useState<Project[]>([])
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [showProjectPicker, setShowProjectPicker] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -38,29 +23,11 @@ export default function AIAssistantPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const loadProjects = useCallback(async () => {
-    const { data } = await supabase
-      .from("projects")
-      .select("id,name,status,project_number")
-      .order("created_at", { ascending: false })
-      .limit(20)
-    setProjects((data as Project[]) ?? [])
-  }, [])
-
-  useEffect(() => { loadProjects() }, [loadProjects])
-
   async function send(text?: string) {
     const msg = (text ?? input).trim()
     if (!msg || loading) return
 
     const userMsg: Msg = { role: "user", content: msg }
-
-    let systemContext = "Du är en AI-arbetsassistent för CLC Fastighetsservice. Du hjälper fältarbetare med planering, ruttoptimering, tidsrapportering och projekthantering. Svara alltid på svenska och var kortfattad och hjälpsam."
-
-    if (selectedProject) {
-      systemContext += ` Aktuellt projekt: "${selectedProject.name}" (${selectedProject.project_number}), status: ${selectedProject.status}.`
-    }
-
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
     setInput("")
@@ -68,14 +35,8 @@ export default function AIAssistantPage() {
 
     let assistantSoFar = ""
 
-    const messagesWithContext = [
-      { role: "user" as const, content: systemContext },
-      { role: "assistant" as const, content: "Förstått! Jag är redo att hjälpa dig." },
-      ...newMessages,
-    ]
-
     await streamChat({
-      messages: messagesWithContext,
+      messages: newMessages,
       onDelta: (chunk) => {
         assistantSoFar += chunk
         setMessages(prev => {
@@ -98,64 +59,21 @@ export default function AIAssistantPage() {
     <div className="flex flex-col h-[calc(100dvh-160px)]">
 
       {/* HEADER */}
-      <div className="flex items-center gap-3 mb-3 animate-fade-in-up">
-        <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-purple-500/15 border border-purple-500/20">
+      <div className="flex items-center gap-3 mb-4 animate-fade-in-up">
+        <div
+          className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ background: "linear-gradient(135deg,rgba(180,100,255,0.25),rgba(140,60,220,0.25))", border: "1px solid rgba(180,100,255,0.2)" }}
+        >
           <Bot size={18} className="text-purple-400" />
         </div>
-        <div className="flex-1">
-          <h1 className="font-bold text-foreground text-sm">CLC AI Arbetsassistent</h1>
-          <p className="text-[10px] text-muted-foreground">Powered by Gemini Flash</p>
+        <div>
+          <h1 className="font-bold text-foreground">CLC AI Assistent</h1>
+          <p className="text-xs text-muted-foreground">Powered by Gemini 2.0</p>
         </div>
-        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+        <div className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)" }}>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[10px] text-emerald-400 font-medium">Online</span>
         </div>
-      </div>
-
-      {/* PROJECT CONTEXT PICKER */}
-      <div className="mb-3">
-        <button
-          onClick={() => setShowProjectPicker(!showProjectPicker)}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all"
-          style={{
-            background: selectedProject
-              ? "rgba(244,162,97,0.1)"
-              : "rgba(255,255,255,0.04)",
-            border: selectedProject
-              ? "1px solid rgba(244,162,97,0.25)"
-              : "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          <Folder size={13} className={selectedProject ? "text-primary" : "text-muted-foreground"} />
-          <span className={selectedProject ? "text-primary font-medium flex-1 text-left" : "text-muted-foreground flex-1 text-left"}>
-            {selectedProject ? `${selectedProject.project_number} – ${selectedProject.name}` : "Välj projekt för kontext (valfritt)"}
-          </span>
-          <ChevronDown size={13} className="text-muted-foreground" />
-        </button>
-
-        {showProjectPicker && (
-          <div
-            className="mt-1 rounded-xl overflow-hidden"
-            style={{ background: "rgba(20,20,32,0.98)", border: "1px solid rgba(255,255,255,0.1)" }}
-          >
-            <button
-              onClick={() => { setSelectedProject(null); setShowProjectPicker(false) }}
-              className="w-full text-left px-3 py-2 text-xs text-muted-foreground hover:bg-white/5 transition-colors"
-            >
-              Inget projekt
-            </button>
-            {projects.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => { setSelectedProject(p); setShowProjectPicker(false) }}
-                className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-white/5 transition-colors border-t border-white/5"
-              >
-                <span className="text-primary text-[10px] font-semibold">{p.project_number}</span>
-                <span className="ml-2">{p.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* MESSAGES */}
@@ -163,17 +81,19 @@ export default function AIAssistantPage() {
 
         {messages.length === 0 && (
           <div className="animate-fade-in-up">
-            <div className="glass-card p-5 mb-3 text-center">
+            {/* Welcome card */}
+            <div className="glass-card p-5 mb-4 text-center">
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
                 style={{ background: "linear-gradient(135deg,#A855F7,#7C3AED)" }}
               >
-                <Sparkles size={22} className="text-white" />
+                <Sparkles size={24} className="text-white" />
               </div>
-              <p className="font-semibold text-foreground mb-1 text-sm">Vad kan jag hjälpa dig med?</p>
-              <p className="text-xs text-muted-foreground">Fråga om rutter, planering, projekt eller jobbprioritering</p>
+              <p className="font-semibold text-foreground mb-1">Vad kan jag hjälpa dig med?</p>
+              <p className="text-xs text-muted-foreground">Fråga om rutter, väder, planering eller jobbprioritering</p>
             </div>
 
+            {/* Suggestions */}
             <div className="grid grid-cols-2 gap-2 stagger-children">
               {SUGGESTIONS.map((s) => (
                 <button
@@ -182,8 +102,7 @@ export default function AIAssistantPage() {
                   className="text-left p-3 rounded-2xl text-xs text-muted-foreground transition-all duration-150 active:scale-95"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
                 >
-                  <Sparkles size={9} className="text-primary mb-1" />
-                  <span className="block text-foreground font-medium text-xs">{s}</span>
+                  <span className="block text-foreground font-medium mb-0.5 text-xs">{s}</span>
                 </button>
               ))}
             </div>
@@ -205,7 +124,9 @@ export default function AIAssistantPage() {
             )}
             <div
               className={`px-4 py-3 rounded-2xl text-sm max-w-[78%] leading-relaxed ${
-                m.role === "user" ? "text-white rounded-br-md" : "text-foreground rounded-bl-md"
+                m.role === "user"
+                  ? "text-white rounded-br-md"
+                  : "text-foreground rounded-bl-md"
               }`}
               style={m.role === "user" ? {
                 background: "linear-gradient(135deg,#F4A261,#E76F51)",
@@ -219,7 +140,9 @@ export default function AIAssistantPage() {
                 <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-li:my-0.5">
                   <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
-              ) : m.content}
+              ) : (
+                m.content
+              )}
             </div>
           </div>
         ))}
@@ -258,7 +181,7 @@ export default function AIAssistantPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-          placeholder={selectedProject ? `Fråga om ${selectedProject.name}...` : "Fråga AI om arbete, rutt, projekt..."}
+          placeholder="Fråga AI om rutt, väder..."
           className="flex-1 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         <button

@@ -3,11 +3,11 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { VitePWA } from "vite-plugin-pwa";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
     port: 5000,
-    allowedHosts: true as const,
+    allowedHosts: true,
     hmr: {
       overlay: false,
     },
@@ -17,46 +17,38 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,svg,webp,jpg,jpeg}"],
-        globIgnores: [
-          "**/pwa-192x192.png",
-          "**/pwa-512x512.png",
-          "**/favicon.png",
-          "**/clc-logo.png",
-          "**/apple-touch-icon.png",
-        ],
-        navigateFallbackDenylist: [/^\/~oauth/],
-        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
-        name: "CLC – Field Service Manager",
+        name: "CLC – Maskinsopning & Framblåsning",
         short_name: "CLC",
-        description: "AI-powered field service management for projects, planning, maps, and route work.",
-        theme_color: "#0b0d12",
-        background_color: "#0b0d12",
+        description: "Hantera maskinsopning, framblåsning och tidrapportering",
+        theme_color: "#1a1a2e",
+        background_color: "#ffffff",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
         icons: [
           {
-            src: "/green-logo.jpg",
-            sizes: "1600x1600",
-            type: "image/jpeg",
+            src: "/clc-logo.png",
+            sizes: "192x192",
+            type: "image/png",
             purpose: "any",
           },
           {
-            src: "/green-logo.jpg",
-            sizes: "1600x1600",
-            type: "image/jpeg",
-            purpose: "maskable",
+            src: "/clc-logo.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
           },
         ],
       },
     }),
-  ],
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-});
+}));
