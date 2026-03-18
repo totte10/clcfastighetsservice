@@ -26,464 +26,325 @@ import {
   useLoadScript
 } from "@react-google-maps/api"
 
-interface Job{
-  id:string
-  name:string
-  address:string
-  lat:number
-  lng:number
-  status:string
-  date?:string
-  type:string
+interface Job {
+  id: string
+  name: string
+  address: string
+  lat: number
+  lng: number
+  status: string
+  date?: string
+  type: string
 }
 
-interface Weather{
-  temp:number
-  rain:number
-  wind:number
+interface Weather {
+  temp: number
+  rain: number
+  wind: number
 }
 
-export default function RoutePlanningPage(){
+export default function RoutePlanningPage() {
 
   const { user } = useAuth()
 
-  const [jobs,setJobs] = useState<Job[]>([])
-  const [optimized,setOptimized] = useState<Job[]>([])
-  const [directions,setDirections] = useState<any>(null)
-  const [loading,setLoading] = useState(true)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [optimized, setOptimized] = useState<Job[]>([])
+  const [directions, setDirections] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const [weather,setWeather] = useState<Weather | null>(null)
+  const [weather, setWeather] = useState<Weather | null>(null)
 
-  const [selectedDate,setSelectedDate] = useState(
-    format(new Date(),"yyyy-MM-dd")
+  const [selectedDate] = useState(
+    format(new Date(), "yyyy-MM-dd")
   )
+
+  const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null)
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY
   })
 
-
-/* LOAD JOBS */
-
-const loadJobs = useCallback(async()=>{
-
-  if(!user){
-    setLoading(false)
-    return
-  }
-
-  setLoading(true)
-
-  try{
-
-    const [projects,egna,tidx,optimal,tmm] = await Promise.all([
-
-      supabase
-        .from("projects")
-        .select("id,name,address,lat,lng,status,datum_planerat"),
-
-      supabase
-        .from("egna_entries")
-        .select("id,address,lat,lng,datum_planerat,blow_status,sweep_status"),
-
-      supabase
-        .from("tidx_entries")
-        .select("id,omrade,address,lat,lng,status,datum_planerat"),
-
-      supabase
-        .from("optimal_entries")
-        .select("id,name,address,lat,lng,status,datum_start"),
-
-      supabase
-        .from("tmm_entries")
-        .select("id,beskrivning,address,lat,lng,status,datum")
-
-    ])
-
-    const list:Job[] = []
-
-    /* PROJECTS */
-
-    ;(projects.data ?? []).forEach(r=>{
-
-      if(!r.lat || !r.lng) return
-
-      const d = r.datum_planerat?.slice(0,10)
-
-      if(d && d !== selectedDate) return
-
-      list.push({
-        id:r.id,
-        name:r.name || "Projekt",
-        address:r.address || "",
-        lat:Number(r.lat),
-        lng:Number(r.lng),
-        status:r.status === "done" ? "done":"pending",
-        type:"project",
-        date:d
-      })
-
-    })
-
-
-    /* EGNA */
-
-    ;(egna.data ?? []).forEach(r=>{
-
-      if(!r.lat || !r.lng) return
-
-      const d = r.datum_planerat?.slice(0,10)
-
-      if(d && d !== selectedDate) return
-
-      const done =
-        r.blow_status === "done" &&
-        r.sweep_status === "done"
-
-      list.push({
-        id:r.id,
-        name:"Egna område",
-        address:r.address || "",
-        lat:Number(r.lat),
-        lng:Number(r.lng),
-        status:done ? "done":"pending",
-        type:"egna",
-        date:d
-      })
-
-    })
-
-
-    /* TIDX */
-
-    ;(tidx.data ?? []).forEach(r=>{
-
-      if(!r.lat || !r.lng) return
-
-      const d = r.datum_planerat?.slice(0,10)
-
-      if(d && d !== selectedDate) return
-
-      list.push({
-        id:r.id,
-        name:r.omrade || "Tidx område",
-        address:r.address || "",
-        lat:Number(r.lat),
-        lng:Number(r.lng),
-        status:r.status === "done" ? "done":"pending",
-        type:"tidx",
-        date:d
-      })
-
-    })
-
-
-    /* OPTIMAL */
-
-    ;(optimal.data ?? []).forEach(r=>{
-
-      if(!r.lat || !r.lng) return
-
-      const d = r.datum_start?.slice(0,10)
-
-      if(d && d !== selectedDate) return
-
-      list.push({
-        id:r.id,
-        name:r.name || "Optimal",
-        address:r.address || "",
-        lat:Number(r.lat),
-        lng:Number(r.lng),
-        status:r.status === "done" ? "done":"pending",
-        type:"optimal",
-        date:d
-      })
-
-    })
-
-
-    /* TMM */
-
-    ;(tmm.data ?? []).forEach(r=>{
-
-      if(!r.lat || !r.lng) return
-
-      const d = r.datum?.slice(0,10)
-
-      if(d && d !== selectedDate) return
-
-      list.push({
-        id:r.id,
-        name:r.beskrivning || "TMM",
-        address:r.address || "",
-        lat:Number(r.lat),
-        lng:Number(r.lng),
-        status:r.status === "done" ? "done":"pending",
-        type:"tmm",
-        date:d
-      })
-
-    })
-
-
-    setJobs(list)
-
-  }catch(e){
-
-    console.log("Job load error",e)
-
-  }
-
-  setLoading(false)
-
-},[user,selectedDate])
-
-
-useEffect(()=>{
-  loadJobs()
-},[loadJobs])
-
-
-/* WEATHER */
-
-const loadWeather = async()=>{
-
-  try{
-
-    const res = await fetch(
-      "https://api.open-meteo.com/v1/forecast?latitude=57.7089&longitude=11.9746&current=temperature_2m,precipitation,wind_speed_10m"
+  /* 📍 GET USER GPS */
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        })
+      },
+      err => console.log("GPS error", err)
     )
+  }, [])
 
-    const data = await res.json()
+  /* LOAD JOBS */
 
-    if(!data?.current) return
+  const loadJobs = useCallback(async () => {
 
-    setWeather({
-      temp:data.current.temperature_2m,
-      rain:data.current.precipitation,
-      wind:data.current.wind_speed_10m
-    })
-
-  }catch{
-    console.log("Weather error")
-  }
-
-}
-
-useEffect(()=>{
-  loadWeather()
-},[])
-
-
-/* ROUTE OPTIMIZATION */
-
-useEffect(()=>{
-
-  if(!isLoaded) return
-  if(jobs.length < 2) return
-
-  const directionsService =
-    new window.google.maps.DirectionsService()
-
-  const origin = jobs[0]
-  const destination = jobs[jobs.length-1]
-
-  const waypoints = jobs.slice(1,-1).map(j=>({
-    location:{lat:j.lat,lng:j.lng}
-  }))
-
-  directionsService.route({
-
-    origin,
-    destination,
-    waypoints,
-    optimizeWaypoints:true,
-    travelMode:window.google.maps.TravelMode.DRIVING
-
-  },
-  (result,status)=>{
-
-    if(status==="OK" && result){
-
-      setDirections(result)
-
-      const order = result.routes[0].waypoint_order
-
-      const optimizedRoute = [
-        jobs[0],
-        ...order.map((i:number)=>jobs[i+1]),
-        jobs[jobs.length-1]
-      ]
-
-      setOptimized(optimizedRoute)
-
+    if (!user) {
+      setLoading(false)
+      return
     }
 
-  })
+    setLoading(true)
 
-},[jobs,isLoaded])
+    try {
 
+      const [projects, egna, tidx, optimal, tmm] = await Promise.all([
 
-const routeJobs =
-  optimized.length ? optimized : jobs
+        supabase.from("projects").select("*"),
+        supabase.from("egna_entries").select("*"),
+        supabase.from("tidx_entries").select("*"),
+        supabase.from("optimal_entries").select("*"),
+        supabase.from("tmm_entries").select("*")
 
+      ])
 
-const center =
-  routeJobs.length
-  ? {lat:routeJobs[0].lat,lng:routeJobs[0].lng}
-  : {lat:57.7089,lng:11.9746}
+      const list: Job[] = []
 
+      const addJob = (job: Job) => {
+        if (!job.lat || !job.lng) return
+        if (job.date !== selectedDate) return
+        if (job.status === "done") return
+        list.push(job)
+      }
 
-return(
+      ;(projects.data ?? []).forEach(r => {
+        addJob({
+          id: r.id,
+          name: r.name || "Projekt",
+          address: r.address || "",
+          lat: Number(r.lat),
+          lng: Number(r.lng),
+          status: r.status === "done" ? "done" : "pending",
+          type: "project",
+          date: r.datum_planerat?.slice(0, 10)
+        })
+      })
 
-<div className="space-y-6">
+      ;(egna.data ?? []).forEach(r => {
+        const done = r.blow_status === "done" && r.sweep_status === "done"
 
-<h1 className="text-2xl font-bold flex items-center gap-2">
-<Route className="h-6 w-6"/>
-Ruttplanering – {format(new Date(selectedDate),"d MMMM",{locale:sv})}
-</h1>
+        addJob({
+          id: r.id,
+          name: "Egna område",
+          address: r.address || "",
+          lat: Number(r.lat),
+          lng: Number(r.lng),
+          status: done ? "done" : "pending",
+          type: "egna",
+          date: r.datum_planerat?.slice(0, 10)
+        })
+      })
 
+      ;(tidx.data ?? []).forEach(r => {
+        addJob({
+          id: r.id,
+          name: r.omrade || "Tidx",
+          address: r.address || "",
+          lat: Number(r.lat),
+          lng: Number(r.lng),
+          status: r.status === "done" ? "done" : "pending",
+          type: "tidx",
+          date: r.datum_planerat?.slice(0, 10)
+        })
+      })
 
-{/* WEATHER */}
+      ;(optimal.data ?? []).forEach(r => {
+        addJob({
+          id: r.id,
+          name: r.name || "Optimal",
+          address: r.address || "",
+          lat: Number(r.lat),
+          lng: Number(r.lng),
+          status: r.status === "done" ? "done" : "pending",
+          type: "optimal",
+          date: r.datum_start?.slice(0, 10)
+        })
+      })
 
-{weather && (
+      ;(tmm.data ?? []).forEach(r => {
+        addJob({
+          id: r.id,
+          name: r.beskrivning || "TMM",
+          address: r.address || "",
+          lat: Number(r.lat),
+          lng: Number(r.lng),
+          status: r.status === "done" ? "done" : "pending",
+          type: "tmm",
+          date: r.datum?.slice(0, 10)
+        })
+      })
 
-<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      setJobs(list)
 
-<Card>
-<CardContent className="p-4 flex items-center gap-3">
-<Thermometer className="w-5 h-5 text-orange-500"/>
-<div>
-<p className="text-xs text-muted-foreground">Temperatur</p>
-<p className="font-semibold">{weather.temp}°C</p>
-</div>
-</CardContent>
-</Card>
+    } catch (e) {
+      console.log(e)
+    }
 
-<Card>
-<CardContent className="p-4 flex items-center gap-3">
-<CloudRain className="w-5 h-5 text-blue-500"/>
-<div>
-<p className="text-xs text-muted-foreground">Nederbörd</p>
-<p className="font-semibold">{weather.rain} mm</p>
-</div>
-</CardContent>
-</Card>
+    setLoading(false)
 
-<Card>
-<CardContent className="p-4 flex items-center gap-3">
-<Wind className="w-5 h-5 text-gray-500"/>
-<div>
-<p className="text-xs text-muted-foreground">Vind</p>
-<p className="font-semibold">{weather.wind} m/s</p>
-</div>
-</CardContent>
-</Card>
+  }, [user, selectedDate])
 
-<Card>
-<CardContent className="p-4 flex items-center">
-<Badge variant="outline">Driftinfo</Badge>
-</CardContent>
-</Card>
+  useEffect(() => {
+    loadJobs()
+  }, [loadJobs])
 
-</div>
+  /* WEATHER */
 
-)}
+  useEffect(() => {
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=57.7089&longitude=11.9746&current=temperature_2m,precipitation,wind_speed_10m")
+      .then(r => r.json())
+      .then(data => {
+        setWeather({
+          temp: data.current.temperature_2m,
+          rain: data.current.precipitation,
+          wind: data.current.wind_speed_10m
+        })
+      })
+  }, [])
 
+  /* 🚀 ROUTE OPTIMIZATION */
 
-{/* MAP */}
+  useEffect(() => {
 
-{!isLoaded ? (
+    if (!isLoaded) return
+    if (jobs.length === 0) return
 
-<div className="flex justify-center p-10">
-<Loader2 className="animate-spin"/>
-</div>
+    const directionsService = new window.google.maps.DirectionsService()
 
-):( 
+    const origin = userLocation || {
+      lat: jobs[0].lat,
+      lng: jobs[0].lng
+    }
 
-<div className="h-[420px] w-full rounded-xl overflow-hidden border">
+    const destination = jobs[jobs.length - 1]
 
-<GoogleMap
-zoom={11}
-center={center}
-mapContainerStyle={{width:"100%",height:"100%"}}
->
+    const waypoints = jobs.slice(0, -1).map(j => ({
+      location: { lat: j.lat, lng: j.lng }
+    }))
 
-<TrafficLayer />
+    directionsService.route({
+      origin,
+      destination,
+      waypoints,
+      optimizeWaypoints: true,
+      travelMode: window.google.maps.TravelMode.DRIVING,
+      drivingOptions: {
+        departureTime: new Date(),
+        trafficModel: "bestguess"
+      }
+    },
+      (result, status) => {
 
-{routeJobs.map((job,index)=>(
-<Marker
-key={`${job.type}-${job.id}`}
-position={{lat:job.lat,lng:job.lng}}
-label={{text:String(index+1),color:"#fff"}}
-/>
-))}
+        if (status === "OK" && result) {
 
-{directions && (
-<DirectionsRenderer directions={directions}/>
-)}
+          setDirections(result)
 
-</GoogleMap>
+          const order = result.routes[0].waypoint_order
 
-</div>
+          const optimizedRoute = [
+            ...order.map((i: number) => jobs[i]),
+            destination
+          ]
 
-)}
+          setOptimized(optimizedRoute)
 
+        }
 
-{/* JOB LIST */}
+      })
 
-<div className="grid gap-3">
+  }, [jobs, isLoaded, userLocation])
 
-{routeJobs.map((job,index)=>{
+  const routeJobs = optimized.length ? optimized : jobs
 
-const done = job.status==="done"
+  const center = routeJobs.length
+    ? { lat: routeJobs[0].lat, lng: routeJobs[0].lng }
+    : { lat: 57.7089, lng: 11.9746 }
 
-return(
+  return (
 
-<Card key={`${job.type}-${job.id}`}>
+    <div className="space-y-6">
 
-<CardContent className="p-4 flex items-center gap-4">
+      <h1 className="text-2xl font-bold flex items-center gap-2">
+        <Route className="h-6 w-6" />
+        Ruttplanering – {format(new Date(), "d MMMM", { locale: sv })}
+      </h1>
 
-<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-{index+1}
-</div>
+      {/* WEATHER */}
 
-<div className="flex-1">
+      {weather && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-<p className="font-medium text-sm">{job.name}</p>
-<p className="text-xs text-muted-foreground">{job.address}</p>
+          <Card><CardContent className="p-4 flex gap-3">
+            <Thermometer /> {weather.temp}°C
+          </CardContent></Card>
 
-<Badge variant="outline" className="text-[10px] mt-1">
-{done?"Klar":"Ej klar"}
-</Badge>
+          <Card><CardContent className="p-4 flex gap-3">
+            <CloudRain /> {weather.rain} mm
+          </CardContent></Card>
 
-</div>
+          <Card><CardContent className="p-4 flex gap-3">
+            <Wind /> {weather.wind} m/s
+          </CardContent></Card>
 
-<Button
-size="sm"
-onClick={()=>window.open(
-`https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`
-)}
-className="gap-2"
->
+        </div>
+      )}
 
-<Navigation className="h-4 w-4"/>
-Navigera
+      {/* MAP */}
 
-</Button>
+      {!isLoaded ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <div className="h-[420px] rounded-xl overflow-hidden">
 
-</CardContent>
+          <GoogleMap
+            zoom={11}
+            center={center}
+            mapContainerStyle={{ width: "100%", height: "100%" }}
+          >
 
-</Card>
+            <TrafficLayer />
 
-)
+            {routeJobs.map((job, i) => (
+              <Marker
+                key={job.id}
+                position={{ lat: job.lat, lng: job.lng }}
+                label={{ text: String(i + 1), color: "#fff" }}
+              />
+            ))}
 
-})}
+            {directions && <DirectionsRenderer directions={directions} />}
 
-</div>
+          </GoogleMap>
 
-</div>
+        </div>
+      )}
 
-)
+      {/* JOB LIST */}
 
+      {routeJobs.map((job, i) => (
+        <Card key={job.id}>
+          <CardContent className="p-4 flex justify-between">
+
+            <div>
+              <p>{i + 1}. {job.name}</p>
+              <p className="text-xs">{job.address}</p>
+            </div>
+
+            <Button
+              onClick={() =>
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`)
+              }
+            >
+              <Navigation />
+            </Button>
+
+          </CardContent>
+        </Card>
+      ))}
+
+    </div>
+  )
 }
