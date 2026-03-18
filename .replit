@@ -32,6 +32,7 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_database:1.0.0"]
+expertMode = true
 
 [[ports]]
 localPort = 5000

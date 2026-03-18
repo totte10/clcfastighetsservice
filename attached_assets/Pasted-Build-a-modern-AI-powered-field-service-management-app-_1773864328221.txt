@@ -1,0 +1,193 @@
+Build a modern AI-powered field service management app with unified system architecture, Google Maps integration, route planning, and consistent premium UI design.
+
+---
+
+CORE GOAL:
+Create a professional work management app for property service (fastighetsservice) where EVERYTHING is connected under projects, with AI acting as a smart work manager.
+
+---
+
+APP STRUCTURE (CRITICAL):
+
+PROJECT is the central entity.
+
+Each project must include:
+- Time entries (Tidx / Tidrapport)
+- Tasks / work items
+- Route planning stops
+- Map locations (Google Maps markers)
+- Areas (Områden)
+- AI interactions (context-aware)
+- Status (Klar / Pågår / Ej påbörjad)
+- Optimization (Optimal)
+
+NO standalone data allowed – everything belongs to a project.
+
+---
+
+AI ASSISTANT (FREE + POWERFUL):
+
+Use a FREE AI model (Gemini Flash or equivalent).
+
+AI should act as a WORK MANAGER:
+- Plan daily work
+- Suggest task order
+- Optimize routes
+- Analyze time usage
+- Answer questions about projects
+
+AI must understand:
+- Current project
+- Tasks
+- Time logs
+- Locations
+
+Include:
+- Chat UI
+- Saved chat history (Supabase)
+- Project-specific AI context
+
+---
+
+ROUTE PLANNER (ADVANCED):
+
+Use Google Maps (NOT Leaflet).
+
+Features:
+- Embedded map inside app
+- Address search (Google Places Autocomplete)
+- Show today’s tasks as markers
+- Draw optimized route between stops
+- क्लिकbara markers with info
+- Button: “Optimera rutt”
+
+Display:
+- Distance
+- Travel time
+- Stop order
+
+Route must be based on project tasks.
+
+---
+
+MAP SYSTEM (GLOBAL):
+
+Replace ALL maps with Google Maps:
+- Karta
+- Projekt
+- Områden
+- Route planner
+
+Use consistent dark theme styling.
+
+---
+
+PROJECT PAGE (UPGRADED):
+
+Each project should have:
+
+Overview:
+- Total time
+- Progress stats
+- Number of tasks
+- Efficiency (Optimal)
+
+Sections:
+- 🗺 Map (with route + markers)
+- ⏱ Time entries
+- 📋 Tasks
+- 📍 Areas
+- 🧠 AI Assistant
+
+---
+
+TIME REPORT (TIDRAPPORT):
+
+- Must be linked to project
+- Show:
+  - Daily logs
+  - Total hours
+  - Time per project
+- Add visual timeline UI
+
+---
+
+AREAS (OMRÅDEN):
+
+- Belong to projects
+- Display on map
+- Group tasks geographically
+
+---
+
+PLANNING PAGE (NEW DESIGN):
+
+Use card-based layout inspired by provided design.
+
+Include:
+- Daily schedule
+- Tasks timeline
+- AI suggestions
+- Route preview
+
+IMPORTANT:
+Use SAME colors as existing home screen (dark + orange).
+
+---
+
+DESIGN SYSTEM:
+
+Use current home screen as base style:
+- Dark theme
+- Orange accent
+- Soft glow
+- Rounded cards
+- Glassmorphism
+
+Apply SAME design to:
+- Projekt
+- Tidrapport
+- Områden
+- Karta
+- AI
+
+---
+
+NAVIGATION:
+
+Bottom navigation:
+- Hem
+- Plan
+- AI
+- Karta
+- Admin
+
+Smooth animations and spacing.
+
+---
+
+LOGO:
+
+Use provided green logo:
+- Header
+- Splash screen
+- Login
+- App icon (PWA / Add to home screen)
+
+---
+
+PERFORMANCE:
+
+- Mobile-first (iPhone optimized)
+- Fast loading
+- Smooth UX
+
+---
+
+FINAL RESULT:
+
+A fully connected system where:
+- Everything is tied to projects
+- AI acts as a real work manager
+- Route planning happens inside the app
+- UI is clean, modern, and consiste
