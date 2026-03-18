@@ -32,8 +32,9 @@ export default function PlanningPage() {
     load()
   }, [load])
 
-  if (loading) return null
-  if (!user) return null
+  // 🔥 STOPPAR VIT SKÄRM
+  if (loading) return <div className="text-white p-6">Laddar...</div>
+  if (!user) return <div className="text-white p-6">Inte inloggad</div>
 
   if (!isAdmin) {
     return <div className="text-white p-6">Ingen behörighet</div>
@@ -53,33 +54,45 @@ export default function PlanningPage() {
   return (
     <div className="min-h-screen bg-[#0B0F1A] text-white p-4">
 
+      {/* HEADER */}
       <h1 className="text-2xl font-bold mb-4">Planering</h1>
 
       {/* DATE STRIP */}
       <div className="flex items-center gap-2 mb-4">
 
-        <ChevronLeft onClick={() => setSelectedDate(d => subDays(d,1))} />
+        <ChevronLeft
+          className="cursor-pointer"
+          onClick={() => setSelectedDate(d => subDays(d,1))}
+        />
 
-        {days.map(day => {
-          const active = isSameDay(day, selectedDate)
-          return (
-            <button
-              key={day.toISOString()}
-              onClick={() => setSelectedDate(day)}
-              className={`px-3 py-2 rounded-xl ${
-                active ? "bg-orange-500" : "bg-white/5"
-              }`}
-            >
-              {format(day, "d")}
-            </button>
-          )
-        })}
+        <div className="flex gap-2 overflow-x-auto">
+          {days.map(day => {
+            const active = isSameDay(day, selectedDate)
 
-        <ChevronRight onClick={() => setSelectedDate(d => addDays(d,1))} />
+            return (
+              <button
+                key={day.toISOString()}
+                onClick={() => setSelectedDate(day)}
+                className={`px-3 py-2 rounded-xl text-sm ${
+                  active
+                    ? "bg-orange-500 text-white"
+                    : "bg-white/5 text-white/50"
+                }`}
+              >
+                {format(day, "d")}
+              </button>
+            )
+          })}
+        </div>
+
+        <ChevronRight
+          className="cursor-pointer"
+          onClick={() => setSelectedDate(d => addDays(d,1))}
+        />
 
       </div>
 
-      {/* JOBS */}
+      {/* JOB LIST */}
       <div className="space-y-3">
 
         {filtered.map(job => (
@@ -88,8 +101,9 @@ export default function PlanningPage() {
             key={job.id}
             className="bg-[#111827] p-4 rounded-2xl border border-white/5"
           >
-            <h3 className="font-semibold">{job.name}</h3>
-            <p className="text-xs text-white/40 flex items-center gap-1">
+            <h3 className="font-semibold text-sm">{job.name}</h3>
+
+            <p className="text-xs text-white/40 flex items-center gap-1 mt-1">
               <MapPin size={12}/> {job.address}
             </p>
           </div>
@@ -105,7 +119,7 @@ export default function PlanningPage() {
       </div>
 
       {/* FLOAT BUTTON */}
-      <button className="fixed bottom-20 right-6 bg-orange-500 w-14 h-14 rounded-full flex items-center justify-center">
+      <button className="fixed bottom-20 right-6 bg-orange-500 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
         <Plus />
       </button>
 
