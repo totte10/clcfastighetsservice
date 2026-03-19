@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { ProtectedRoute } from "./ProtectedRoute";
 
-// PAGES
+// pages
 import RoutePlanningPage from "../pages/RoutePlanningPage";
 import PlanningPage from "../pages/PlanningPage";
 import AdminPlanner from "../pages/AdminPlanner";
@@ -11,8 +11,10 @@ import LoginPage from "../pages/LoginPage";
 export const AppRoutes = () => {
   const { user, loading } = useAuth();
 
-  // Vänta på auth (viktigt)
-  if (loading) return <div>Loading...</div>;
+  // 🔥 VIKTIGAST AV ALLT
+  if (loading) {
+    return <div>Loading app...</div>;
+  }
 
   return (
     <Routes>
@@ -21,7 +23,7 @@ export const AppRoutes = () => {
       <Route
         path="/login"
         element={
-          user ? <Navigate to="/planning" /> : <LoginPage />
+          user ? <Navigate to="/planning" replace /> : <LoginPage />
         }
       />
 
@@ -29,7 +31,7 @@ export const AppRoutes = () => {
       <Route
         path="/"
         element={
-          user ? <Navigate to="/planning" /> : <Navigate to="/login" />
+          user ? <Navigate to="/planning" replace /> : <Navigate to="/login" replace />
         }
       />
 
@@ -37,27 +39,21 @@ export const AppRoutes = () => {
       <Route
         path="/planning"
         element={
-          <ProtectedRoute>
-            <PlanningPage />
-          </ProtectedRoute>
+          user ? <PlanningPage /> : <Navigate to="/login" replace />
         }
       />
 
       <Route
         path="/route-planning"
         element={
-          <ProtectedRoute>
-            <RoutePlanningPage />
-          </ProtectedRoute>
+          user ? <RoutePlanningPage /> : <Navigate to="/login" replace />
         }
       />
 
       <Route
         path="/admin"
         element={
-          <ProtectedRoute>
-            <AdminPlanner />
-          </ProtectedRoute>
+          user ? <AdminPlanner /> : <Navigate to="/login" replace />
         }
       />
 
