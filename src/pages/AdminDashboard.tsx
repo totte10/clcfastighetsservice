@@ -1,30 +1,16 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ClipboardList, Map, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminDashboard() {
+
   const navigate = useNavigate();
-
-  // 🔥 HÄMTA JOBS
-  const { data: jobs } = useQuery({
-    queryKey: ["jobs"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .order("date", { ascending: true });
-
-      if (error) throw error;
-      return data;
-    },
-  });
 
   return (
     <div className="space-y-6 p-4">
 
       {/* HEADER */}
+
       <div>
         <h1 className="text-2xl font-bold">
           Admin Dashboard
@@ -36,38 +22,12 @@ export default function AdminDashboard() {
       </div>
 
 
-      {/* 🔥 SNABB ÖVERSIKT (NY) */}
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Dina uppdrag</h2>
-
-        {jobs?.slice(0, 3).map((job: any) => (
-          <Card key={job.id}>
-            <CardContent className="p-4 space-y-1">
-              <p className="font-medium">{job.title}</p>
-              <p className="text-sm text-muted-foreground">{job.date}</p>
-
-              <p
-                className={`text-xs font-medium ${
-                  job.status === "completed"
-                    ? "text-green-500"
-                    : job.status === "in_progress"
-                    ? "text-blue-500"
-                    : "text-yellow-500"
-                }`}
-              >
-                {job.status}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-
-      </div>
-
-
       {/* QUICK ACTIONS */}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
         {/* PLANERING */}
+
         <Card
           className="cursor-pointer hover:scale-[1.02] transition"
           onClick={() => navigate("/planning")}
@@ -86,9 +46,10 @@ export default function AdminDashboard() {
 
 
         {/* ROUTE PLANNER */}
+
         <Card
           className="cursor-pointer hover:scale-[1.02] transition"
-          onClick={() => navigate("/route-planning")}
+          onClick={() => navigate("/admin-planner")}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -104,6 +65,7 @@ export default function AdminDashboard() {
 
 
         {/* TIME REPORTS */}
+
         <Card
           className="cursor-pointer hover:scale-[1.02] transition"
           onClick={() => navigate("/time/reports")}
