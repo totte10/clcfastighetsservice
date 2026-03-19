@@ -1,13 +1,11 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
 
-// IMPORTERA DINA PAGES (justera namn om de skiljer sig)
-import PlanningPage from "../pages/PlanningPage";
+// IMPORTERA DINA RIKTIGA PAGES
 import RoutePlanningPage from "../pages/RoutePlanningPage";
+import PlanningPage from "../pages/PlanningPage";
 import AdminPlanner from "../pages/AdminPlanner";
-
-// om du har login page:
-import LoginPage from "../pages/LoginPage";
+import LoginPage from "../pages/LoginPage"; // viktigt!
 
 export const AppRoutes = () => {
   return (
@@ -16,10 +14,10 @@ export const AppRoutes = () => {
       {/* LOGIN */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* STARTSIDA → redirect */}
+      {/* DEFAULT REDIRECT */}
       <Route path="/" element={<Navigate to="/planning" />} />
 
-      {/* PROTECTED ROUTES */}
+      {/* PROTECTED */}
       <Route
         path="/planning"
         element={
