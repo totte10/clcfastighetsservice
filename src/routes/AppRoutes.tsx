@@ -2,12 +2,12 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 // pages
+import Index from "../pages/Index"; // 🔥 DIN RIKTIGA DASHBOARD
 import RoutePlanningPage from "../pages/RoutePlanningPage";
 import PlanningPage from "../pages/PlanningPage";
 import AdminPlanner from "../pages/AdminPlanner";
 import LoginPage from "../pages/LoginPage";
 import AllEntriesPage from "../pages/AllEntriesPage";
-import AdminDashboard from "../pages/AdminDashboard"; // 🔥 VIKTIG
 
 export const AppRoutes = () => {
   const { user, loading, isAdmin } = useAuth();
@@ -27,11 +27,11 @@ export const AppRoutes = () => {
         }
       />
 
-      {/* 🔥 ROOT = DASHBOARD */}
+      {/* 🔥 ROOT = DIN SNYGGA INDEX DASHBOARD */}
       <Route
         path="/"
         element={
-          user ? <AdminDashboard /> : <Navigate to="/login" replace />
+          user ? <Index /> : <Navigate to="/login" replace />
         }
       />
 
