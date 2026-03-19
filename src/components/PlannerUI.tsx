@@ -1,109 +1,136 @@
-import { useState } from "react"
-import { format, addDays } from "date-fns"
-import { sv } from "date-fns/locale"
+import { useMemo, useState } from "react";
+import { addDays, format, isValid, parseISO } from "date-fns";
+import { sv } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { MapPin, Users } from "lucide-react";
 
 interface Job {
-  id: string
-  name: string
-  address: string
-  date?: string
-  status: string
+  id: string;
+  name: string;
+  address: string;
+  date?: string | null;
+  status?: string | null;
+  workers?: string[];
+  type?: string | null;
+}
+
+function safeDate(value?: string | null) {
+  if (!value) return null;
+  const parsed = parseISO(value);
+  return isValid(parsed) ? parsed : null;
+}
+
+function getStatusLabel(status?: string | null) {
+  if (status === "done") return "Klar";
+  if (status === "in-progress") return "Pågår";
+  return "Planerad";
+}
+
+function getSourceLabel(type?: string | null) {
+  switch (type) {
+    case "project":
+      return "Projekt";
+    case "tidx":
+      return "TIDX";
+    case "egna":
+      return "Egna";
+    case "tmm":
+      return "TMM";
+    case "optimal":
+      return "Optimal";
+    default:
+      return "Jobb";
+  }
 }
 
 export default function PlannerUI({ jobs }: { jobs: Job[] }) {
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const [selectedDate, setSelectedDate] = useState(new Date())
+  const days = useMemo(
+    () => Array.from({ length: 9 }, (_, i) => addDays(new Date(), i - 4)),
+    []
+  );
 
-  const days = Array.from({ length: 7 }).map((_, i) =>
-    addDays(new Date(), i - 3)
-  )
+  const selectedKey = format(selectedDate, "yyyy-MM-dd");
 
-  const filteredJobs = jobs.filter(j =>
-    j.date === format(selectedDate, "yyyy-MM-dd")
-  )
+  const filteredJobs = useMemo(
+    () =>
+      (jobs ?? []).filter((job) => {
+        const parsed = safeDate(job?.date);
+        return parsed ? format(parsed, "yyyy-MM-dd") === selectedKey : false;
+      }),
+    [jobs, selectedKey]
+  );
 
   return (
-    <div className="p-4 space-y-6 text-white">
-
-      {/* HEADER */}
-      <div>
-        <h1 className="text-3xl font-bold leading-tight">
-          Planera<br />dina uppdrag
-        </h1>
+    <div className="space-y-6 text-foreground">
+      <div className="space-y-2">
+        <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Planering</p>
+        <h1 className="text-3xl font-bold leading-tight">Dina uppdrag</h1>
+        <p className="text-sm text-muted-foreground">Välj dag och se alla planerade jobb i en enhetlig vy.</p>
       </div>
 
-      {/* DATE SCROLLER */}
-      <div className="flex gap-3 overflow-x-auto pb-2">
-
-        {days.map((d, i) => {
-
-          const active =
-            format(d, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-
-          return (
-            <button
-              key={i}
-              onClick={() => setSelectedDate(d)}
-              className={`flex flex-col items-center px-4 py-2 rounded-xl min-w-[60px]
-              ${active
-                  ? "bg-orange-500 text-white"
-                  : "bg-white/5 text-gray-400"
-                }`}
-            >
-              <span className="text-xs">
-                {format(d, "EEE", { locale: sv })}
-              </span>
-              <span className="text-lg font-semibold">
-                {format(d, "d")}
-              </span>
-            </button>
-          )
-        })}
-
+      <div className="-mx-4 overflow-x-auto px-4 pb-1">
+        <div className="flex gap-3 min-w-max">
+          {days.map((day) => {
+            const isActive = format(day, "yyyy-MM-dd") === selectedKey;
+            return (
+              <button
+                key={day.toISOString()}
+                type="button"
+                onClick={() => setSelectedDate(day)}
+                className={isActive ? "glass-pill-active min-w-[74px] py-3" : "glass-pill min-w-[74px] py-3"}
+              >
+                <span className="block text-[10px] uppercase tracking-wide opacity-80">
+                  {format(day, "EEE", { locale: sv })}
+                </span>
+                <span className="mt-1 block text-lg font-semibold">{format(day, "d")}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* JOB CARDS */}
       <div className="space-y-4">
-
-        {filteredJobs.length === 0 && (
-          <p className="text-sm text-gray-400">
-            Inga jobb idag
-          </p>
-        )}
-
-        {filteredJobs.map((job, i) => {
-
-          const done = job.status === "done"
-
-          return (
-            <div
-              key={job.id}
-              className="rounded-3xl p-5 relative overflow-hidden"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(249,115,22,0.25), rgba(15,15,20,0.9))",
-                border: "1px solid rgba(255,255,255,0.08)",
-                backdropFilter: "blur(20px)"
-              }}
+        {filteredJobs.length === 0 ? (
+          <div className="glass-card p-5 text-sm text-muted-foreground">Inga jobb för vald dag.</div>
+        ) : (
+          filteredJobs.map((job, index) => (
+            <article
+              key={job.id || `${job.name}-${index}`}
+              className="glass-card p-5 animate-fade-up"
+              style={{ animationDelay: `${index * 60}ms` }}
             >
-
-              {/* PRIORITY BADGE */}
-              <div className="absolute top-4 left-4 text-[10px] px-2 py-1 rounded-full bg-white/10">
-                {done ? "Klar" : "Aktiv"}
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">{getSourceLabel(job?.type)}</Badge>
+                    <Badge variant={job?.status === "done" ? "default" : "outline"}>{getStatusLabel(job?.status)}</Badge>
+                  </div>
+                  <h2 className="text-lg font-semibold leading-tight">{job?.name || "Namnlöst jobb"}</h2>
+                </div>
+                <Button type="button" size="sm" variant="secondary" className="shrink-0">
+                  {format(selectedDate, "d MMM", { locale: sv })}
+                </Button>
               </div>
 
-              {/* TITLE */}
-              <h2 className="text-lg font-semibold mt-6">
-                {job.name}
-              </h2>
-
-              {/* ADDRESS */}
-              <p className="text-xs text-gray-300 mt-1">
-                {job.address}
-              </p>
-
-              {/* FOOTER */}
-              <div className="flex justify-between items-center mt-4">
-
-                <span className="text-[11px] text-gray-400">
-                  {format(selectedDate
+              <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 h-4 w-4 text-primary" />
+                  <span>{job?.address || "Adress saknas"}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Users className="mt-0.5 h-4 w-4 text-primary" />
+                  <span>
+                    {job?.workers && job.workers.length > 0 ? job.workers.join(", ") : "Inga tilldelade medarbetare"}
+                  </span>
+                </div>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
