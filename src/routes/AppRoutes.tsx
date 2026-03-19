@@ -1,29 +1,37 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
 
-// IMPORTERA DINA NUVARANDE PAGES
+// IMPORTERA DINA RIKTIGA PAGES
 import RoutePlanningPage from "../pages/RoutePlanningPage";
 import PlanningPage from "../pages/PlanningPage";
 import AdminPlanner from "../pages/AdminPlanner";
-// lägg till fler här
+import LoginPage from "../pages/LoginPage"; // viktigt!
 
 export const AppRoutes = () => {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <RoutePlanningPage />
-          </ProtectedRoute>
-        }
-      />
 
+      {/* LOGIN */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* DEFAULT REDIRECT */}
+      <Route path="/" element={<Navigate to="/planning" />} />
+
+      {/* PROTECTED */}
       <Route
         path="/planning"
         element={
           <ProtectedRoute>
             <PlanningPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/route-planning"
+        element={
+          <ProtectedRoute>
+            <RoutePlanningPage />
           </ProtectedRoute>
         }
       />
@@ -36,6 +44,7 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
     </Routes>
   );
 };
