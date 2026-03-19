@@ -6,12 +6,12 @@ import RoutePlanningPage from "../pages/RoutePlanningPage";
 import PlanningPage from "../pages/PlanningPage";
 import AdminPlanner from "../pages/AdminPlanner";
 import LoginPage from "../pages/LoginPage";
-import AllEntriesPage from "../pages/AllEntriesPage"; // NY
+import AllEntriesPage from "../pages/AllEntriesPage";
+import AdminDashboard from "../pages/AdminDashboard"; // 🔥 VIKTIG
 
 export const AppRoutes = () => {
   const { user, loading, isAdmin } = useAuth();
 
-  // 🔥 Vänta på auth (fixar alla buggar)
   if (loading) {
     return <div>Loading app...</div>;
   }
@@ -23,19 +23,19 @@ export const AppRoutes = () => {
       <Route
         path="/login"
         element={
-          user ? <Navigate to="/entries" replace /> : <LoginPage />
+          user ? <Navigate to="/" replace /> : <LoginPage />
         }
       />
 
-      {/* ROOT */}
+      {/* 🔥 ROOT = DASHBOARD */}
       <Route
         path="/"
         element={
-          user ? <Navigate to="/entries" replace /> : <Navigate to="/login" replace />
+          user ? <AdminDashboard /> : <Navigate to="/login" replace />
         }
       />
 
-      {/* 🔥 DASHBOARD (huvudsida) */}
+      {/* ALLA UPPDRAG */}
       <Route
         path="/entries"
         element={
@@ -59,22 +59,20 @@ export const AppRoutes = () => {
         }
       />
 
-      {/* 🔐 ADMIN ONLY */}
+      {/* ADMIN */}
       <Route
         path="/admin"
         element={
-          user && isAdmin ? (
-            <AdminPlanner />
-          ) : (
-            <Navigate to="/entries" replace />
-          )
+          user && isAdmin
+            ? <AdminPlanner />
+            : <Navigate to="/" replace />
         }
       />
 
       {/* FALLBACK */}
       <Route
         path="*"
-        element={<Navigate to={user ? "/entries" : "/login"} replace />}
+        element={<Navigate to={user ? "/" : "/login"} replace />}
       />
 
     </Routes>
