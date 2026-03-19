@@ -233,7 +233,7 @@ export default function RoutePlanningPage() {
       travelMode: window.google.maps.TravelMode.DRIVING,
       drivingOptions: {
         departureTime: new Date(),
-        trafficModel: "bestguess"
+        trafficModel: window.google.maps.TrafficModel.BEST_GUESS
       }
     },
       (result, status) => {
