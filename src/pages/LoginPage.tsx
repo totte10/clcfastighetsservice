@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
-import { lovable } from "@/integrations/lovable"
 import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
@@ -22,6 +21,7 @@ export default function LoginPage() {
 
     try {
       const email = `${username.trim().toLowerCase()}@app.internal`
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -32,7 +32,7 @@ export default function LoginPage() {
         setError("Fel användarnamn eller lösenord")
       }
     } catch (e) {
-      console.error("Password login crash:", e)
+      console.error("Login crash:", e)
       setError("Inloggningen misslyckades")
     } finally {
       setLoading(false)
@@ -44,8 +44,11 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
       })
 
       if (error) {
@@ -78,7 +81,11 @@ export default function LoginPage() {
       >
         <div className="flex flex-col items-center mb-6">
           <div className="w-20 h-20 rounded-2xl overflow-hidden mb-3">
-            <img src="/green-logo.jpg" className="w-full h-full object-cover" alt="CLC Fastighetsservice" />
+            <img
+              src="/green-logo.jpg"
+              className="w-full h-full object-cover"
+              alt="CLC Fastighetsservice"
+            />
           </div>
           <h1 className="text-lg font-semibold text-white">
             CLC Fastighetsservice
@@ -132,7 +139,7 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white flex items-center justify-center gap-2"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
