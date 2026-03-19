@@ -1,17 +1,17 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { ProtectedRoute } from "./ProtectedRoute";
 
 // pages
 import RoutePlanningPage from "../pages/RoutePlanningPage";
 import PlanningPage from "../pages/PlanningPage";
 import AdminPlanner from "../pages/AdminPlanner";
 import LoginPage from "../pages/LoginPage";
+import AllEntriesPage from "../pages/AllEntriesPage"; // NY
 
 export const AppRoutes = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
-  // 🔥 VIKTIGAST AV ALLT
+  // 🔥 Vänta på auth (fixar alla buggar)
   if (loading) {
     return <div>Loading app...</div>;
   }
@@ -23,7 +23,7 @@ export const AppRoutes = () => {
       <Route
         path="/login"
         element={
-          user ? <Navigate to="/planning" replace /> : <LoginPage />
+          user ? <Navigate to="/entries" replace /> : <LoginPage />
         }
       />
 
@@ -31,11 +31,19 @@ export const AppRoutes = () => {
       <Route
         path="/"
         element={
-          user ? <Navigate to="/planning" replace /> : <Navigate to="/login" replace />
+          user ? <Navigate to="/entries" replace /> : <Navigate to="/login" replace />
         }
       />
 
-      {/* PROTECTED */}
+      {/* 🔥 DASHBOARD (huvudsida) */}
+      <Route
+        path="/entries"
+        element={
+          user ? <AllEntriesPage /> : <Navigate to="/login" replace />
+        }
+      />
+
+      {/* PLANNING */}
       <Route
         path="/planning"
         element={
@@ -43,6 +51,7 @@ export const AppRoutes = () => {
         }
       />
 
+      {/* ROUTE PLANNING */}
       <Route
         path="/route-planning"
         element={
@@ -50,11 +59,22 @@ export const AppRoutes = () => {
         }
       />
 
+      {/* 🔐 ADMIN ONLY */}
       <Route
         path="/admin"
         element={
-          user ? <AdminPlanner /> : <Navigate to="/login" replace />
+          user && isAdmin ? (
+            <AdminPlanner />
+          ) : (
+            <Navigate to="/entries" replace />
+          )
         }
+      />
+
+      {/* FALLBACK */}
+      <Route
+        path="*"
+        element={<Navigate to={user ? "/entries" : "/login"} replace />}
       />
 
     </Routes>
