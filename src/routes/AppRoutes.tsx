@@ -1,21 +1,37 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { ProtectedRoute } from "./ProtectedRoute";
 
-// IMPORTERA DINA RIKTIGA PAGES
+// PAGES
 import RoutePlanningPage from "../pages/RoutePlanningPage";
 import PlanningPage from "../pages/PlanningPage";
 import AdminPlanner from "../pages/AdminPlanner";
-import LoginPage from "../pages/LoginPage"; // viktigt!
+import LoginPage from "../pages/LoginPage";
 
 export const AppRoutes = () => {
+  const { user, loading } = useAuth();
+
+  // Vänta på auth (viktigt)
+  if (loading) return <div>Loading...</div>;
+
   return (
     <Routes>
 
       {/* LOGIN */}
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          user ? <Navigate to="/planning" /> : <LoginPage />
+        }
+      />
 
-      {/* DEFAULT REDIRECT */}
-      <Route path="/" element={<Navigate to="/planning" />} />
+      {/* ROOT */}
+      <Route
+        path="/"
+        element={
+          user ? <Navigate to="/planning" /> : <Navigate to="/login" />
+        }
+      />
 
       {/* PROTECTED */}
       <Route
